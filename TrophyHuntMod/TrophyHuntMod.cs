@@ -32,7 +32,7 @@ namespace TrophyHuntMod
         private void Awake()
         {
             // Jotunn comes with its own Logger class to provide a consistent Log style for all mods using it
-            Jotunn.Logger.LogWarning("TrophyHuntMod has landed");
+            Debug.LogWarning("TrophyHuntMod has landed");
 
             // Patch with Harmony
             harmony.PatchAll();
@@ -136,7 +136,8 @@ namespace TrophyHuntMod
         {
             static void Postfix(Player __instance)
             {
-                Jotunn.Logger.LogWarning("Player is Awake()!");
+
+                Debug.LogWarning("Player is Awake()!");
 
                 // Pull the list of trophies from the ObjectDB
                 //
@@ -150,18 +151,18 @@ namespace TrophyHuntMod
                         __m_trophiesInObjectDB.Add(component.gameObject.name);
                     }
                 }
-                Jotunn.Logger.LogWarning($"{__m_trophiesInObjectDB.Count} trophies discovered");
+                Debug.LogWarning($"{__m_trophiesInObjectDB.Count} trophies discovered");
 
                 if (__m_trophiesInObjectDB.Count != __m_trophyData.Length)
                 {
-                    Jotunn.Logger.LogError($"Discovered Trophies ({__m_trophiesInObjectDB.Count}) doesn't match the stored Trophy data ({__m_trophyData.Length}), this mod is out of date.");
+                    Debug.LogError($"Discovered Trophies ({__m_trophiesInObjectDB.Count}) doesn't match the stored Trophy data ({__m_trophyData.Length}), this mod is out of date.");
                 }
 
                 // Sort the trophies by biome, score and name
                 Array.Sort<TrophyData>(__m_trophyData, (x, y) => x.m_biome.CompareTo(y.m_biome) * 100000 + x.m_value.CompareTo(y.m_value) * 10000 + x.m_name.CompareTo(y.m_name));
                 foreach (var t in __m_trophyData)
                 {
-                    Jotunn.Logger.LogWarning($"{t.m_biome.ToString()}, {t.m_name}, {t.m_value}");
+                    Debug.LogWarning($"{t.m_biome.ToString()}, {t.m_name}, {t.m_value}");
                 }
 
                 BuildUIElements();
@@ -171,11 +172,11 @@ namespace TrophyHuntMod
             {
                 if (Hud.instance.m_rootObject != null)
                 {
-                    Jotunn.Logger.LogWarning("TrophyHuntMod: Hud.instance.m_rootObject is valid");
+                    Debug.LogWarning("TrophyHuntMod: Hud.instance.m_rootObject is valid");
                 }
                 else
                 {
-                    Jotunn.Logger.LogError("TrophyHuntMod: Hud.instance.m_rootObject is NOT valid");
+                    Debug.LogError("TrophyHuntMod: Hud.instance.m_rootObject is NOT valid");
                 }
 
                 Transform healthPanelTransform = Hud.instance.transform.Find("hudroot/healthpanel");
@@ -189,7 +190,7 @@ namespace TrophyHuntMod
                     Debug.LogError("Health panel transform not found.");
                 }
 
-                //GameObject trophyTray = CreateTrophyTrayElement(healthPanelTransform);
+                GameObject trophyTray = CreateTrophyTrayElement(healthPanelTransform);
 
                 CreateScoreTextElement(healthPanelTransform);
 
@@ -201,11 +202,11 @@ namespace TrophyHuntMod
 
                 trophyTray.transform.SetParent(parentTransform);
                 RectTransform trophyTrayRectTransform = trophyTray.AddComponent<RectTransform>();
-                trophyTrayRectTransform.sizeDelta = new Vector2(1000, 70);
-                trophyTrayRectTransform.anchoredPosition = new Vector2(0, 0);
-
+                trophyTrayRectTransform.sizeDelta = new Vector2(3000, 40);
+                trophyTrayRectTransform.anchoredPosition = new Vector2(500, -140);
+                
                 UnityEngine.UI.Image trayImage = trophyTray.AddComponent<UnityEngine.UI.Image>();
-                trayImage.color = new Color(128, 128, 128, 128);
+                trayImage.color = new Color(0.1f, 0.1f, 0.1f, 0.5f);
                 trayImage.raycastTarget = false;
 
                 return trophyTray;
@@ -214,7 +215,7 @@ namespace TrophyHuntMod
 
             static void CreateScoreTextElement(Transform parentTransform)
             {
-                Jotunn.Logger.LogWarning("TrophyHuntMod: CreateTextElement() called");
+                Debug.LogWarning("TrophyHuntMod: CreateTextElement() called");
 
                 // Create a new GameObject for the text
                 __m_scoreTextElement = new GameObject("ScoreText");
@@ -255,12 +256,12 @@ namespace TrophyHuntMod
 
             static Sprite GetTrophySprite(string trophyPrefabName)
             {
-                Jotunn.Logger.LogWarning($"TrophyHuntMod: GetTrophySprite() called for {trophyPrefabName}");
+                Debug.LogWarning($"TrophyHuntMod: GetTrophySprite() called for {trophyPrefabName}");
 
                 // Ensure the ObjectDB is loaded
                 if (ObjectDB.instance == null)
                 {
-                    Jotunn.Logger.LogError("ObjectDB is not loaded.");
+                    Debug.LogError("ObjectDB is not loaded.");
                     return null;
                 }
 
@@ -268,7 +269,7 @@ namespace TrophyHuntMod
                 GameObject trophyPrefab = ObjectDB.instance.GetItemPrefab(trophyPrefabName);
                 if (trophyPrefab == null)
                 {
-                    Jotunn.Logger.LogError($"Trophy prefab '{trophyPrefabName}' not found.");
+                    Debug.LogError($"Trophy prefab '{trophyPrefabName}' not found.");
                     return null;
                 }
 
@@ -279,13 +280,13 @@ namespace TrophyHuntMod
                     return itemDrop.m_itemData.m_shared.m_icons[0];
                 }
 
-                Jotunn.Logger.LogError($"ItemDrop component not found on prefab '{trophyPrefabName}'.");
+                Debug.LogError($"ItemDrop component not found on prefab '{trophyPrefabName}'.");
                 return null;
             }
 
             static GameObject CreateIconElement(Transform parentTransform, Sprite iconSprite, string iconName, int index)
             {
-                Jotunn.Logger.LogWarning("TrophyHuntMod: CreateIconElement() called");
+                Debug.LogWarning("TrophyHuntMod: CreateIconElement() called");
 
                 // Create a new GameObject for the icon
                 GameObject iconElement = new GameObject(iconName);
@@ -295,7 +296,7 @@ namespace TrophyHuntMod
 
                 int iconSize = 33;
                 int iconBorderSize = 0;
-                int xOffset = -30;
+                int xOffset = -20;
                 int yOffset = -140;
 
                 // Add RectTransform component for positioning
@@ -378,11 +379,11 @@ namespace TrophyHuntMod
                 {
                     var name = item.m_shared.m_name;
 
-                    Jotunn.Logger.LogWarning(string.Format("TrophyHuntMod: Trophy added! '{0}'", name));
+                    Debug.LogWarning(string.Format("TrophyHuntMod: Trophy added! '{0}'", name));
 
                     foreach (var x in player.m_trophies)
                     {
-                        Jotunn.Logger.LogWarning(x);
+                        Debug.LogWarning(x);
                     }
                 }
             }
