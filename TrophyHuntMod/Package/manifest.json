@@ -1,10 +1,9 @@
 ﻿{
-  "name": "JotunnModStub",
-  "description": "",
-  "version_number": "0.0.1",
-  "website_url": "",
-  "dependencies": [
-    "denikson-BepInExPack_Valheim-5.4.2202",
-    "ValheimModding-Jotunn-2.20.1"
-  ]
+    "name": "TrophyHuntMod",
+    "description": "Simple BepInEx mod that implements Trophy display and scoring for doing the Valheim Trophy Hunt",
+    "version_number": "0.0.1",
+    "website_url": "https://github.com/smariotti/TrophyHuntMod",
+    "dependencies": [
+        "denikson-BepInExPack_Valheim-5.4.2202"
+    ]
 }

@@ -1,8 +1,8 @@
-﻿// Veilheim
+﻿// TrophyHuntMod
 // a Valheim mod
 // 
 // File:    IgnoreAccessModifiers.cs
-// Project: Veilheim
+// Project: TrophyHuntMod
 
 using System.Security.Permissions;
 

@@ -12,6 +12,7 @@ using System.Configuration;
 using System.Security.Policy;
 using System.Linq;
 using static System.Net.Mime.MediaTypeNames;
+using System.Reflection;
 
 namespace TrophyHuntMod
 {
@@ -58,6 +59,8 @@ namespace TrophyHuntMod
             public Biome m_biome;
             public int m_value;
         }
+
+        const int DEATH_PENALTY = 20;
 
         static public TrophyData[] __m_trophyData = new TrophyData[]
         {
@@ -120,8 +123,12 @@ namespace TrophyHuntMod
         };
 
         static GameObject __m_scoreTextElement = null;
+        static GameObject __m_deathsTextElement = null;
+        static GameObject __m_trophyTrayElement = null;
+
         static List<string> __m_trophiesInObjectDB = new List<string>();
         static List<GameObject> __m_iconList = new List<GameObject>();
+        static int __m_deaths = 0;
 
         [HarmonyPatch(typeof(Player), "Awake")]
         public class Player_Awake_Patch
@@ -147,7 +154,7 @@ namespace TrophyHuntMod
 
                 if (__m_trophiesInObjectDB.Count != __m_trophyData.Length)
                 {
-                    Debug.LogError($"Discovered Trophies ({__m_trophiesInObjectDB.Count}) doesn't match the stored Trophy data ({__m_trophyData.Length}), this mod is out of date.");
+                    Debug.LogError($"Valheim's list of Trophies ({__m_trophiesInObjectDB.Count}) doesn't match the mod's Trophy data ({__m_trophyData.Length}), this mod is out of date.");
                 }
 
                 // Sort the trophies by biome, score and name
@@ -186,11 +193,15 @@ namespace TrophyHuntMod
 
                 Transform baseHUDTransform = Hud.instance.transform.Find("hudroot/healthpanel");
 
-                GameObject trophyTray = CreateTrophyTrayElement(healthPanelTransform);
+                __m_trophyTrayElement = CreateTrophyTrayElement(healthPanelTransform);
+
+                // TODO: do something with trophyTray? like parent everything under it?
 
                 CreateScoreTextElement(healthPanelTransform);
 
                 CreateTrophyIconElements(healthPanelTransform, __m_trophyData);
+
+                __m_deathsTextElement = CreateDeathsElement(healthPanelTransform);
             }
             static GameObject CreateTrophyTrayElement(Transform parentTransform)
             {
@@ -208,6 +219,42 @@ namespace TrophyHuntMod
                 return trophyTray;
             }
 
+            static GameObject CreateDeathsElement(Transform parentTransform)
+            {
+                // use the charred skull sprite for our Death count indicator in the UI
+                Sprite skullSprite = GetTrophySprite("Charredskull");
+
+                // Create the skullElement for deaths
+                GameObject skullElement = new GameObject("DeathsIcon");
+                skullElement.transform.SetParent(parentTransform);
+
+                // Add RectTransform component for positioning
+                RectTransform rectTransform = skullElement.AddComponent<RectTransform>();
+                rectTransform.sizeDelta = new Vector2(40, 40);
+                rectTransform.anchoredPosition = new Vector2(-70, -90); // Set position
+
+                // Add an Image component
+                UnityEngine.UI.Image image = skullElement.AddComponent<UnityEngine.UI.Image>();
+                image.sprite = skullSprite;
+                image.color = Color.white;
+                image.raycastTarget = false;
+
+                GameObject deathsTextElement = new GameObject("DeathsText");
+                deathsTextElement.transform.SetParent(parentTransform);
+
+                RectTransform deathsTextTransform = deathsTextElement.AddComponent<RectTransform>();
+                deathsTextTransform.sizeDelta = new Vector2(40, 40);
+                deathsTextTransform.anchoredPosition = new Vector2(-60, -100); // Set position
+
+                TMPro.TextMeshProUGUI tmText = deathsTextElement.AddComponent<TMPro.TextMeshProUGUI>();
+                tmText.text = $"{__m_deaths}";
+                tmText.fontSize = 22;
+                tmText.color = Color.yellow;
+                tmText.alignment = TextAlignmentOptions.Center;
+                tmText.raycastTarget = false;
+
+                return deathsTextElement;
+            }
 
             static void CreateScoreTextElement(Transform parentTransform)
             {
@@ -357,6 +404,34 @@ namespace TrophyHuntMod
                             }
 
                             break;
+                        }
+                    }
+                }
+
+                // Remove score for death penalty
+                if (Game.instance == null)
+                {
+                    Debug.Log("Unable to retrieve the Game instance!");
+                }
+                else
+                {
+                    PlayerProfile profile = Game.instance.GetPlayerProfile();
+                    if (profile != null)
+                    {
+                        PlayerProfile.PlayerStats stats = profile.m_playerStats;
+                        if (stats != null)
+                        {
+                            int __m_deaths = (int)stats[PlayerStatType.Deaths];
+
+//                            Debug.LogWarning($"Subtracing score for {__m_deaths} deaths.");
+                            score -= __m_deaths * DEATH_PENALTY;
+
+                            // Update the UI element
+                            TMPro.TextMeshProUGUI deathsText = __m_deathsTextElement.GetComponent<TMPro.TextMeshProUGUI>();
+                            if (deathsText != null )
+                            {
+                                deathsText.SetText(__m_deaths.ToString());
+                            }
                         }
                     }
                 }
