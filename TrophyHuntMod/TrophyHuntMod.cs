@@ -16,8 +16,6 @@ using static System.Net.Mime.MediaTypeNames;
 namespace TrophyHuntMod
 {
     [BepInPlugin(PluginGUID, PluginName, PluginVersion)]
- //   [BepInDependency(Jotunn.Main.ModGuid)]
-    //[NetworkCompatibility(CompatibilityLevel.EveryoneMustHaveMod, VersionStrictness.Minor)]
     internal class TrophyHuntMod : BaseUnityPlugin
     {
         public const string PluginGUID = "com.oathorse.TrophyHuntMod";
@@ -25,20 +23,14 @@ namespace TrophyHuntMod
         public const string PluginVersion = "0.0.1";
         private readonly Harmony harmony = new Harmony(PluginGUID);
 
-        // Use this class to add your own localization to the game
-        // https://valheim-modding.github.io/Jotunn/tutorials/localization.html
-//        public static CustomLocalization Localization = LocalizationManager.Instance.GetLocalization();
+        private const Boolean DUMP_TROPHY_DATA = false;
 
         private void Awake()
         {
-            // Jotunn comes with its own Logger class to provide a consistent Log style for all mods using it
             Debug.LogWarning("TrophyHuntMod has landed");
 
             // Patch with Harmony
             harmony.PatchAll();
-
-            // To learn more about Jotunn's features, go to
-            // https://valheim-modding.github.io/Jotunn/tutorials/overview.html
         }
 
         public enum Biome
@@ -160,35 +152,39 @@ namespace TrophyHuntMod
 
                 // Sort the trophies by biome, score and name
                 Array.Sort<TrophyData>(__m_trophyData, (x, y) => x.m_biome.CompareTo(y.m_biome) * 100000 + x.m_value.CompareTo(y.m_value) * 10000 + x.m_name.CompareTo(y.m_name));
-                foreach (var t in __m_trophyData)
+
+                // Dump loaded trophy data
+                if (DUMP_TROPHY_DATA)
                 {
-                    Debug.LogWarning($"{t.m_biome.ToString()}, {t.m_name}, {t.m_value}");
+                    foreach (var t in __m_trophyData)
+                    {
+                        Debug.LogWarning($"{t.m_biome.ToString()}, {t.m_name}, {t.m_value}");
+                    }
                 }
 
+                // Create all the UI elements we need for this mod ahead of time and manipulate them at Player.Update() time
                 BuildUIElements();
             }
 
             static void BuildUIElements()
             {
-                if (Hud.instance.m_rootObject != null)
-                {
-                    Debug.LogWarning("TrophyHuntMod: Hud.instance.m_rootObject is valid");
-                }
-                else
+                if (Hud.instance == null || Hud.instance.m_rootObject == null)
                 {
                     Debug.LogError("TrophyHuntMod: Hud.instance.m_rootObject is NOT valid");
+                    
+                    return;
                 }
 
                 Transform healthPanelTransform = Hud.instance.transform.Find("hudroot/healthpanel");
 
-                if (healthPanelTransform != null)
-                {
-                    Debug.LogWarning("Health panel transform found!");
-                }
-                else
+                if (healthPanelTransform == null)
                 {
                     Debug.LogError("Health panel transform not found.");
+
+                    return;
                 }
+
+                Transform baseHUDTransform = Hud.instance.transform.Find("hudroot/healthpanel");
 
                 GameObject trophyTray = CreateTrophyTrayElement(healthPanelTransform);
 
@@ -202,7 +198,7 @@ namespace TrophyHuntMod
 
                 trophyTray.transform.SetParent(parentTransform);
                 RectTransform trophyTrayRectTransform = trophyTray.AddComponent<RectTransform>();
-                trophyTrayRectTransform.sizeDelta = new Vector2(3000, 40);
+                trophyTrayRectTransform.sizeDelta = new Vector2(3600, 40);
                 trophyTrayRectTransform.anchoredPosition = new Vector2(500, -140);
                 
                 UnityEngine.UI.Image trayImage = trophyTray.AddComponent<UnityEngine.UI.Image>();
@@ -215,8 +211,6 @@ namespace TrophyHuntMod
 
             static void CreateScoreTextElement(Transform parentTransform)
             {
-                Debug.LogWarning("TrophyHuntMod: CreateTextElement() called");
-
                 // Create a new GameObject for the text
                 __m_scoreTextElement = new GameObject("ScoreText");
 
@@ -237,6 +231,7 @@ namespace TrophyHuntMod
                 tmText.color = Color.yellow;
                 tmText.alignment = TextAlignmentOptions.Center;
                 tmText.raycastTarget = false;
+                
             }
             static void CreateTrophyIconElements(Transform parentTransform, TrophyData[] trophies)
             {
@@ -246,6 +241,8 @@ namespace TrophyHuntMod
                     if (trophySprite == null)
                     {
                         //ACK
+                        Debug.LogError($"Unable to find trophy sprite for {trophy.m_name}");
+                        continue;
                     }
 
                     GameObject iconElement = CreateIconElement(parentTransform, trophySprite, trophy.m_name, __m_iconList.Count);
@@ -256,8 +253,6 @@ namespace TrophyHuntMod
 
             static Sprite GetTrophySprite(string trophyPrefabName)
             {
-                Debug.LogWarning($"TrophyHuntMod: GetTrophySprite() called for {trophyPrefabName}");
-
                 // Ensure the ObjectDB is loaded
                 if (ObjectDB.instance == null)
                 {
@@ -275,19 +270,17 @@ namespace TrophyHuntMod
 
                 // Extract the ItemDrop component and get the item's icon
                 ItemDrop itemDrop = trophyPrefab.GetComponent<ItemDrop>();
-                if (itemDrop != null)
+                if (itemDrop == null)
                 {
-                    return itemDrop.m_itemData.m_shared.m_icons[0];
+                    Debug.LogError($"ItemDrop component not found on prefab '{trophyPrefabName}'.");
+                    return null;
                 }
 
-                Debug.LogError($"ItemDrop component not found on prefab '{trophyPrefabName}'.");
-                return null;
+                return itemDrop.m_itemData.m_shared.m_icons[0];
             }
 
             static GameObject CreateIconElement(Transform parentTransform, Sprite iconSprite, string iconName, int index)
             {
-                Debug.LogWarning("TrophyHuntMod: CreateIconElement() called");
-
                 // Create a new GameObject for the icon
                 GameObject iconElement = new GameObject(iconName);
 
@@ -314,14 +307,30 @@ namespace TrophyHuntMod
             }
         }
 
+        // Patch the Player.Update() function to do our own update of the trophy data displayed in the HUD
+        //
         [HarmonyPatch(typeof(Player), "Update")]
         public class Player_Update_Patch
         {
             static void Postfix(ObjectDB __instance)
             {
+                // If there's no Hud yet, don't do anything here
+                if (Hud.instance == null || Hud.instance.m_rootObject == null)
+                {
+                    return;
+                }
+
+                // If there's no player yet, or no trophy list, don't do anything here
+                if (Player.m_localPlayer == null || Player.m_localPlayer.m_trophies == null)
+                {
+                    return;
+                }
+
                 // Player.Update() has already occurred, now build the list of Trophies we've discovered
                 List<string> discoveredTrophies = Player.m_localPlayer.m_trophies.ToList<string>();
 
+                // Quick and dirty brute force lookup for trophies to update the UI
+                //
                 int score = 0;
                 foreach (TrophyData td in __m_trophyData)
                 {
@@ -352,43 +361,44 @@ namespace TrophyHuntMod
                     }
                 }
 
+                // Update the Score string
                 __m_scoreTextElement.GetComponent<TMPro.TextMeshProUGUI>().text = score.ToString();
             }
         }
     
-        [HarmonyPatch(typeof(Hud), "Awake")]
-        public class Hud_Awake_Patch
-        {
-            static void Postfix(Hud __instance)
-            {
-                // This code runs after the Hud's Awake method
-                Debug.Log("TrophyHuntMod: HUD has been instantiated!");
-            }
-        }
+        //[HarmonyPatch(typeof(Hud), "Awake")]
+        //public class Hud_Awake_Patch
+        //{
+        //    static void Postfix(Hud __instance)
+        //    {
+        //        // This code runs after the Hud's Awake method
+        //        Debug.Log("TrophyHuntMod: HUD has been instantiated!");
+        //    }
+        //}
     }
 
-    [HarmonyPatch(typeof(Player), nameof(Player.AddTrophy), new [] {typeof(ItemDrop.ItemData)} )]
-    public static class Player_AddTrophy_Patch
-    {
-        public static void Postfix(Player __instance, ItemDrop.ItemData item)
-        {
-            var player = __instance;
-            if (player != null)
-            {
-                if (item != null)
-                {
-                    var name = item.m_shared.m_name;
+    //[HarmonyPatch(typeof(Player), nameof(Player.AddTrophy), new [] {typeof(ItemDrop.ItemData)} )]
+    //public static class Player_AddTrophy_Patch
+    //{
+    //    public static void Postfix(Player __instance, ItemDrop.ItemData item)
+    //    {
+    //        var player = __instance;
+    //        if (player != null)
+    //        {
+    //            if (item != null)
+    //            {
+    //                var name = item.m_shared.m_name;
 
-                    Debug.LogWarning(string.Format("TrophyHuntMod: Trophy added! '{0}'", name));
+    //                Debug.LogWarning(string.Format("TrophyHuntMod: Trophy added! '{0}'", name));
 
-                    foreach (var x in player.m_trophies)
-                    {
-                        Debug.LogWarning(x);
-                    }
-                }
-            }
-        }
-    }
+    //                foreach (var x in player.m_trophies)
+    //                {
+    //                    Debug.LogWarning(x);
+    //                }
+    //            }
+    //        }
+    //    }
+    //}
 }
 
 
