@@ -21,7 +21,7 @@ namespace TrophyHuntMod
     {
         public const string PluginGUID = "com.oathorse.TrophyHuntMod";
         public const string PluginName = "TrophyHuntMod";
-        public const string PluginVersion = "0.0.1";
+        public const string PluginVersion = "0.0.2";
         private readonly Harmony harmony = new Harmony(PluginGUID);
 
         private const Boolean DUMP_TROPHY_DATA = false;
@@ -130,6 +130,8 @@ namespace TrophyHuntMod
         static List<GameObject> __m_iconList = new List<GameObject>();
         static int __m_deaths = 0;
 
+        static List<string> __m_trophyHuntTrophies = null
+
         [HarmonyPatch(typeof(Player), "Awake")]
         public class Player_Awake_Patch
         {
@@ -171,6 +173,8 @@ namespace TrophyHuntMod
 
                 // Create all the UI elements we need for this mod ahead of time and manipulate them at Player.Update() time
                 BuildUIElements();
+
+                __m_trophyHuntTrophies = Player.m_localPlayer.m_trophies.ToList<string>();
             }
 
             static void BuildUIElements()
