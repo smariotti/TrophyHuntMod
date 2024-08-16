@@ -22,7 +22,7 @@ namespace TrophyHuntMod
     {
         public const string PluginGUID = "com.oathorse.TrophyHuntMod";
         public const string PluginName = "TrophyHuntMod";
-        public const string PluginVersion = "0.0.3";
+        public const string PluginVersion = "0.0.4.0";
         private readonly Harmony harmony = new Harmony(PluginGUID);
 
         private const Boolean DUMP_TROPHY_DATA = false;
@@ -37,14 +37,14 @@ namespace TrophyHuntMod
 
         public enum Biome
         {
-            Meadows,
-            Forest,
-            Ocean,
-            Swamp,
-            Mountains,
-            Plains,
-            Mistlands,
-            Ashlands
+            Meadows = 0,
+            Forest = 1,
+            Ocean = 2,
+            Swamp = 3,
+            Mountains = 4,
+            Plains = 5,
+            Mistlands = 6,
+            Ashlands = 7
         };
 
         public struct TrophyHuntData
@@ -126,12 +126,13 @@ namespace TrophyHuntMod
         static public Color[] __m_biomeColors = new Color[]
         {
             new Color(0.2f, 0.2f, 0.1f, 0.3f),  // Biome.Meadows
-            new Color(0.1f, 0.2f, 0.1f, 0.3f),  // Biome.Forest   
+            new Color(0.0f, 0.2f, 0.0f, 0.3f),  // Biome.Forest   
             new Color(0.1f, 0.1f, 0.2f, 0.3f),  // Biome.Ocean    
+            new Color(0.2f, 0.0f, 0.0f, 0.3f),  // Biome.Swamp
             new Color(0.2f, 0.2f, 0.2f, 0.3f),  // Biome.Mountains
-            new Color(0.2f, 0.2f, 0.1f, 0.3f),  // Biome.Plains 
+            new Color(0.2f, 0.2f, 0.0f, 0.3f),  // Biome.Plains 
             new Color(0.1f, 0.2f, 0.1f, 0.3f),  // Biome.Mistlands
-            new Color(0.2f, 0.1f, 0.1f, 0.3f)   // Biome.Ashlands 
+            new Color(0.2f, 0.0f, 0.0f, 0.3f)   // Biome.Ashlands 
         };
 
         // UI Elements
@@ -375,7 +376,8 @@ namespace TrophyHuntMod
                 int xOffset = -20;
                 int yOffset = -140;
 
-                Color backgroundColor = __m_biomeColors[(int)iconBiome];
+                int biomeIndex = (int)iconBiome;
+                Color backgroundColor = __m_biomeColors[biomeIndex];
 
                 // Create a new GameObject for the icon background
                 GameObject iconBackgroundElement = new GameObject(iconName);
