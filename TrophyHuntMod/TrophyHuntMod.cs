@@ -187,6 +187,8 @@ namespace TrophyHuntMod
                     return true;
                 }
 
+                PrintToConsole($"[Trophy Hunt Scoring]");
+
                 int score = 0;
                 PrintToConsole($"Trophies:");
                 foreach (TrophyHuntData thData in __m_trophyHuntData)
