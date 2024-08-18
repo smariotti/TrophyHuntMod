@@ -528,7 +528,7 @@ namespace TrophyHuntMod
                 {
                     for (float t = 0.0f; t < flashDuration; t += Time.deltaTime)
                     {
-                        targetImage.color = new Color(1,1,1, t / flashDuration);
+                        targetImage.color = new Color(1,1,1, Math.Min(1.0f, t / flashDuration));
 
                         yield return null;
                     }
@@ -558,15 +558,6 @@ namespace TrophyHuntMod
                 }
             }
 
-            //[HarmonyPatch(typeof(Player), "Update")]
-            //public class Player_Update_Patch
-            //{
-            //    static void Postfix(ObjectDB __instance)
-            //    {
-            //        UpdateTrophyHuntUI();
-            //    }
-            //}
-
             [HarmonyPatch(typeof(Player), nameof(Player.AddTrophy), new[] { typeof(ItemDrop.ItemData) })]
             public static class Player_AddTrophy_Patch
             {
@@ -593,128 +584,7 @@ namespace TrophyHuntMod
                 }
             }
         }
-
-        // Patch the Player.Update() function to do our own update of the trophy data displayed in the HUD
-        //
-        //        [HarmonyPatch(typeof(Player), "Update")]
-        //        public class Player_Update_Patch
-        //        {
-        //            static void Postfix(ObjectDB __instance)
-        //            {
-        //                UpdateTrophyHuntUI();
-        //                // If there's no Hud yet, don't do anything here
-        //                if (Hud.instance == null || Hud.instance.m_rootObject == null)
-        //                {
-        //                    return;
-        //                }
-
-        //                // If there's no player yet, or no trophy list, don't do anything here
-        //                if (Player.m_localPlayer == null || Player.m_localPlayer.m_trophies == null)
-        //                {
-        //                    return;
-        //                }
-
-        //                // Player.Update() has already occurred, now build the list of Trophies we've discovered
-        //                List<string> discoveredTrophies = Player.m_localPlayer.m_trophies.ToList<string>();
-
-        //                // Quick and dirty brute force lookup for trophies to update the UI
-        //                //
-        //                int score = 0;
-        //                foreach (TrophyHuntData td in __m_trophyData)
-        //                {
-        //                    foreach (string s in discoveredTrophies)
-        //                    {
-        //                        if (td.m_name == s)
-        //                        {
-        //                            // Add the value to our score
-        //                            score += td.m_value;
-
-        //                            // Find the UI element and bold it
-        //                            foreach (GameObject o in __m_iconList)
-        //                            {
-        //                                UnityEngine.UI.Image image = o.GetComponent<UnityEngine.UI.Image>();
-        //                                if (image != null)
-        //                                {
-        //                                    if (image.name == s)
-        //                                    {
-        //                                        image.color = Color.white;
-
-        //                                        break;
-        //                                    }
-        //                                }
-        //                            }
-
-        //                            break;
-        //                        }
-        //                    }
-        //                }
-
-        //                // Remove score for death penalty
-        //                if (Game.instance == null)
-        //                {
-        //                    Debug.Log("Unable to retrieve the Game instance!");
-        //                }
-        //                else
-        //                {
-        //                    PlayerProfile profile = Game.instance.GetPlayerProfile();
-        //                    if (profile != null)
-        //                    {
-        //                        PlayerProfile.PlayerStats stats = profile.m_playerStats;
-        //                        if (stats != null)
-        //                        {
-        //                            int __m_deaths = (int)stats[PlayerStatType.Deaths];
-
-        ////                            Debug.LogWarning($"Subtracing score for {__m_deaths} deaths.");
-        //                            score -= __m_deaths * DEATH_PENALTY;
-
-        //                            // Update the UI element
-        //                            TMPro.TextMeshProUGUI deathsText = __m_deathsTextElement.GetComponent<TMPro.TextMeshProUGUI>();
-        //                            if (deathsText != null )
-        //                            {
-        //                                deathsText.SetText(__m_deaths.ToString());
-        //                            }
-        //                        }
-        //                    }
-        //                }
-
-        //                // Update the Score string
-        //                __m_scoreTextElement.GetComponent<TMPro.TextMeshProUGUI>().text = score.ToString();
-        //            }
-        //        }
-
-        //[HarmonyPatch(typeof(Hud), "Awake")]
-        //public class Hud_Awake_Patch
-        //{
-        //    static void Postfix(Hud __instance)
-        //    {
-        //        // This code runs after the Hud's Awake method
-        //        Debug.Log("TrophyHuntMod: HUD has been instantiated!");
-        //    }
-        //}
     }
-
-    //[HarmonyPatch(typeof(Player), nameof(Player.AddTrophy), new [] {typeof(ItemDrop.ItemData)} )]
-    //public static class Player_AddTrophy_Patch
-    //{
-    //    public static void Postfix(Player __instance, ItemDrop.ItemData item)
-    //    {
-    //        var player = __instance;
-    //        if (player != null)
-    //        {
-    //            if (item != null)
-    //            {
-    //                var name = item.m_shared.m_name;
-
-    //                Debug.LogWarning(string.Format("TrophyHuntMod: Trophy added! '{0}'", name));
-
-    //                foreach (var x in player.m_trophies)
-    //                {
-    //                    Debug.LogWarning(x);
-    //                }
-    //            }
-    //        }
-    //    }
-    //}
 }
 
 
