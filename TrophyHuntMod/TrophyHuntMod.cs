@@ -14,6 +14,7 @@ using System.Linq;
 using static System.Net.Mime.MediaTypeNames;
 using System.Reflection;
 using UnityEngine.UIElements;
+using System.Collections;
 
 namespace TrophyHuntMod
 {
@@ -27,9 +28,13 @@ namespace TrophyHuntMod
 
         private const Boolean DUMP_TROPHY_DATA = false;
 
+        static TrophyHuntMod __m_trophyHuntMod;
+
         private void Awake()
         {
             Debug.LogWarning("TrophyHuntMod has landed");
+
+            __m_trophyHuntMod = this;
 
             // Patch with Harmony
             harmony.PatchAll();
@@ -63,7 +68,7 @@ namespace TrophyHuntMod
 
         const int DEATH_PENALTY = 20;
 
-        static public TrophyHuntData[] __m_trophyData = new TrophyHuntData[]
+        static public TrophyHuntData[] __m_trophyHuntData = new TrophyHuntData[]
         {
             new TrophyHuntData("TrophyAbomination", Biome.Swamp, 20),
             new TrophyHuntData("TrophyAsksvin", Biome.Ashlands, 50),
@@ -143,6 +148,9 @@ namespace TrophyHuntMod
 
         // TrophyHuntData list
         static List<string> __m_trophiesInObjectDB = new List<string>();
+        
+        // Cache for detecting newly arrived trophies and flashing the new ones
+        static List<string> __m_trophyCache = new List<string>();
 
         // Death counter
         static int __m_deaths = 0;
@@ -177,22 +185,25 @@ namespace TrophyHuntMod
                 }
                 Debug.Log($"{__m_trophiesInObjectDB.Count} trophies discovered");
 
-                if (__m_trophiesInObjectDB.Count != __m_trophyData.Length)
+                if (__m_trophiesInObjectDB.Count != __m_trophyHuntData.Length)
                 {
-                    Debug.LogError($"Valheim's list of Trophies ({__m_trophiesInObjectDB.Count}) doesn't match the mod's Trophy data ({__m_trophyData.Length}), this mod is out of date.");
+                    Debug.LogError($"Valheim's list of Trophies ({__m_trophiesInObjectDB.Count}) doesn't match the mod's Trophy data ({__m_trophyHuntData.Length}), this mod is out of date.");
                 }
 
                 // Sort the trophies by biome, score and name
-                Array.Sort<TrophyHuntData>(__m_trophyData, (x, y) => x.m_biome.CompareTo(y.m_biome) * 100000 + x.m_value.CompareTo(y.m_value) * 10000 + x.m_name.CompareTo(y.m_name));
+                Array.Sort<TrophyHuntData>(__m_trophyHuntData, (x, y) => x.m_biome.CompareTo(y.m_biome) * 100000 + x.m_value.CompareTo(y.m_value) * 10000 + x.m_name.CompareTo(y.m_name));
 
                 // Dump loaded trophy data
                 if (DUMP_TROPHY_DATA)
                 {
-                    foreach (var t in __m_trophyData)
+                    foreach (var t in __m_trophyHuntData)
                     {
                         Debug.LogWarning($"{t.m_biome.ToString()}, {t.m_name}, {t.m_value}");
                     }
                 }
+
+                // Cache already discovered trophies
+                __m_trophyCache = Player.m_localPlayer.GetTrophies();
 
                 // Create all the UI elements we need for this mod
                 BuildUIElements();
@@ -239,7 +250,7 @@ namespace TrophyHuntMod
                     if (__m_iconList == null)
                     {
                         __m_iconList = new List<GameObject>();
-                        CreateTrophyIconElements(healthPanelTransform, __m_trophyData, __m_iconList);
+                        CreateTrophyIconElements(healthPanelTransform, __m_trophyHuntData, __m_iconList);
                     }
                 }
             }
@@ -469,7 +480,7 @@ namespace TrophyHuntMod
                 int score = 0;
                 foreach (string trophyName in discoveredTrophies)
                 {
-                    TrophyHuntData trophyHuntData = Array.Find(__m_trophyData, element => element.m_name == trophyName);
+                    TrophyHuntData trophyHuntData = Array.Find(__m_trophyHuntData, element => element.m_name == trophyName);
 
                     if (trophyHuntData.m_name == trophyName)
                     {
@@ -506,6 +517,47 @@ namespace TrophyHuntMod
                 __m_scoreTextElement.GetComponent<TMPro.TextMeshProUGUI>().text = score.ToString();
             }
 
+            static IEnumerator FlashImage(UnityEngine.UI.Image targetImage)
+            {
+                Debug.LogError($"FlashImage called for {targetImage.ToString()}");
+
+                float flashDuration = 0.3f;
+                int numFlashes = 5;
+
+                for (int i = 0; i < numFlashes; i++)
+                {
+                    for (float t = 0.0f; t < flashDuration; t += Time.deltaTime)
+                    {
+                        targetImage.color = new Color(1,1,1, t / flashDuration);
+
+                        yield return null;
+                    }
+                }
+
+                targetImage.color = Color.white;
+            }
+
+            static void FlashTrophy(string trophyName)
+            {
+                GameObject iconGameObject = __m_iconList.Find(gameObject => gameObject.name == trophyName);
+
+                if (iconGameObject != null)
+                {
+                    UnityEngine.UI.Image image = iconGameObject.GetComponent<UnityEngine.UI.Image>();
+                    if (image != null)
+                    {
+                        // Flash it with a CoRoutine
+                        Debug.LogError($"FlashTrophy called for {trophyName}, starting FlashImage coroutine");
+
+                        __m_trophyHuntMod.StartCoroutine(FlashImage(image));
+                    }
+                }
+                else
+                {
+                    Debug.LogError($"Unable to find {trophyName} in __m_iconList");
+                }
+            }
+
             //[HarmonyPatch(typeof(Player), "Update")]
             //public class Player_Update_Patch
             //{
@@ -526,16 +578,17 @@ namespace TrophyHuntMod
                     {
                         var name = item.m_dropPrefab.name;
 
-                        if (player.GetTrophies().Contains(name))
+                        // Check to see if this one's in the cache, if not, it's new to us
+                        if (__m_trophyCache.Find(trophyName => trophyName == name) != name)
                         {
-                            Debug.LogError($"Trophy {name} already in player.GetTrophies()");
-                        }
-                        else 
-                        {
-                            Debug.LogError($"Trophy {name} NOT already in player.GetTrophies()");
-                        }
+                            // Haven't collected this one before, flash the UI for it
+                            FlashTrophy(name);
 
-                        UpdateTrophyHuntUI(player);
+                            // Update Trophy cache
+                            __m_trophyCache = player.GetTrophies();
+
+                            UpdateTrophyHuntUI(player);
+                        }
                     }
                 }
             }
