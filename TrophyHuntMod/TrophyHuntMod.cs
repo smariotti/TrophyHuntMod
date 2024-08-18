@@ -15,6 +15,11 @@ using static System.Net.Mime.MediaTypeNames;
 using System.Reflection;
 using UnityEngine.UIElements;
 using System.Collections;
+using System.Data;
+using UnityEngine.Profiling;
+using System.Runtime.CompilerServices;
+using static Terminal;
+using UnityEngine.SocialPlatforms.Impl;
 
 namespace TrophyHuntMod
 {
@@ -29,16 +34,6 @@ namespace TrophyHuntMod
         private const Boolean DUMP_TROPHY_DATA = false;
 
         static TrophyHuntMod __m_trophyHuntMod;
-
-        private void Awake()
-        {
-            Debug.LogWarning("TrophyHuntMod has landed");
-
-            __m_trophyHuntMod = this;
-
-            // Patch with Harmony
-            harmony.PatchAll();
-        }
 
         public enum Biome
         {
@@ -67,6 +62,9 @@ namespace TrophyHuntMod
         }
 
         const int DEATH_PENALTY = 20;
+        const int LOGOUT_PENALTY = 10;
+
+        const float LOGOUT_PENALTY_GRACE_DISTANCE = 50.0f;  // total distance you're allowed to walk run since initial spawn and get a free logout to clear wet debuff
 
         //
         // Trophy Scores updated from Discord chat 08/18/24
@@ -150,7 +148,6 @@ namespace TrophyHuntMod
         // UI Elements
         static GameObject __m_scoreTextElement = null;
         static GameObject __m_deathsTextElement = null;
-        static GameObject __m_trophyTrayElement = null;
         static List<GameObject> __m_iconList = null;
 
         // TrophyHuntData list
@@ -161,11 +158,68 @@ namespace TrophyHuntMod
 
         // Death counter
         static int __m_deaths = 0;
+        static int __m_logoutCount = 0;
+
+        private void Awake()
+        {
+            Debug.LogWarning("TrophyHuntMod has landed");
+
+            __m_trophyHuntMod = this;
+
+            // Patch with Harmony
+            harmony.PatchAll();
+
+            AddConsoleCommand();
+        }
+        void PrintToConsole(string message)
+        {
+            if (Console.m_instance) Console.m_instance.AddString(message);
+            if (Chat.m_instance) Chat.m_instance.AddString(message);
+        }
+
+        void AddConsoleCommand()
+        {
+            ConsoleCommand trophyHuntCommand = new ConsoleCommand("trophyhunt", "Prints trophy hunt data", delegate (ConsoleEventArgs args)
+            {
+                if (!Game.instance)
+                {
+                    PrintToConsole("'trophyhunt' console command can only be used in-game.");
+                    return true;
+                }
+
+                int score = 0;
+                PrintToConsole($"Trophies:");
+                foreach (TrophyHuntData thData in __m_trophyHuntData)
+                {
+                    if (__m_trophyCache.Contains(thData.m_name))
+                    {
+                        PrintToConsole($"  {thData.m_name}: Score: {thData.m_value} Biome: {thData.m_biome.ToString()}");
+                        score += thData.m_value;
+                    }
+                }
+                PrintToConsole($"Trophy Score Total: {score}");
+
+                int deathScore = __m_deaths * DEATH_PENALTY * -1;
+                int logoutScore = __m_logoutCount * LOGOUT_PENALTY * -1;
+
+                PrintToConsole($"Penalties:");
+                PrintToConsole($"  Deaths: {__m_deaths} Score: {deathScore}");
+                PrintToConsole($"  Logouts: {__m_logoutCount} Score: {logoutScore}");
+
+                score += deathScore;
+                score += logoutScore;
+
+                PrintToConsole($"Total Score: {score}");
+
+                return true;
+            });
+        }
+
+
 
         // OnSpawned() is required instead of Awake
         //   this is because at Awake() time, Player.m_trophyList and Player.m_localPlayer haven't been initialized yet
         //
-      
         [HarmonyPatch(typeof(Player), nameof(Player.OnSpawned))]
         public class Player_OnSpawned_Patch
         {
@@ -217,6 +271,17 @@ namespace TrophyHuntMod
 
                 // Do initial update of all UI elements to the current state of the game
                 UpdateTrophyHuntUI(Player.m_localPlayer);
+
+                // Until the player has moved 10 meters, ignore logouts. This is a hack
+                // to get around switching players and accounting for logouts in case the 
+                // user was playing another character before starting the trophy hunt run
+                //
+                if (GetTotalOnFootDistance(Game.instance) < 10.0f)
+                {
+                    __m_logoutCount = 0;
+                }
+
+                Debug.LogWarning($"Total Logouts: {__m_logoutCount}");
             }
 
             static void BuildUIElements()
@@ -228,7 +293,7 @@ namespace TrophyHuntMod
                     return;
                 }
 
-                if (__m_deathsTextElement == null && __m_scoreTextElement == null && __m_trophyTrayElement == null)
+                if (__m_deathsTextElement == null && __m_scoreTextElement == null)
                 {
                     Transform healthPanelTransform = Hud.instance.transform.Find("hudroot/healthpanel");
                     if (healthPanelTransform == null)
@@ -237,12 +302,6 @@ namespace TrophyHuntMod
 
                         return;
                     }
-
-                    // TODO: do something with trophyTray? like parent everything under it?
-                    //if (__m_trophyTrayElement == null)
-                    //{
-                    //    __m_trophyTrayElement = CreateTrophyTrayElement(healthPanelTransform);
-                    //}
 
                     if (__m_scoreTextElement == null)
                     {
@@ -254,27 +313,9 @@ namespace TrophyHuntMod
                         __m_deathsTextElement = CreateDeathsElement(healthPanelTransform);
                     }
 
-                    if (__m_iconList == null)
-                    {
-                        __m_iconList = new List<GameObject>();
-                        CreateTrophyIconElements(healthPanelTransform, __m_trophyHuntData, __m_iconList);
-                    }
+                    __m_iconList = new List<GameObject>();
+                    CreateTrophyIconElements(healthPanelTransform, __m_trophyHuntData, __m_iconList);
                 }
-            }
-            static GameObject CreateTrophyTrayElement(Transform parentTransform)
-            {
-                GameObject trophyTray = new GameObject("TrophyTray");
-
-                trophyTray.transform.SetParent(parentTransform);
-                RectTransform trophyTrayRectTransform = trophyTray.AddComponent<RectTransform>();
-                trophyTrayRectTransform.sizeDelta = new Vector2(3600, 40);
-                trophyTrayRectTransform.anchoredPosition = new Vector2(500, -140);
-
-                UnityEngine.UI.Image trayImage = trophyTray.AddComponent<UnityEngine.UI.Image>();
-                trayImage.color = new Color(0.1f, 0.1f, 0.1f, 0.5f);
-                trayImage.raycastTarget = false;
-
-                return trophyTray;
             }
 
             static GameObject CreateDeathsElement(Transform parentTransform)
@@ -289,7 +330,7 @@ namespace TrophyHuntMod
                 // Add RectTransform component for positioning
                 RectTransform rectTransform = skullElement.AddComponent<RectTransform>();
                 rectTransform.sizeDelta = new Vector2(40, 40);
-                rectTransform.anchoredPosition = new Vector2(-80, -80); // Set position
+                rectTransform.anchoredPosition = new Vector2(-75, -75); // Set position
 
                 // Add an Image component
                 UnityEngine.UI.Image image = skullElement.AddComponent<UnityEngine.UI.Image>();
@@ -432,6 +473,13 @@ namespace TrophyHuntMod
             static void EnableTrophyHuntIcon(string trophyName)
             {
                 // Find the UI element and bold it
+                if (__m_iconList == null)
+                {
+                    Debug.LogError("__m_iconList is null in EnableTrophyHuntIcon()");
+
+                    return;
+                }
+
                 GameObject iconGameObject = __m_iconList.Find(gameObject => gameObject.name == trophyName);
 
                 if (iconGameObject != null)
@@ -506,7 +554,7 @@ namespace TrophyHuntMod
                     PlayerProfile.PlayerStats stats = profile.m_playerStats;
                     if (stats != null)
                     {
-                        int __m_deaths = (int)stats[PlayerStatType.Deaths];
+                        __m_deaths = (int)stats[PlayerStatType.Deaths];
 
                         //                            Debug.LogWarning($"Subtracing score for {__m_deaths} deaths.");
                         score -= __m_deaths * DEATH_PENALTY;
@@ -519,6 +567,9 @@ namespace TrophyHuntMod
                         }
                     }
                 }
+
+                // Subtract points for logouts
+                score -= __m_logoutCount * LOGOUT_PENALTY;
 
                 // Update the Score string
                 __m_scoreTextElement.GetComponent<TMPro.TextMeshProUGUI>().text = score.ToString();
@@ -594,6 +645,50 @@ namespace TrophyHuntMod
                             UpdateTrophyHuntUI(player);
                         }
                     }
+                }
+            }
+
+            static float GetTotalOnFootDistance(Game game)
+            {
+                if (game == null)
+                {
+                    Debug.LogError($"No Game object found in GetTotalOnFootDistance");
+
+                    return 0.0f;
+                }
+
+                PlayerProfile profile = game.GetPlayerProfile();
+                if (profile != null)
+                {
+                    PlayerProfile.PlayerStats stats = profile.m_playerStats;
+                    if (stats != null)
+                    {
+                        float onFootDistance = stats[PlayerStatType.DistanceWalk] + stats[PlayerStatType.DistanceRun];
+
+                        return onFootDistance;
+                    }
+                }
+
+                return 0.0f;
+            }
+
+            // public void Logout(bool save = true, bool changeToStartScene = true)
+            [HarmonyPatch(typeof(Game), nameof(Game.Logout), new[] { typeof(bool), typeof(bool) })]
+            public static class Game_Logout_Patch
+            {
+                public static void Postfix(Game __instance, bool save, bool changeToStartScene)
+                {
+                    float onFootDistance = GetTotalOnFootDistance(__instance);
+                    Debug.LogError($"Total on-foot distance moved: {onFootDistance}");
+
+                    // If you've never logged out, and your total run/walk distance is less than the max grace distance, no penalty
+                    if (__m_logoutCount < 1 && onFootDistance < LOGOUT_PENALTY_GRACE_DISTANCE)
+                    {
+                        // ignore this logout
+                        return;
+                    }
+
+                    __m_logoutCount++;
                 }
             }
         }
