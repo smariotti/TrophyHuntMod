@@ -23,7 +23,7 @@ namespace TrophyHuntMod
     {
         public const string PluginGUID = "com.oathorse.TrophyHuntMod";
         public const string PluginName = "TrophyHuntMod";
-        public const string PluginVersion = "0.0.4";
+        public const string PluginVersion = "0.0.5";
         private readonly Harmony harmony = new Harmony(PluginGUID);
 
         private const Boolean DUMP_TROPHY_DATA = false;
@@ -68,6 +68,13 @@ namespace TrophyHuntMod
 
         const int DEATH_PENALTY = 20;
 
+        //
+        // Trophy Scores updated from Discord chat 08/18/24
+        // Archy:
+        //  *eik/elder/bonemass/moder/yag     -   40/60/80/100/120 pts 
+        //  *hildir bosses trophies respectively -   25/45/65 pts
+        //
+
         static public TrophyHuntData[] __m_trophyHuntData = new TrophyHuntData[]
         {
             new TrophyHuntData("TrophyAbomination", Biome.Swamp, 20),
@@ -80,7 +87,7 @@ namespace TrophyHuntMod
             new TrophyHuntData("TrophyCharredMage", Biome.Ashlands, 50),
             new TrophyHuntData("TrophyCharredMelee", Biome.Ashlands, 50),
             new TrophyHuntData("TrophyCultist", Biome.Mountains, 30),
-            new TrophyHuntData("TrophyCultist_Hildir", Biome.Mountains, 30),
+            new TrophyHuntData("TrophyCultist_Hildir", Biome.Mountains, 45),
             new TrophyHuntData("TrophyDeathsquito", Biome.Plains, 30),
             new TrophyHuntData("TrophyDeer", Biome.Meadows, 10),
             new TrophyHuntData("TrophyDragonQueen", Biome.Mountains, 100),
@@ -88,7 +95,7 @@ namespace TrophyHuntMod
             new TrophyHuntData("TrophyDraugrElite", Biome.Swamp, 20),
             new TrophyHuntData("TrophyDraugrFem", Biome.Swamp, 20),
             new TrophyHuntData("TrophyDvergr", Biome.Mistlands, 40),
-            new TrophyHuntData("TrophyEikthyr", Biome.Meadows, 50),
+            new TrophyHuntData("TrophyEikthyr", Biome.Meadows, 40),
             new TrophyHuntData("TrophyFader", Biome.Ashlands, 1000),
             new TrophyHuntData("TrophyFallenValkyrie", Biome.Ashlands, 50),
             new TrophyHuntData("TrophyFenring", Biome.Mountains, 30),
@@ -97,9 +104,9 @@ namespace TrophyHuntMod
             new TrophyHuntData("TrophyGjall", Biome.Mistlands, 40),
             new TrophyHuntData("TrophyGoblin", Biome.Plains, 30),
             new TrophyHuntData("TrophyGoblinBrute", Biome.Plains, 30),
-            new TrophyHuntData("TrophyGoblinBruteBrosBrute", Biome.Plains, 30),
-            new TrophyHuntData("TrophyGoblinBruteBrosShaman", Biome.Plains, 30),
-            new TrophyHuntData("TrophyGoblinKing", Biome.Plains, 100),
+            new TrophyHuntData("TrophyGoblinBruteBrosBrute", Biome.Plains, 65),
+            new TrophyHuntData("TrophyGoblinBruteBrosShaman", Biome.Plains, 65),
+            new TrophyHuntData("TrophyGoblinKing", Biome.Plains, 120),
             new TrophyHuntData("TrophyGoblinShaman", Biome.Plains, 30),
             new TrophyHuntData("TrophyGreydwarf", Biome.Forest, 20),
             new TrophyHuntData("TrophyGreydwarfBrute", Biome.Forest, 20),
@@ -117,10 +124,10 @@ namespace TrophyHuntMod
             new TrophyHuntData("TrophySerpent", Biome.Ocean, 25),
             new TrophyHuntData("TrophySGolem", Biome.Mountains, 30),
             new TrophyHuntData("TrophySkeleton", Biome.Forest, 20),
-            new TrophyHuntData("TrophySkeletonHildir", Biome.Forest, 20),
+            new TrophyHuntData("TrophySkeletonHildir", Biome.Forest, 25),
             new TrophyHuntData("TrophySkeletonPoison", Biome.Forest, 20),
             new TrophyHuntData("TrophySurtling", Biome.Swamp, 20),
-            new TrophyHuntData("TrophyTheElder", Biome.Forest, 50),
+            new TrophyHuntData("TrophyTheElder", Biome.Forest, 60),
             new TrophyHuntData("TrophyTick", Biome.Mistlands, 40),
             new TrophyHuntData("TrophyUlv", Biome.Mountains, 30),
             new TrophyHuntData("TrophyVolture", Biome.Ashlands, 50),
@@ -517,24 +524,27 @@ namespace TrophyHuntMod
                 __m_scoreTextElement.GetComponent<TMPro.TextMeshProUGUI>().text = score.ToString();
             }
 
-            static IEnumerator FlashImage(UnityEngine.UI.Image targetImage)
+            static IEnumerator FlashImage(UnityEngine.UI.Image targetImage, RectTransform imageRect)
             {
-                Debug.LogError($"FlashImage called for {targetImage.ToString()}");
-
                 float flashDuration = 0.3f;
                 int numFlashes = 5;
+
+                Vector3 originalScale = imageRect.localScale;
 
                 for (int i = 0; i < numFlashes; i++)
                 {
                     for (float t = 0.0f; t < flashDuration; t += Time.deltaTime)
                     {
-                        targetImage.color = new Color(1,1,1, Math.Min(1.0f, t / flashDuration));
+                        float interpValue = Math.Min(1.0f, t / flashDuration);
+                        targetImage.color = new Color(1, 1, 1, interpValue);
+                        imageRect.localScale = new Vector3(1 + interpValue, 1 + interpValue, 1 + interpValue);
 
                         yield return null;
                     }
                 }
 
                 targetImage.color = Color.white;
+                imageRect.localScale = originalScale;
             }
 
             static void FlashTrophy(string trophyName)
@@ -546,10 +556,13 @@ namespace TrophyHuntMod
                     UnityEngine.UI.Image image = iconGameObject.GetComponent<UnityEngine.UI.Image>();
                     if (image != null)
                     {
-                        // Flash it with a CoRoutine
-                        Debug.LogError($"FlashTrophy called for {trophyName}, starting FlashImage coroutine");
+                        RectTransform imageRect = iconGameObject.GetComponent<RectTransform>();
 
-                        __m_trophyHuntMod.StartCoroutine(FlashImage(image));
+                        if (imageRect != null)
+                        {
+                            // Flash it with a CoRoutine
+                            __m_trophyHuntMod.StartCoroutine(FlashImage(image, imageRect));
+                        }
                     }
                 }
                 else
