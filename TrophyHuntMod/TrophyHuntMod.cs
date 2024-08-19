@@ -171,10 +171,12 @@ namespace TrophyHuntMod
 
             AddConsoleCommand();
         }
+
         void PrintToConsole(string message)
         {
             if (Console.m_instance) Console.m_instance.AddString(message);
             if (Chat.m_instance) Chat.m_instance.AddString(message);
+            Debug.Log(message);
         }
 
         void AddConsoleCommand()
@@ -579,7 +581,7 @@ namespace TrophyHuntMod
 
             static IEnumerator FlashImage(UnityEngine.UI.Image targetImage, RectTransform imageRect)
             {
-                float flashDuration = 0.3f;
+                float flashDuration = 0.6f;
                 int numFlashes = 5;
 
                 Vector3 originalScale = imageRect.localScale;
