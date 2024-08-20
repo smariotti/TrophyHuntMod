@@ -19,7 +19,7 @@ namespace TrophyHuntMod
     {
         public const string PluginGUID = "com.oathorse.TrophyHuntMod";
         public const string PluginName = "TrophyHuntMod";
-        public const string PluginVersion = "0.2.0";
+        public const string PluginVersion = "0.2.1";
         private readonly Harmony harmony = new Harmony(PluginGUID);
 
         // Configuration variables
@@ -159,7 +159,7 @@ namespace TrophyHuntMod
         static List<Minimap.PinData> __m_pathPins = new List<Minimap.PinData>();   // keep track of the special pins we add to the minimap so we can remove them
         static List<Vector3> __m_playerPathData = new List<Vector3>();   // list of player positions during the session
         static bool __m_collectingPlayerPath = false;                           // are we actively asynchronously collecting the player position?
-        static float __m_playerPathCollectionInterval = 10.0f;                  // seconds between checks to see if we can store the current player position
+        static float __m_playerPathCollectionInterval = 8.0f;                   // seconds between checks to see if we can store the current player position
         static float __m_minPathPlayerMoveDistance = 50.0f;                     // the min distance the player has to have moved to consider storing the new path position
         static Vector3 __m_previousPlayerPos;                                   // last player position stored
 
@@ -337,6 +337,8 @@ namespace TrophyHuntMod
                 // Start collecting player position map pin data
                 if (COLLECT_PLAYER_PATH)
                 {
+                    ShowPlayerPath(false);
+                    StopCollectingPlayerPath();
                     StartCollectingPlayerPath();
                 }
             }
@@ -765,7 +767,7 @@ namespace TrophyHuntMod
                 if (!__m_collectingPlayerPath)
                 {
                     Debug.Log("Starting Player Path collection");
-
+                    
  //                   AddPlayerPathUI();
 
                     __m_previousPlayerPos = Player.m_localPlayer.transform.position;
@@ -780,14 +782,19 @@ namespace TrophyHuntMod
             {
                 Debug.Log("Stopping Player Path collection");
 
-                __m_collectingPlayerPath = false;
+                if (__m_collectingPlayerPath)
+                {
+                    __m_trophyHuntMod.StopCoroutine(CollectPlayerPath());
+
+                    __m_collectingPlayerPath = false;
+                }
             }
 
             public static IEnumerator CollectPlayerPath()
             {
                 if (Player.m_localPlayer != null)
                 {
-                    while (__m_collectingPlayerPath)
+                    while (__m_collectingPlayerPath && Player.m_localPlayer != null)
                     {
                         Vector3 curPlayerPos = Player.m_localPlayer.transform.position;
                         if (Vector3.Distance(curPlayerPos, __m_previousPlayerPos) > __m_minPathPlayerMoveDistance)
