@@ -21,6 +21,8 @@ Displays a tray at the bottom of the game screen with the computed Trophy Hunt s
 
 A death counter appears to the left of the health and food bar, as deaths count against point totals in Trophy Hunt.
 
+### Console Command: `/trophyhunt`
+
 The Chat console (and F5 console) both support the console command `/trophyhunt` which prints out the Trophy Hunt scoring in detail like so:
 
 ```
@@ -37,6 +39,10 @@ Penalties:
   Logouts: 0 Score: 0
 Total Score: 50
 ```
+
+### Console Command: `/showpath`
+
+This will display pins on the in-game Map showing the path that the Player has traveled during the session. One pin every 100 meters or so.
 
 ## Changelog
 
