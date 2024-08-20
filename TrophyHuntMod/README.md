@@ -44,12 +44,19 @@ Total Score: 50
 
 This will display pins on the in-game Map showing the path that the Player has traveled during the session. One pin every 100 meters or so.
 
-## Changelog
+## Support the Valheim Speedrunning Community!
+If you'd like to donate a dollar or two to the speedrunners and the Trophy Hunt Events, please consider donating via CashApp or PayPal. All the money goes directly into the prize pool for future Trophy Hunt events! 
 
-Initial version.
+You can learn more on the Valheim Speedrun Discord channel here: https://discord.gg/9bCBQCPH
+
+	CashApp: $ARCHYCooper 
+	PayPal: https://www.paypal.com/paypalme/expertarchy
+
 
 ## Known issues
+None at the moment
 
+## Where to Find
 You can find the github at: https://github.com/smariotti/TrophyHuntMod
 
 Note, this was originally built with Jotunn, using their example mod project structure, though Jotunn is no longer a requirement to run it. You just need to have BepInEx installed.
