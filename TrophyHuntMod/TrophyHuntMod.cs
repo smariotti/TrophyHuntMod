@@ -1,25 +1,16 @@
 using BepInEx;
-//using Jotunn.Entities;
-//using Jotunn.Managers;
-//using Jotunn.Utils;
 using HarmonyLib;
-using UnityEngine;
-using UnityEngine.UI;
-using System.Collections.Generic;
-using TMPro;
+using Steamworks;
 using System;
-using System.Configuration;
-using System.Security.Policy;
-using System.Linq;
-using static System.Net.Mime.MediaTypeNames;
-using System.Reflection;
-using UnityEngine.UIElements;
 using System.Collections;
-using System.Data;
-using UnityEngine.Profiling;
-using System.Runtime.CompilerServices;
+using System.Collections.Generic;
+using System.IO;
+using TMPro;
+using UnityEngine;
 using static Terminal;
-using UnityEngine.SocialPlatforms.Impl;
+using UnityEngine.Networking;
+using UnityEngine.UI;
+using System.Threading.Tasks;
 
 namespace TrophyHuntMod
 {
@@ -28,10 +19,13 @@ namespace TrophyHuntMod
     {
         public const string PluginGUID = "com.oathorse.TrophyHuntMod";
         public const string PluginName = "TrophyHuntMod";
-        public const string PluginVersion = "0.1.0";
+        public const string PluginVersion = "0.2.0";
         private readonly Harmony harmony = new Harmony(PluginGUID);
 
+        // Configuration variables
         private const Boolean DUMP_TROPHY_DATA = false;
+        private const Boolean UPDATE_LEADERBOARD = false;
+        private const Boolean COLLECT_PLAYER_PATH = true;
 
         static TrophyHuntMod __m_trophyHuntMod;
 
@@ -64,7 +58,7 @@ namespace TrophyHuntMod
         const int DEATH_PENALTY = 20;
         const int LOGOUT_PENALTY = 10;
 
-        const float LOGOUT_PENALTY_GRACE_DISTANCE = 50.0f;  // total distance you're allowed to walk run since initial spawn and get a free logout to clear wet debuff
+        const float LOGOUT_PENALTY_GRACE_DISTANCE = 50.0f;  // total distance you're allowed to walk/run from initial spawn and get a free logout to clear wet debuff
 
         //
         // Trophy Scores updated from Discord chat 08/18/24
@@ -138,10 +132,10 @@ namespace TrophyHuntMod
             new Color(0.2f, 0.2f, 0.1f, 0.3f),  // Biome.Meadows
             new Color(0.0f, 0.2f, 0.0f, 0.3f),  // Biome.Forest   
             new Color(0.1f, 0.1f, 0.2f, 0.3f),  // Biome.Ocean    
-            new Color(0.2f, 0.0f, 0.0f, 0.3f),  // Biome.Swamp
+            new Color(0.2f, 0.1f, 0.0f, 0.3f),  // Biome.Swamp
             new Color(0.2f, 0.2f, 0.2f, 0.3f),  // Biome.Mountains
             new Color(0.2f, 0.2f, 0.0f, 0.3f),  // Biome.Plains 
-            new Color(0.1f, 0.2f, 0.1f, 0.3f),  // Biome.Mistlands
+            new Color(0.2f, 0.1f, 0.2f, 0.3f),  // Biome.Mistlands
             new Color(0.2f, 0.0f, 0.0f, 0.3f)   // Biome.Ashlands 
         };
 
@@ -152,13 +146,22 @@ namespace TrophyHuntMod
 
         // TrophyHuntData list
         static List<string> __m_trophiesInObjectDB = new List<string>();
-        
+
         // Cache for detecting newly arrived trophies and flashing the new ones
         static List<string> __m_trophyCache = new List<string>();
 
         // Death counter
         static int __m_deaths = 0;
         static int __m_logoutCount = 0;
+
+        // Player Path
+        static bool __m_pathAddedToMinimap = false;                                // are we showing the path on the minimap? 
+        static List<Minimap.PinData> __m_pathPins = new List<Minimap.PinData>();   // keep track of the special pins we add to the minimap so we can remove them
+        static List<Vector3> __m_playerPathData = new List<Vector3>();   // list of player positions during the session
+        static bool __m_collectingPlayerPath = false;                           // are we actively asynchronously collecting the player position?
+        static float __m_playerPathCollectionInterval = 10.0f;                  // seconds between checks to see if we can store the current player position
+        static float __m_minPathPlayerMoveDistance = 50.0f;                     // the min distance the player has to have moved to consider storing the new path position
+        static Vector3 __m_previousPlayerPos;                                   // last player position stored
 
         private void Awake()
         {
@@ -169,9 +172,11 @@ namespace TrophyHuntMod
             // Patch with Harmony
             harmony.PatchAll();
 
-            AddConsoleCommand();
+            AddConsoleCommands();
         }
 
+        // New Console Commands for TrophyHuntMod
+        #region Console Commands
         void PrintToConsole(string message)
         {
             if (Console.m_instance) Console.m_instance.AddString(message);
@@ -179,7 +184,7 @@ namespace TrophyHuntMod
             Debug.Log(message);
         }
 
-        void AddConsoleCommand()
+        void AddConsoleCommands()
         {
             ConsoleCommand trophyHuntCommand = new ConsoleCommand("trophyhunt", "Prints trophy hunt data", delegate (ConsoleEventArgs args)
             {
@@ -217,9 +222,47 @@ namespace TrophyHuntMod
 
                 return true;
             });
+
+            ConsoleCommand showPathCommand = new ConsoleCommand("showpath", "Show the path the player took", delegate (ConsoleEventArgs args)
+            {
+                if (!Game.instance)
+                {
+                    PrintToConsole("'showpath' console command can only be used in-game.");
+                }
+
+                ShowPlayerPath(!__m_pathAddedToMinimap);
+            });
         }
 
+        public static void ShowPlayerPath(bool showPlayerPath)
+        {
+            if (!showPlayerPath)
+            {
+                foreach (Minimap.PinData pinData in __m_pathPins)
+                {
+                    Minimap.instance.RemovePin(pinData);
+                }
 
+                __m_pathPins.Clear();
+
+                __m_pathAddedToMinimap = false;
+            }
+            else
+            {
+                __m_pathPins.Clear();
+
+                foreach (Vector3 pathPos in __m_playerPathData)
+                {
+                    Minimap.PinType pinType = Minimap.PinType.Icon3;
+                    Minimap.PinData newPin = Minimap.instance.AddPin(pathPos, pinType, "", save: false, isChecked: false);
+
+                    __m_pathPins.Add(newPin);
+                }
+
+                __m_pathAddedToMinimap = true;
+            }
+        }
+        #endregion
 
         // OnSpawned() is required instead of Awake
         //   this is because at Awake() time, Player.m_trophyList and Player.m_localPlayer haven't been initialized yet
@@ -286,6 +329,16 @@ namespace TrophyHuntMod
                 }
 
                 Debug.LogWarning($"Total Logouts: {__m_logoutCount}");
+
+                string workingDirectory = Directory.GetCurrentDirectory();
+                Debug.Log($"Working Directory for Trophy Hunt Mod: {workingDirectory}");
+                Debug.Log($"Steam username: {SteamFriends.GetPersonaName()}");
+
+                // Start collecting player position map pin data
+                if (COLLECT_PLAYER_PATH)
+                {
+                    StartCollectingPlayerPath();
+                }
             }
 
             static void BuildUIElements()
@@ -521,7 +574,7 @@ namespace TrophyHuntMod
                     Debug.LogError("Player.m_localPlayer is null");
                     return;
                 }
-                
+
                 if (player.m_trophies == null)
                 {
                     Debug.LogError("Player.m_localPlayer.m_trophies is null");
@@ -577,6 +630,12 @@ namespace TrophyHuntMod
 
                 // Update the Score string
                 __m_scoreTextElement.GetComponent<TMPro.TextMeshProUGUI>().text = score.ToString();
+
+                if (UPDATE_LEADERBOARD)
+                {
+                    // Send the score to the web page
+                    SendScoreToLeaderboard(score);
+                }
             }
 
             static IEnumerator FlashImage(UnityEngine.UI.Image targetImage, RectTransform imageRect)
@@ -652,6 +711,184 @@ namespace TrophyHuntMod
                 }
             }
 
+            // Player Path Collection
+            #region Player Path Collection
+
+            //public static void OnCheckboxToggled(bool isChecked)
+            //{
+            //    // Handle what happens when the checkbox is toggled
+            //    ShowPlayerPath(isChecked);
+            //}
+
+            //private static Toggle checkbox;
+            //private static GameObject minimapRoot;
+
+            //public static void AddPlayerPathUI()
+            //{
+            //    Transform publicPanel = Hud.instance.transform.Find("hudroot/MiniMap/large/PublicPanel");
+
+            //    if (publicPanel == null)
+            //    { 
+            //        return; 
+            //    }
+
+            //    // Create a new GameObject for the checkbox
+            //    GameObject checkboxObject = new GameObject("ShowPlayerPath");
+            //    checkboxObject.transform.SetParent(publicPanel, false);
+
+            //    // Add a Toggle component to the GameObject
+            //    checkbox = checkboxObject.AddComponent<Toggle>();
+
+            //    // Configure the Toggle (Checkbox) properties
+            //    RectTransform rectTransform = checkboxObject.GetComponent<RectTransform>();
+            //    rectTransform.sizeDelta = new Vector2(20, 20); // Size of the checkbox
+            //    rectTransform.anchoredPosition = new Vector2(100, -50); // Position relative to the map
+
+            //    // Create a Label for the Checkbox
+            //    GameObject labelObject = new GameObject("ShowPlayerPathLabel");
+            //    labelObject.transform.SetParent(checkboxObject.transform, false);
+
+            //    TMPro.TextMeshProUGUI tmText = checkboxObject.AddComponent<TMPro.TextMeshProUGUI>();
+
+            //    tmText.text = "Show Player Path";
+            //    tmText.fontSize = 28;
+            //    tmText.color = Color.yellow;
+            //    tmText.alignment = TextAlignmentOptions.Center;
+            //    tmText.raycastTarget = false;
+
+            //    // Add a listener for the Toggle (Checkbox) changes
+            //    checkbox.onValueChanged.AddListener(OnCheckboxToggled);
+            //}
+
+            public static void StartCollectingPlayerPath()
+            {
+                if (!__m_collectingPlayerPath)
+                {
+                    Debug.Log("Starting Player Path collection");
+
+ //                   AddPlayerPathUI();
+
+                    __m_previousPlayerPos = Player.m_localPlayer.transform.position;
+
+                    __m_collectingPlayerPath = true;
+
+                    __m_trophyHuntMod.StartCoroutine(CollectPlayerPath());
+                }
+            }
+
+            public static void StopCollectingPlayerPath()
+            {
+                Debug.Log("Stopping Player Path collection");
+
+                __m_collectingPlayerPath = false;
+            }
+
+            public static IEnumerator CollectPlayerPath()
+            {
+                if (Player.m_localPlayer != null)
+                {
+                    while (__m_collectingPlayerPath)
+                    {
+                        Vector3 curPlayerPos = Player.m_localPlayer.transform.position;
+                        if (Vector3.Distance(curPlayerPos, __m_previousPlayerPos) > __m_minPathPlayerMoveDistance)
+                        {
+                            __m_playerPathData.Add(curPlayerPos);
+                            __m_previousPlayerPos = curPlayerPos;
+
+                            Debug.Log($"Collected player position at {curPlayerPos.ToString()}");
+                        }
+
+                        yield return new WaitForSeconds(__m_playerPathCollectionInterval);
+                    }
+                }
+            }
+            #endregion
+
+            // Leaderboard
+            #region Leaderboard
+
+            [System.Serializable]
+            public class LeaderboardData
+            {
+                public string player_name;
+                public int current_score;
+                public string session_id;
+                public string player_location;
+                public string trophies;
+                public int deaths;
+                public int logouts;
+            }
+
+            private static void SendScoreToLeaderboard(int score)
+            {
+                string steamName = SteamFriends.GetPersonaName();
+                int seed = WorldGenerator.instance.GetSeed();
+                string sessionId = seed.ToString();
+                string playerPos = Player.m_localPlayer.transform.position.ToString();
+                string trophyList = string.Join(", ", __m_trophyCache);
+
+                // Example data to send to the leaderboard
+                var leaderboardData = new LeaderboardData
+                {
+                    player_name = steamName,
+                    current_score = score,
+                    session_id = sessionId,
+                    player_location = playerPos,
+                    trophies = trophyList,
+                    deaths = __m_deaths,
+                    logouts = __m_logoutCount
+                };
+
+                // Start the coroutine to post the data
+                __m_trophyHuntMod.StartCoroutine(PostLeaderboardDataCoroutine("https://oathorse.pythonanywhere.com/submit", leaderboardData));
+            }
+
+            // HACK: use API key to communicate with server instead of viciously bypassing security.
+            // Valheim configured Unity to require secure connections
+            //
+            //private class BypassCertificateHandler : CertificateHandler
+            //{
+            //    protected override bool ValidateCertificate(byte[] certificateData)
+            //    {
+            //        return true; // Always return true to bypass validation
+            //    }
+            //}
+
+            private static IEnumerator PostLeaderboardDataCoroutine(string url, LeaderboardData data)
+            {
+                // Convert the data to JSON
+                string jsonData = JsonUtility.ToJson(data);
+
+                Debug.Log(jsonData);
+
+                // Create a UnityWebRequest for the POST operation
+                var request = new UnityWebRequest(url, "POST");
+                byte[] bodyRaw = System.Text.Encoding.UTF8.GetBytes(jsonData);
+                request.uploadHandler = new UploadHandlerRaw(bodyRaw);
+                request.downloadHandler = new DownloadHandlerBuffer();
+                request.SetRequestHeader("Content-Type", "application/json");
+
+                //request.certificateHandler = new BypassCertificateHandler();
+
+                // Send the request and wait for a response
+                yield return request.SendWebRequest();
+
+                // Handle the response
+                if (request.result == UnityWebRequest.Result.Success)
+                {
+                    Debug.Log("Leaderboard POST successful! Response: " + request.downloadHandler.text);
+                }
+                else
+                {
+                    Debug.LogError("Leaderboard POST failed: " + request.error);
+                }
+            }
+
+            #endregion Leaderboard
+
+            // Logout Tracking
+            #region Logout Handling
+
             static float GetTotalOnFootDistance(Game game)
             {
                 if (game == null)
@@ -675,7 +912,7 @@ namespace TrophyHuntMod
 
                 return 0.0f;
             }
-
+            
             // public void Logout(bool save = true, bool changeToStartScene = true)
             [HarmonyPatch(typeof(Game), nameof(Game.Logout), new[] { typeof(bool), typeof(bool) })]
             public static class Game_Logout_Patch
@@ -695,6 +932,8 @@ namespace TrophyHuntMod
                     __m_logoutCount++;
                 }
             }
+
+            #endregion
         }
     }
 }
