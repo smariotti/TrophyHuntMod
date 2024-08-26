@@ -54,7 +54,8 @@ You can learn more on the Valheim Speedrun Discord channel here: https://discord
 
 
 ## Known issues
-None at the moment
+Remove TrophyForestTroll
+	- Valheim reports two different troll trophies, TrophyFrostTroll (the one used in the game) and TrophyForestTroll (which isn't used, and doesn't drop.) Both get displayed, even though one isn't actually gettable. 
 
 ## Where to Find
 You can find the github at: https://github.com/smariotti/TrophyHuntMod

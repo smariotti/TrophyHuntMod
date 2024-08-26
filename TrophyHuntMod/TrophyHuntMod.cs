@@ -91,7 +91,7 @@ namespace TrophyHuntMod
             new TrophyHuntData("TrophyFader", Biome.Ashlands, 1000),
             new TrophyHuntData("TrophyFallenValkyrie", Biome.Ashlands, 50),
             new TrophyHuntData("TrophyFenring", Biome.Mountains, 30),
-            new TrophyHuntData("TrophyForestTroll", Biome.Forest, 20),
+//            new TrophyHuntData("TrophyForestTroll", Biome.Forest, 20),
             new TrophyHuntData("TrophyFrostTroll", Biome.Forest, 20),
             new TrophyHuntData("TrophyGjall", Biome.Mistlands, 40),
             new TrophyHuntData("TrophyGoblin", Biome.Plains, 30),
@@ -145,7 +145,7 @@ namespace TrophyHuntMod
         static List<GameObject> __m_iconList = null;
 
         // TrophyHuntData list
-        static List<string> __m_trophiesInObjectDB = new List<string>();
+//        static List<string> __m_trophiesInObjectDB = new List<string>();
 
         // Cache for detecting newly arrived trophies and flashing the new ones
         static List<string> __m_trophyCache = new List<string>();
@@ -281,22 +281,21 @@ namespace TrophyHuntMod
 
                 // Pull the list of trophies from the ObjectDB
                 //
-                __m_trophiesInObjectDB.Clear();
-                foreach (GameObject item in ObjectDB.m_instance.m_items)
-                {
-                    ItemDrop component = item.GetComponent<ItemDrop>();
+                //__m_trophiesInObjectDB.Clear();
+                //foreach (GameObject item in ObjectDB.m_instance.m_items)
+                //{
+                //    ItemDrop component = item.GetComponent<ItemDrop>();
 
-                    if (component != null && component.m_itemData.m_shared.m_itemType == ItemDrop.ItemData.ItemType.Trophy)
-                    {
-                        __m_trophiesInObjectDB.Add(component.gameObject.name);
-                    }
-                }
-                Debug.Log($"{__m_trophiesInObjectDB.Count} trophies discovered");
-
-                if (__m_trophiesInObjectDB.Count != __m_trophyHuntData.Length)
-                {
-                    Debug.LogError($"Valheim's list of Trophies ({__m_trophiesInObjectDB.Count}) doesn't match the mod's Trophy data ({__m_trophyHuntData.Length}), this mod is out of date.");
-                }
+                //    if (component != null && component.m_itemData.m_shared.m_itemType == ItemDrop.ItemData.ItemType.Trophy)
+                //    {
+                //        __m_trophiesInObjectDB.Add(component.gameObject.name);
+                //    }
+                //}
+                //Debug.Log($"{__m_trophiesInObjectDB.Count} trophies discovered");
+                //if (__m_trophiesInObjectDB.Count != __m_trophyHuntData.Length)
+                //{
+                //    Debug.LogError($"Valheim's list of Trophies ({__m_trophiesInObjectDB.Count}) doesn't match the mod's Trophy data ({__m_trophyHuntData.Length}), this mod is out of date.");
+                //}
 
                 // Sort the trophies by biome, score and name
                 Array.Sort<TrophyHuntData>(__m_trophyHuntData, (x, y) => x.m_biome.CompareTo(y.m_biome) * 100000 + x.m_value.CompareTo(y.m_value) * 10000 + x.m_name.CompareTo(y.m_name));
