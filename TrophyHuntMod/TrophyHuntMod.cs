@@ -488,27 +488,28 @@ namespace TrophyHuntMod
             static GameObject CreateIconElement(Transform parentTransform, Sprite iconSprite, string iconName, Biome iconBiome, int index)
             {
 
-                int iconSize = 33;
-                int iconBorderSize = 0;
+                int iconSize = 35;
+                int iconBorderSize = -2;
                 int xOffset = -20;
                 int yOffset = -140;
 
                 int biomeIndex = (int)iconBiome;
                 Color backgroundColor = __m_biomeColors[biomeIndex];
 
-                // Create a new GameObject for the icon background
-                GameObject iconBackgroundElement = new GameObject(iconName);
-                iconBackgroundElement.transform.SetParent(parentTransform);
+                //// Icon Background
+                //// Create a new GameObject for the icon background
+                //GameObject iconBackgroundElement = new GameObject(iconName);
+                //iconBackgroundElement.transform.SetParent(parentTransform);
 
-                // AddRectTransform for sprite background
-                RectTransform iconBackgroundRectTransform = iconBackgroundElement.AddComponent<RectTransform>();
-                iconBackgroundRectTransform.sizeDelta = new Vector2(iconSize, iconSize); // Set size
-                iconBackgroundRectTransform.anchoredPosition = new Vector2(xOffset + index * (iconSize + iconBorderSize), yOffset); // Set position
+                //// AddRectTransform for sprite background
+                //RectTransform iconBackgroundRectTransform = iconBackgroundElement.AddComponent<RectTransform>();
+                //iconBackgroundRectTransform.sizeDelta = new Vector2(iconSize, iconSize); // Set size
+                //iconBackgroundRectTransform.anchoredPosition = new Vector2(xOffset + index * (iconSize + iconBorderSize), yOffset); // Set position
 
-                UnityEngine.UI.Image iconBackgroundImage = iconBackgroundElement.AddComponent<UnityEngine.UI.Image>();
-                iconBackgroundImage.color = backgroundColor;
+                //UnityEngine.UI.Image iconBackgroundImage = iconBackgroundElement.AddComponent<UnityEngine.UI.Image>();
+                //iconBackgroundImage.color = backgroundColor;
 
-                iconBackgroundImage.raycastTarget = false;
+                //iconBackgroundImage.raycastTarget = false;
 
                 // Create a new GameObject for the icon
                 GameObject iconElement = new GameObject(iconName);
