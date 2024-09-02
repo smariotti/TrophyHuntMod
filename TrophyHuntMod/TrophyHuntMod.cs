@@ -85,7 +85,7 @@ namespace TrophyHuntMod
             new TrophyHuntData("TrophyDragonQueen", Biome.Mountains, 100),
             new TrophyHuntData("TrophyDraugr", Biome.Swamp, 20),
             new TrophyHuntData("TrophyDraugrElite", Biome.Swamp, 20),
-            new TrophyHuntData("TrophyDraugrFem", Biome.Swamp, 20),
+//            new TrophyHuntData("TrophyDraugrFem", Biome.Swamp, 20),
             new TrophyHuntData("TrophyDvergr", Biome.Mistlands, 40),
             new TrophyHuntData("TrophyEikthyr", Biome.Meadows, 40),
             new TrophyHuntData("TrophyFader", Biome.Ashlands, 1000),
