@@ -19,7 +19,7 @@ namespace TrophyHuntMod
     {
         public const string PluginGUID = "com.oathorse.TrophyHuntMod";
         public const string PluginName = "TrophyHuntMod";
-        public const string PluginVersion = "0.2.1";
+        public const string PluginVersion = "0.2.2";
         private readonly Harmony harmony = new Harmony(PluginGUID);
 
         // Configuration variables

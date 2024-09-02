@@ -19,9 +19,9 @@ Simply copy the contents of the archive into the BepinEx/Plugins directory. This
 
 - Increased the base size of trophies so they read better on screen for the stream audience.
 
-- Added `/trophysize` console command to allow the user to scale the size of the trophies at the bottom of the screen. Default is 1.0, and can be set as low as 0.1 and as high as you like. This will help adjust trophies to be more readable for streamers at some screen sizes.
+- Added `/trophyscale` console command to allow the user to scale the size of the trophies at the bottom of the screen. Default is 1.0, and can be set as low as 0.1 and as high as you like. This will help adjust trophies to be more readable for streamers at some screen sizes.
 
-	To increase the size of the trophies, hit <enter> to bring up the Chat Console and type `/trophysize 1.5` for example. This would increase the trophy sizes by 50%
+	To increase the size of the trophies, hit <enter> to bring up the Chat Console and type `/trophyscale 1.5` for example. This would increase the trophy sizes by 50%
 
 - Made the animation that plays when you collect a trophy more visible by flashing it on and off as well as animating the size. This makes it easier for runners to know when they picked one up without hunting for it on the trophy bar at the bottom.
 
