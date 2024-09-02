@@ -163,6 +163,10 @@ namespace TrophyHuntMod
         static float __m_minPathPlayerMoveDistance = 50.0f;                     // the min distance the player has to have moved to consider storing the new path position
         static Vector3 __m_previousPlayerPos;                                   // last player position stored
 
+
+        static float __m_baseTrophyScale = 1.5f;
+        static float __m_userTrophyScale = 1.0f;
+
         private void Awake()
         {
             Debug.LogWarning("TrophyHuntMod has landed");
@@ -232,6 +236,65 @@ namespace TrophyHuntMod
 
                 ShowPlayerPath(!__m_pathAddedToMinimap);
             });
+
+            ConsoleCommand trophyScaleCommand = new ConsoleCommand("trophyscale", "Scale the trophy sizes (1.0 is default)", delegate (ConsoleEventArgs args)
+            {
+                if (!Game.instance)
+                {
+                    PrintToConsole("'showpath' console command can only be used in-game.");
+                }
+
+                // First argument is user trophy scale
+                if (args.Length > 1)
+                {
+                    Debug.Log(args);
+
+                    float userScale = float.Parse(args[1]);
+                    if (userScale == 0) userScale = 1;
+                    __m_userTrophyScale = userScale;
+
+                    // second argument is base trophy scale (for debugging)
+                    if (args.Length > 2)
+                    {
+                        float baseScale = float.Parse(args[2]);
+                        if (baseScale == 0) baseScale = 1;
+                        __m_baseTrophyScale = baseScale;
+                    }
+                }
+                else
+                {
+                    // no arguments means reset
+                    __m_userTrophyScale = 1.0f;
+                    __m_baseTrophyScale = 1.0f;
+                }
+
+                // Readjust the UI elements' trophy sizes
+                Player player = Player.m_localPlayer;
+                if (player != null)
+                {
+                    List<string> discoveredTrophies = player.GetTrophies();
+                    foreach (TrophyHuntData td in __m_trophyHuntData)
+                    {
+                        string trophyName = td.m_name;
+
+                        GameObject iconGameObject = __m_iconList.Find(gameObject => gameObject.name == trophyName);
+
+                        if (iconGameObject != null)
+                        {
+                            UnityEngine.UI.Image image = iconGameObject.GetComponent<UnityEngine.UI.Image>();
+                            if (image != null)
+                            {
+                                RectTransform imageRect = iconGameObject.GetComponent<RectTransform>();
+
+                                if (imageRect != null)
+                                {
+                                    imageRect.localScale = new Vector3(__m_baseTrophyScale, __m_baseTrophyScale, __m_baseTrophyScale) * __m_userTrophyScale;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
         }
 
         public static void ShowPlayerPath(bool showPlayerPath)
@@ -261,6 +324,7 @@ namespace TrophyHuntMod
 
                 __m_pathAddedToMinimap = true;
             }
+
         }
         #endregion
 
@@ -488,8 +552,8 @@ namespace TrophyHuntMod
             static GameObject CreateIconElement(Transform parentTransform, Sprite iconSprite, string iconName, Biome iconBiome, int index)
             {
 
-                int iconSize = 35;
-                int iconBorderSize = -2;
+                int iconSize = 33;
+                int iconBorderSize = -1;
                 int xOffset = -20;
                 int yOffset = -140;
 
@@ -519,6 +583,7 @@ namespace TrophyHuntMod
                 RectTransform iconRectTransform = iconElement.AddComponent<RectTransform>();
                 iconRectTransform.sizeDelta = new Vector2(iconSize, iconSize); // Set size
                 iconRectTransform.anchoredPosition = new Vector2(xOffset + index * (iconSize + iconBorderSize), yOffset); // Set position
+                iconRectTransform.localScale = new Vector3(__m_baseTrophyScale, __m_baseTrophyScale, __m_baseTrophyScale) * __m_userTrophyScale;
 
                 // Add an Image component for Sprite
                 UnityEngine.UI.Image iconImage = iconElement.AddComponent<UnityEngine.UI.Image>();
@@ -642,8 +707,8 @@ namespace TrophyHuntMod
 
             static IEnumerator FlashImage(UnityEngine.UI.Image targetImage, RectTransform imageRect)
             {
-                float flashDuration = 0.6f;
-                int numFlashes = 5;
+                float flashDuration = 0.5f;
+                int numFlashes = 6;
 
                 Vector3 originalScale = imageRect.localScale;
 
@@ -652,8 +717,19 @@ namespace TrophyHuntMod
                     for (float t = 0.0f; t < flashDuration; t += Time.deltaTime)
                     {
                         float interpValue = Math.Min(1.0f, t / flashDuration);
-                        targetImage.color = new Color(1, 1, 1, interpValue);
-                        imageRect.localScale = new Vector3(1 + interpValue, 1 + interpValue, 1 + interpValue);
+
+                        int flash = (int)(interpValue * 5.0f);
+                        if (flash % 2 == 0)
+                        {
+                            targetImage.color = Color.white;
+                        }
+                        else
+                        {
+                            targetImage.color = Color.black;
+                        }
+
+                        float flashScale = 1 + interpValue;
+                        imageRect.localScale = new Vector3(__m_baseTrophyScale, __m_baseTrophyScale, __m_baseTrophyScale) * flashScale * __m_userTrophyScale;
 
                         yield return null;
                     }
