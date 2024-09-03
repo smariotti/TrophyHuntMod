@@ -13,15 +13,26 @@ https://thunderstore.io/c/valheim/p/denikson/BepInExPack_Valheim/
 
 ## Installation (manual)
 
-Simply copy the contents of the archive into the BepinEx/Plugins directory. This is usually found somewhere like 'C:\Program Files (x86)\Steam\steamapps\common\Valheim\BepInEx\plugins'
+Two Options:
+	1. Use r2modman to automatically install it from Thunderstore and launch Valheim. R2modman is the mod manager available for download at https://thunderstore.io
+	2. Manual: Simply copy the contents of the archive into the BepinEx/Plugins directory. This is usually found somewhere like 'C:\Program Files (x86)\Steam\steamapps\common\Valheim\BepInEx\plugins'
 
 ## What's New?
 
+- Removed "TrophyDraugrFem" from the trophy list since it's not supported in the game and does not drop.
+- Decreased default HUD trophy size slightly
+- TrophyHuntMod now detects whether it's the only mod running and reports this to the log file and displays the score in light blue instead of yellow.
+	Yellow score means it's the only mod, which is required for the Trophy Hunt events.
+	Light Blue score means other mods are present.
+- Corrected the readme which listed the trophy HUD scaling command as `trophysize` instead of `/trophyscale` which is the correct command.
+
+## Previous Changes
+
 - Increased the base size of trophies so they read better on screen for the stream audience.
 
-- Added `/trophysize` console command to allow the user to scale the size of the trophies at the bottom of the screen. Default is 1.0, and can be set as low as 0.1 and as high as you like. This will help adjust trophies to be more readable for streamers at some screen sizes.
+- Added `/trophyscale` console command to allow the user to scale the size of the trophies at the bottom of the screen. Default is 1.0, and can be set as low as 0.1 and as high as you like. This will help adjust trophies to be more readable for streamers at some screen sizes.
 
-	To increase the size of the trophies, hit <enter> to bring up the Chat Console and type `/trophysize 1.5` for example. This would increase the trophy sizes by 50%
+	To increase the size of the trophies, hit <enter> to bring up the Chat Console and type `/trophyscale 1.5` for example. This would increase the trophy sizes by 50%
 
 - Made the animation that plays when you collect a trophy more visible by flashing it on and off as well as animating the size. This makes it easier for runners to know when they picked one up without hunting for it on the trophy bar at the bottom.
 
@@ -62,10 +73,12 @@ You can learn more on the Valheim Speedrun Discord channel here: https://discord
 	CashApp: $ARCHYCooper 
 	PayPal: https://www.paypal.com/paypalme/expertarchy
 
-
 ## Known issues
-Remove TrophyForestTroll
-	- Valheim reports two different troll trophies, TrophyFrostTroll (the one used in the game) and TrophyForestTroll (which isn't used, and doesn't drop.) Both get displayed, even though one isn't actually gettable. 
+
+## Feature Requests
+
+- Report score and trophies to the valheim.help tracker during runs
+- Kr4ken92 - I also think it would be nice to have such a feature that display the number of creature killed vs the number of trophy obtained (ex: stone golem killed 1000 / Trophy obtained 1) with a command like trophystats
 
 ## Where to Find
 You can find the github at: https://github.com/smariotti/TrophyHuntMod

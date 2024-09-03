@@ -19,7 +19,7 @@ namespace TrophyHuntMod
     {
         public const string PluginGUID = "com.oathorse.TrophyHuntMod";
         public const string PluginName = "TrophyHuntMod";
-        public const string PluginVersion = "0.2.2";
+        public const string PluginVersion = "0.2.3";
         private readonly Harmony harmony = new Harmony(PluginGUID);
 
         // Configuration variables
@@ -163,13 +163,29 @@ namespace TrophyHuntMod
         static float __m_minPathPlayerMoveDistance = 50.0f;                     // the min distance the player has to have moved to consider storing the new path position
         static Vector3 __m_previousPlayerPos;                                   // last player position stored
 
+        static bool __m_onlyModRunning = false;
 
-        static float __m_baseTrophyScale = 1.5f;
+        static float __m_baseTrophyScale = 1.4f;
         static float __m_userTrophyScale = 1.0f;
 
         private void Awake()
         {
-            Debug.LogWarning("TrophyHuntMod has landed");
+            // Get the list of loaded plugins
+            var loadedPlugins = BepInEx.Bootstrap.Chainloader.PluginInfos;
+
+            // Check if the count of loaded plugins is 1 and if it's this mod
+            if (loadedPlugins.Count == 1 && loadedPlugins.ContainsKey(Info.Metadata.GUID))
+            {
+                Debug.LogWarning("[TrophyHuntMod] is loaded and is the ONLY mod running! Let's Hunt!");
+
+                __m_onlyModRunning = true;
+            }
+            else
+            {
+                Debug.LogWarning("[TrophyHuntMod] detected other mods running. For official events, it must be the ONLY mod running.");
+
+                __m_onlyModRunning = false;
+            }
 
             __m_trophyHuntMod = this;
 
@@ -499,6 +515,11 @@ namespace TrophyHuntMod
                 tmText.color = Color.yellow;
                 tmText.alignment = TextAlignmentOptions.Center;
                 tmText.raycastTarget = false;
+
+                if (!__m_onlyModRunning)
+                {
+                    tmText.color = Color.cyan;
+                }
 
                 return scoreTextElement;
             }
