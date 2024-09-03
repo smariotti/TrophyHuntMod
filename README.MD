@@ -19,6 +19,16 @@ Two Options:
 
 ## What's New?
 
+v0.2.4
+- Added tooltips to the Trophy icons at the bottom screen if you pause the game (ESC) and hover the mouse over them.
+	This displays the Trophy name, the number of enemies killed that could drop that trophy and the number of trophies actually dropped by those enemies as well as a drop percentage.
+- Swanky new Main Menu logo displaying "Trophy Hunt!" and the mod's version number
+- Experimental console command `/trophyrush` which enables Trophy Rush Mode.
+	Trophy Rush mode causes every enemy that WOULD drop a Trophy to drop a Trophy 100% of the time. This was suggested by @FizzyP as a potential new trophy hunt contest type so it's in there for experimentation
+
+## Previous Changes
+
+v0.2.3
 - Removed "TrophyDraugrFem" from the trophy list since it's not supported in the game and does not drop.
 - Decreased default HUD trophy size slightly
 - TrophyHuntMod now detects whether it's the only mod running and reports this to the log file and displays the score in light blue instead of yellow.
@@ -26,17 +36,13 @@ Two Options:
 	Light Blue score means other mods are present.
 - Corrected the readme which listed the trophy HUD scaling command as `trophysize` instead of `/trophyscale` which is the correct command.
 
-## Previous Changes
-
+v0.2.2
 - Increased the base size of trophies so they read better on screen for the stream audience.
-
 - Added `/trophyscale` console command to allow the user to scale the size of the trophies at the bottom of the screen. Default is 1.0, and can be set as low as 0.1 and as high as you like. This will help adjust trophies to be more readable for streamers at some screen sizes.
-
 	To increase the size of the trophies, hit <enter> to bring up the Chat Console and type `/trophyscale 1.5` for example. This would increase the trophy sizes by 50%
-
 - Made the animation that plays when you collect a trophy more visible by flashing it on and off as well as animating the size. This makes it easier for runners to know when they picked one up without hunting for it on the trophy bar at the bottom.
 
-## Features
+## Trophy Hunt Mod Features
 
 Displays a tray at the bottom of the game screen with the computed Trophy Hunt score on the left, and each Trophy running to the right. Trophies are grouped by Biome, and are displayed in silhouette when not yet acquired, and in full color when acquired.
 
