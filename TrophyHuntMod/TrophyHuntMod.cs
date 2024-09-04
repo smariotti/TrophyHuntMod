@@ -15,6 +15,8 @@ using static CharacterDrop;
 using UnityEngine.EventSystems;
 using System.Xml.Linq;
 using static System.Net.Mime.MediaTypeNames;
+using static TrophyHuntMod.TrophyHuntMod;
+using static UnityEngine.EventSystems.EventTrigger;
 
 namespace TrophyHuntMod
 {
@@ -48,12 +50,13 @@ namespace TrophyHuntMod
 
         public struct TrophyHuntData
         {
-            public TrophyHuntData(string name, string prettyName, Biome biome, int value, List<string> enemies)
+            public TrophyHuntData(string name, string prettyName, Biome biome, int value, float dropPercent, List<string> enemies)
             {
                 m_name = name;
                 m_prettyName = prettyName;
                 m_biome = biome;
                 m_value = value;
+                m_dropPercent = dropPercent;
                 m_enemies = enemies;
             }
 
@@ -61,6 +64,7 @@ namespace TrophyHuntMod
             public string m_prettyName;
             public Biome m_biome;
             public int m_value;
+            public float m_dropPercent;
             public List<string> m_enemies;
         }
 
@@ -78,62 +82,66 @@ namespace TrophyHuntMod
 
         //            new TrophyHuntData("TrophyDraugrFem", Biome.Swamp, 20, new List<string> { "" }),
         //            new TrophyHuntData("TrophyForestTroll", Biome.Forest, 20, new List<string> { "" }),
+
+        // Drop Percentages are from the Valheim Fandom Wiki: https://valheim.fandom.com/wiki/Trophies
+        //
+
         static public TrophyHuntData[] __m_trophyHuntData = new TrophyHuntData[]
-        {//                     Trophy Name                     Pretty Name         Biome               Score   Dropping Enemy Name(s)
-            new TrophyHuntData("TrophyAbomination",             "Abomination",      Biome.Swamp,        20,     new List<string> { "$enemy_abomination" }),
-            new TrophyHuntData("TrophyAsksvin",                 "Asksvin",          Biome.Ashlands,     50,     new List<string> { "$enemy_asksvin" }),
-            new TrophyHuntData("TrophyBlob",                    "Blob",             Biome.Swamp,        20,     new List<string> { "$enemy_blob",       "$enemy_blobelite" }),
-            new TrophyHuntData("TrophyBoar", "                  Boar",              Biome.Meadows,      10,     new List<string> { "$enemy_boar" }),
-            new TrophyHuntData("TrophyBonemass",                "Bonemass",         Biome.Swamp,        80,     new List<string> { "$enemy_bonemass" }),
-            new TrophyHuntData("TrophyBonemawSerpent",          "Bonemaw",          Biome.Ashlands,     50,     new List<string> { "$enemy_bonemawserpent" }),
-            new TrophyHuntData("TrophyCharredArcher",           "Charred Archer",   Biome.Ashlands,     50,     new List<string> { "$enemy_charred_archer" }),
-            new TrophyHuntData("TrophyCharredMage",             "Charred Warlock",  Biome.Ashlands,     50,     new List<string> { "$enemy_charred_mage" }),
-            new TrophyHuntData("TrophyCharredMelee",            "Charred Warrior",  Biome.Ashlands,     50,     new List<string> { "$enemy_charred_melee" }),
-            new TrophyHuntData("TrophyCultist",                 "Cultist",          Biome.Mountains,    30,     new List<string> { "$enemy_fenringcultist" }),
-            new TrophyHuntData("TrophyCultist_Hildir",          "Geirrhafa",        Biome.Mountains,    45,     new List<string> { "$enemy_fenringcultist_hildir" }),
-            new TrophyHuntData("TrophyDeathsquito",             "Deathsquito",      Biome.Plains,       30,     new List<string> { "$enemy_deathsquito" }),
-            new TrophyHuntData("TrophyDeer",                    "Deer",             Biome.Meadows,      10,     new List<string> { "$enemy_deer" }),
-            new TrophyHuntData("TrophyDragonQueen",             "Moder",            Biome.Mountains,    100,    new List<string> { "$enemy_dragon" }),
-            new TrophyHuntData("TrophyDraugr",                  "Draugr",           Biome.Swamp,        20,     new List<string> { "$enemy_draugr" }),
-            new TrophyHuntData("TrophyDraugrElite",             "Draugr Elite",     Biome.Swamp,        20,     new List<string> { "$enemy_draugrelite" }),
-            new TrophyHuntData("TrophyDvergr",                  "Dvergr",           Biome.Mistlands,    40,     new List<string> { "$enemy_dvergr",     "$enemy_dvergr_mage" }),
-            new TrophyHuntData("TrophyEikthyr",                 "Eikthyr",          Biome.Meadows,      40,     new List<string> { "$enemy_eikthyr" }),
-            new TrophyHuntData("TrophyFader",                   "Fader",            Biome.Ashlands,     1000,   new List<string> { "$enemy_fader" }),
-            new TrophyHuntData("TrophyFallenValkyrie",          "Fallen Valkyrie",  Biome.Ashlands,     50,     new List<string> { "$enemy_fallenvalkyrie" }),
-            new TrophyHuntData("TrophyFenring",                 "Fenring",          Biome.Mountains,    30,     new List<string> { "$enemy_fenring" }),
-            new TrophyHuntData("TrophyFrostTroll",              "Troll",            Biome.Forest,       20,     new List<string> { "$enemy_troll" }),
-            new TrophyHuntData("TrophyGjall",                   "Gjall",            Biome.Mistlands,    40,     new List<string> { "$enemy_gjall" }),
-            new TrophyHuntData("TrophyGoblin",                  "Fuling",           Biome.Plains,       30,     new List<string> { "$enemy_goblin" }),
-            new TrophyHuntData("TrophyGoblinBrute",             "Fuling Berserker", Biome.Plains,       30,     new List<string> { "$enemy_goblinbrute" }),
-            new TrophyHuntData("TrophyGoblinBruteBrosBrute",    "Thungr",           Biome.Plains,       65,     new List<string> { "$enemy_goblinbrute_hildircombined" }),
-            new TrophyHuntData("TrophyGoblinBruteBrosShaman",   "Zil",              Biome.Plains,       65,     new List<string> { "$enemy_goblin_hildir" }),
-            new TrophyHuntData("TrophyGoblinKing",              "Yagluth",          Biome.Plains,       120,    new List<string> { "$enemy_goblinking" }),
-            new TrophyHuntData("TrophyGoblinShaman",            "Fuling Shaman",    Biome.Plains,       30,     new List<string> { "$enemy_goblinshaman" }),
-            new TrophyHuntData("TrophyGreydwarf",               "Greydwarf",        Biome.Forest,       20,     new List<string> { "$enemy_greydwarf" }),
-            new TrophyHuntData("TrophyGreydwarfBrute",          "Greydwarf Brute",  Biome.Forest,       20,     new List<string> { "$enemy_greydwarfbrute" }),
-            new TrophyHuntData("TrophyGreydwarfShaman",         "Greydwarf Shaman", Biome.Forest,       20,     new List<string> { "$enemy_greydwarfshaman" }),
-            new TrophyHuntData("TrophyGrowth",                  "Growth",           Biome.Plains,       30,     new List<string> { "$enemy_blobtar" }),
-            new TrophyHuntData("TrophyHare",                    "Misthare",         Biome.Mistlands,    40,     new List<string> { "$enemy_hare" }),
-            new TrophyHuntData("TrophyHatchling",               "Drake",            Biome.Mountains,    30,     new List<string> { "$enemy_thehive",    "$enemy_drake" }),
-            new TrophyHuntData("TrophyLeech",                   "Leech",            Biome.Swamp,        20,     new List<string> { "$enemy_leech" }),
-            new TrophyHuntData("TrophyLox",                     "Lox",              Biome.Plains,       30,     new List<string> { "$enemy_lox" }),
-            new TrophyHuntData("TrophyMorgen",                  "Morgen",           Biome.Ashlands,     50,     new List<string> { "$enemy_morgen" }),
-            new TrophyHuntData("TrophyNeck",                    "Neck",             Biome.Meadows,      10,     new List<string> { "$enemy_neck" }),
-            new TrophyHuntData("TrophySeeker",                  "Seeker",           Biome.Mistlands,    40,     new List<string> { "$enemy_seeker" }),
-            new TrophyHuntData("TrophySeekerBrute",             "Seeker Soldier",   Biome.Mistlands,    40,     new List<string> { "$enemy_seekerbrute" }),
-            new TrophyHuntData("TrophySeekerQueen",             "The Queen",        Biome.Mistlands,    1000,   new List<string> { "$enemy_seekerqueen" }),
-            new TrophyHuntData("TrophySerpent",                 "Serpent",          Biome.Ocean,        25,     new List<string> { "$enemy_serpent" }),
-            new TrophyHuntData("TrophySGolem",                  "Stone Golem",      Biome.Mountains,    30,     new List<string> { "$enemy_stonegolem" }),
-            new TrophyHuntData("TrophySkeleton",                "Skeleton",         Biome.Forest,       20,     new List<string> { "$enemy_skeleton" }),
-            new TrophyHuntData("TrophySkeletonHildir",          "Brenna",           Biome.Forest,       25,     new List<string> { "$enemy_skeletonfire" }),
-            new TrophyHuntData("TrophySkeletonPoison",          "Rancid Remains",   Biome.Forest,       20,     new List<string> { "$enemy_skeletonpoison" }),
-            new TrophyHuntData("TrophySurtling",                "Surtling",         Biome.Swamp,        20,     new List<string> { "$enemy_surtling" }),
-            new TrophyHuntData("TrophyTheElder",                "The Elder",        Biome.Forest,       60,     new List<string> { "$enemy_gdking" }),
-            new TrophyHuntData("TrophyTick",                    "Tick",             Biome.Mistlands,    40,     new List<string> { "$enemy_tick" }),
-            new TrophyHuntData("TrophyUlv",                     "Ulv",              Biome.Mountains,    30,     new List<string> { "$enemy_ulv" }),
-            new TrophyHuntData("TrophyVolture",                 "Volture",          Biome.Ashlands,     50,     new List<string> { "$enemy_volture" }),
-            new TrophyHuntData("TrophyWolf",                    "Wolf",             Biome.Mountains,    30,     new List<string> { "$enemy_wolf" }),
-            new TrophyHuntData("TrophyWraith",                  "Wraith",           Biome.Swamp,        20,     new List<string> { "$enemy_wraith" })
+        {//                     Trophy Name                     Pretty Name         Biome               Score   Drop%   Dropping Enemy Name(s)
+            new TrophyHuntData("TrophyAbomination",             "Abomination",      Biome.Swamp,        20,     50,     new List<string> { "$enemy_abomination" }),
+            new TrophyHuntData("TrophyAsksvin",                 "Asksvin",          Biome.Ashlands,     50,     50,     new List<string> { "$enemy_asksvin" }),
+            new TrophyHuntData("TrophyBlob",                    "Blob",             Biome.Swamp,        20,     10,     new List<string> { "$enemy_blob",       "$enemy_blobelite" }),
+            new TrophyHuntData("TrophyBoar",                    "Boar",             Biome.Meadows,      10,     15,     new List<string> { "$enemy_boar" }),
+            new TrophyHuntData("TrophyBonemass",                "Bonemass",         Biome.Swamp,        80,     100,    new List<string> { "$enemy_bonemass" }),
+            new TrophyHuntData("TrophyBonemawSerpent",          "Bonemaw",          Biome.Ashlands,     50,     33,     new List<string> { "$enemy_bonemawserpent" }),
+            new TrophyHuntData("TrophyCharredArcher",           "Charred Archer",   Biome.Ashlands,     50,     5,      new List<string> { "$enemy_charred_archer" }),
+            new TrophyHuntData("TrophyCharredMage",             "Charred Warlock",  Biome.Ashlands,     50,     5,      new List<string> { "$enemy_charred_mage" }),
+            new TrophyHuntData("TrophyCharredMelee",            "Charred Warrior",  Biome.Ashlands,     50,     5,      new List<string> { "$enemy_charred_melee" }),
+            new TrophyHuntData("TrophyCultist",                 "Cultist",          Biome.Mountains,    30,     10,     new List<string> { "$enemy_fenringcultist" }),
+            new TrophyHuntData("TrophyCultist_Hildir",          "Geirrhafa",        Biome.Mountains,    45,     100,    new List<string> { "$enemy_fenringcultist_hildir" }),
+            new TrophyHuntData("TrophyDeathsquito",             "Deathsquito",      Biome.Plains,       30,     5,      new List<string> { "$enemy_deathsquito" }),
+            new TrophyHuntData("TrophyDeer",                    "Deer",             Biome.Meadows,      10,     50,     new List<string> { "$enemy_deer" }),
+            new TrophyHuntData("TrophyDragonQueen",             "Moder",            Biome.Mountains,    100,    100,    new List<string> { "$enemy_dragon" }),
+            new TrophyHuntData("TrophyDraugr",                  "Draugr",           Biome.Swamp,        20,     10,     new List<string> { "$enemy_draugr" }),
+            new TrophyHuntData("TrophyDraugrElite",             "Draugr Elite",     Biome.Swamp,        20,     10,     new List<string> { "$enemy_draugrelite" }),
+            new TrophyHuntData("TrophyDvergr",                  "Dvergr",           Biome.Mistlands,    40,     5,      new List<string> { "$enemy_dvergr",     "$enemy_dvergr_mage" }),
+            new TrophyHuntData("TrophyEikthyr",                 "Eikthyr",          Biome.Meadows,      40,     100,    new List<string> { "$enemy_eikthyr" }),
+            new TrophyHuntData("TrophyFader",                   "Fader",            Biome.Ashlands,     1000,   100,    new List<string> { "$enemy_fader" }),
+            new TrophyHuntData("TrophyFallenValkyrie",          "Fallen Valkyrie",  Biome.Ashlands,     50,     5,      new List<string> { "$enemy_fallenvalkyrie" }),
+            new TrophyHuntData("TrophyFenring",                 "Fenring",          Biome.Mountains,    30,     10,     new List<string> { "$enemy_fenring" }),
+            new TrophyHuntData("TrophyFrostTroll",              "Troll",            Biome.Forest,       20,     50,     new List<string> { "$enemy_troll" }),
+            new TrophyHuntData("TrophyGjall",                   "Gjall",            Biome.Mistlands,    40,     30,     new List<string> { "$enemy_gjall" }),
+            new TrophyHuntData("TrophyGoblin",                  "Fuling",           Biome.Plains,       30,     10,     new List<string> { "$enemy_goblin" }),
+            new TrophyHuntData("TrophyGoblinBrute",             "Fuling Berserker", Biome.Plains,       30,     5,      new List<string> { "$enemy_goblinbrute" }),
+            new TrophyHuntData("TrophyGoblinBruteBrosBrute",    "Thungr",           Biome.Plains,       65,     100,    new List<string> { "$enemy_goblinbrute_hildircombined" }),
+            new TrophyHuntData("TrophyGoblinBruteBrosShaman",   "Zil",              Biome.Plains,       65,     100,    new List<string> { "$enemy_goblin_hildir" }),
+            new TrophyHuntData("TrophyGoblinKing",              "Yagluth",          Biome.Plains,       120,    100,    new List<string> { "$enemy_goblinking" }),
+            new TrophyHuntData("TrophyGoblinShaman",            "Fuling Shaman",    Biome.Plains,       30,     10,     new List<string> { "$enemy_goblinshaman" }),
+            new TrophyHuntData("TrophyGreydwarf",               "Greydwarf",        Biome.Forest,       20,     5,      new List<string> { "$enemy_greydwarf" }),
+            new TrophyHuntData("TrophyGreydwarfBrute",          "Greydwarf Brute",  Biome.Forest,       20,     10,     new List<string> { "$enemy_greydwarfbrute" }),
+            new TrophyHuntData("TrophyGreydwarfShaman",         "Greydwarf Shaman", Biome.Forest,       20,     10,     new List<string> { "$enemy_greydwarfshaman" }),
+            new TrophyHuntData("TrophyGrowth",                  "Growth",           Biome.Plains,       30,     10,     new List<string> { "$enemy_blobtar" }),
+            new TrophyHuntData("TrophyHare",                    "Misthare",         Biome.Mistlands,    40,     5,      new List<string> { "$enemy_hare" }),
+            new TrophyHuntData("TrophyHatchling",               "Drake",            Biome.Mountains,    30,     10,     new List<string> { "$enemy_thehive",    "$enemy_drake" }),
+            new TrophyHuntData("TrophyLeech",                   "Leech",            Biome.Swamp,        20,     10,     new List<string> { "$enemy_leech" }),
+            new TrophyHuntData("TrophyLox",                     "Lox",              Biome.Plains,       30,     10,     new List<string> { "$enemy_lox" }),
+            new TrophyHuntData("TrophyMorgen",                  "Morgen",           Biome.Ashlands,     50,     5,      new List<string> { "$enemy_morgen" }),
+            new TrophyHuntData("TrophyNeck",                    "Neck",             Biome.Meadows,      10,     5,      new List<string> { "$enemy_neck" }),
+            new TrophyHuntData("TrophySeeker",                  "Seeker",           Biome.Mistlands,    40,     10,     new List<string> { "$enemy_seeker" }),
+            new TrophyHuntData("TrophySeekerBrute",             "Seeker Soldier",   Biome.Mistlands,    40,     5,      new List<string> { "$enemy_seekerbrute" }),
+            new TrophyHuntData("TrophySeekerQueen",             "The Queen",        Biome.Mistlands,    1000,   100,    new List<string> { "$enemy_seekerqueen" }),
+            new TrophyHuntData("TrophySerpent",                 "Serpent",          Biome.Ocean,        25,     33,     new List<string> { "$enemy_serpent" }),
+            new TrophyHuntData("TrophySGolem",                  "Stone Golem",      Biome.Mountains,    30,     5,      new List<string> { "$enemy_stonegolem" }),
+            new TrophyHuntData("TrophySkeleton",                "Skeleton",         Biome.Forest,       20,     10,     new List<string> { "$enemy_skeleton" }),
+            new TrophyHuntData("TrophySkeletonHildir",          "Brenna",           Biome.Forest,       25,     100,    new List<string> { "$enemy_skeletonfire" }),
+            new TrophyHuntData("TrophySkeletonPoison",          "Rancid Remains",   Biome.Forest,       20,     10,     new List<string> { "$enemy_skeletonpoison" }),
+            new TrophyHuntData("TrophySurtling",                "Surtling",         Biome.Swamp,        20,     5,      new List<string> { "$enemy_surtling" }),
+            new TrophyHuntData("TrophyTheElder",                "The Elder",        Biome.Forest,       60,     100,    new List<string> { "$enemy_gdking" }),
+            new TrophyHuntData("TrophyTick",                    "Tick",             Biome.Mistlands,    40,     5,      new List<string> { "$enemy_tick" }),
+            new TrophyHuntData("TrophyUlv",                     "Ulv",              Biome.Mountains,    30,     5,      new List<string> { "$enemy_ulv" }),
+            new TrophyHuntData("TrophyVolture",                 "Volture",          Biome.Ashlands,     50,     50,     new List<string> { "$enemy_volture" }),
+            new TrophyHuntData("TrophyWolf",                    "Wolf",             Biome.Mountains,    30,     10,     new List<string> { "$enemy_wolf" }),
+            new TrophyHuntData("TrophyWraith",                  "Wraith",           Biome.Swamp,        20,     5,      new List<string> { "$enemy_wraith" })
         };
 
         static public Color[] __m_biomeColors = new Color[]
@@ -202,13 +210,13 @@ namespace TrophyHuntMod
             // Check if the count of loaded plugins is 1 and if it's this mod
             if (loadedPlugins.Count == 1 && loadedPlugins.ContainsKey(Info.Metadata.GUID))
             {
-                Debug.LogWarning("[TrophyHuntMod] is loaded and is the ONLY mod running! Let's Hunt!");
+                Debug.LogWarning($"[TrophyHuntMod] v{PluginVersion} is loaded and is the ONLY mod running! Let's Hunt!");
 
                 __m_onlyModRunning = true;
             }
             else
             {
-                Debug.LogWarning("[TrophyHuntMod] detected other mods running. For official events, it must be the ONLY mod running.");
+                Debug.LogWarning($"[TrophyHuntMod] v{PluginVersion} detected other mods running. For official events, it must be the ONLY mod running.");
 
                 __m_onlyModRunning = false;
             }
@@ -326,12 +334,27 @@ namespace TrophyHuntMod
                 }
             });
 
+            //ConsoleCommand dumpDropRates = new ConsoleCommand("dumpdroprates", "Dump the drop counts and rates to a logfile", delegate (ConsoleEventArgs args)
+            //{
+            //    PrintToConsole($"{"TrophyName",-18} {"Killed",-7} {"Dropped",-8} {"Rate",-6}%");
+            //    foreach (KeyValuePair<string, DropInfo> entry in __m_trophyDropInfo)
+            //    {
+            //        TrophyHuntData trophyHuntData = Array.Find(__m_trophyHuntData, element => element.m_name == entry.Key);
+            //        string enemyName = trophyHuntData.m_prettyName;
+            //        string percentStr = "n/a";
+            //        if (entry.Value.m_numKilled > 0)
+            //            percentStr = (100.0f * (float)entry.Value.m_trophiesDropped / (float)entry.Value.m_numKilled).ToString("0.0");
+            //        PrintToConsole($"{enemyName,-18} {entry.Value.m_numKilled,-7} {entry.Value.m_trophiesDropped,-8} {percentStr,-6}%");
+            //    }
+            //});
+
             ConsoleCommand trophyRush = new ConsoleCommand("trophyrush", "Toggle Trophy Rush Mode on and off", delegate (ConsoleEventArgs args)
             {
-                //if (Game.instance)
-                //{
-                //    PrintToConsole("'/trophyrush' console command can only be used at the Main Menu.");
-                //}
+                if (Game.instance)
+                {
+                    PrintToConsole("'/trophyrush' console command can only be used at the main menu via the F5 console.");
+                    return;
+                }
 
                 __m_trophyRushEnabled = !__m_trophyRushEnabled;
 
@@ -352,7 +375,7 @@ namespace TrophyHuntMod
             {
                 if (!Game.instance)
                 {
-                    PrintToConsole("'showpath' console command can only be used in-game.");
+                    PrintToConsole("'trophyscale' console command can only be used in-game.");
                 }
 
                 // First argument is user trophy scale
@@ -412,7 +435,7 @@ namespace TrophyHuntMod
 
         public static string GetTrophyHuntMainMenuText()
         {
-            string textStr = $"<b><size=52><color=yellow>Trophy Hunt!</color></size></b>\n<size=24>Version {PluginVersion}</size>";
+            string textStr = $"<b><size=52><color=#FFB75B>TrophyHuntMod</color></size></b>\n<size=24>Version {PluginVersion}</size>";
 
             if (__m_trophyRushEnabled)
             {
@@ -711,6 +734,11 @@ namespace TrophyHuntMod
                 iconImage.sprite = iconSprite;
                 iconImage.color = Color.black;
                 iconImage.raycastTarget = true;
+
+                if (__m_trophyRushEnabled)
+                {
+                    iconImage.color = new Color(0.5f, 0.0f, 0.0f);
+                }
 
                 AddHoverTextTriggersToUIObject(iconElement);
 
@@ -1186,11 +1214,13 @@ namespace TrophyHuntMod
                     dropPercentStr = (100.0f * (float)dropInfo.m_trophiesDropped / (float)dropInfo.m_numKilled).ToString("0.0"); ;
                 }
 
+                string dropWikiPercentStr = trophyHuntData.m_dropPercent.ToString();
+
                 string text = 
-                    $"<size=16><b><color=yellow>{trophyHuntData.m_prettyName}</color><b></size>\n" +
+                    $"<size=16><b><color=#FFB75B>{trophyHuntData.m_prettyName}</color><b></size>\n" +
                     $"<color=white>Kills: </color><color=orange>{dropInfo.m_numKilled}</color>\n" +
                     $"<color=white>Trophies: </color><color=orange>{dropInfo.m_trophiesDropped}</color>\n" +
-                    $"<color=white>Drop Rate: </color><color=orange>{dropPercentStr}%</color>";
+                    $"<color=white>Drop Rate: </color><color=orange>{dropPercentStr}%</color> (<color=yellow>{dropWikiPercentStr}%)</color>";
 
                 return text;
             }
@@ -1340,7 +1370,7 @@ namespace TrophyHuntMod
                         Transform logoTransform = mainMenu.transform.Find("Logo");
                         if (logoTransform != null)
                         {
-                            GameObject textObject = new GameObject("CustomLogoText");
+                            GameObject textObject = new GameObject("TrophyHuntModLogoText");
                             textObject.transform.SetParent(logoTransform.parent);
 
                             // Set up the RectTransform for positioning
@@ -1350,7 +1380,8 @@ namespace TrophyHuntMod
                             rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
                             rectTransform.pivot = new Vector2(0.5f, 0.5f);
                             rectTransform.anchoredPosition = new Vector2(0, 0); // Position below the logo
-
+                            rectTransform.sizeDelta = new Vector2(500, 200);
+                            
                             // Add a TextMeshProUGUI component
                             __m_trophyHuntMainMenuText = textObject.AddComponent<TextMeshProUGUI>();
                             __m_trophyHuntMainMenuText.text = GetTrophyHuntMainMenuText();
@@ -1358,10 +1389,10 @@ namespace TrophyHuntMod
                             __m_trophyHuntMainMenuText.alignment = TextAlignmentOptions.Center;
                             // Enable outline
                             __m_trophyHuntMainMenuText.fontMaterial.EnableKeyword("OUTLINE_ON");
-
+                            __m_trophyHuntMainMenuText.lineSpacingAdjustment = -5;
                             // Set outline color and thickness
                             __m_trophyHuntMainMenuText.outlineColor = Color.black;
-                            __m_trophyHuntMainMenuText.outlineWidth = 0.1f; // Adjust the thickness
+                            __m_trophyHuntMainMenuText.outlineWidth = 0.05f; // Adjust the thickness
 
                         }
                         else

@@ -15,16 +15,26 @@ https://thunderstore.io/c/valheim/p/denikson/BepInExPack_Valheim/
 
 Two Options:
 	1. Use r2modman to automatically install it from Thunderstore and launch Valheim. R2modman is the mod manager available for download at https://thunderstore.io
-	2. Manual: Simply copy the contents of the archive into the BepinEx/Plugins directory. This is usually found somewhere like 'C:\Program Files (x86)\Steam\steamapps\common\Valheim\BepInEx\plugins'
+	2. Manual: Simply copy the contents of the archive into the BepinEx/Plugins directory. This is usually found somewhere like 'C:\Program Files (x86)\Steam\steamapps\common\Valheim\BepInEx\plugins' if you've installed BepInEx according to the instructions. (https://www.nitroserv.com/en/guides/installing-mods-on-valheim-with-bepinex)
+
 
 ## What's New?
 
 v0.2.4
-- Added tooltips to the Trophy icons at the bottom screen if you pause the game (ESC) and hover the mouse over them.
-	This displays the Trophy name, the number of enemies killed that could drop that trophy and the number of trophies actually dropped by those enemies as well as a drop percentage.
 - Swanky new Main Menu logo displaying "Trophy Hunt!" and the mod's version number
-- Experimental console command `/trophyrush` which enables Trophy Rush Mode.
-	Trophy Rush mode causes every enemy that WOULD drop a Trophy to drop a Trophy 100% of the time. This was suggested by @FizzyP as a potential new trophy hunt contest type so it's in there for experimentation
+- Added tooltips to the Trophy icons at the bottom screen if you pause the game (ESC) and hover the mouse over them.
+	- Only available in-game at the Pause (ESC) menu (not in-play with the Inventory screen open!)
+	- This displays:
+		- Trophy name
+		- The number of enemies killed that could drop that Trophy
+		- Number of trophies actually dropped by those enemies
+		- Actual drop percentage
+		- Wiki-documented drop percentage
+- Experimental F5 console command `trophyrush` at the main menu, which enables Trophy Rush Mode.
+	- Trophy Rush mode causes every enemy that WOULD drop a Trophy to drop a Trophy 100% of the time. This was suggested by @FizzyP as a potential new trophy hunt contest type so it's in there for experimentation.
+	- This can only be enabled at the Main Menu via the F5 console command
+	- Unfound Trophies will be colored RED in the hud to indicate Trophy Rush is enabled.
+	- NOTE! This is the ONLY feature of TrophyHuntMod which modifies the behavior of Valheim. Please use with caution!
 
 ## Previous Changes
 
@@ -48,28 +58,31 @@ Displays a tray at the bottom of the game screen with the computed Trophy Hunt s
 
 A death counter appears to the left of the health and food bar, as deaths count against point totals in Trophy Hunt.
 
-### Console Command: `/trophyhunt`
+### Console Commands
 
-The Chat console (and F5 console) both support the console command `/trophyhunt` which prints out the Trophy Hunt scoring in detail like so:
+`/trophyhunt`
 
-```
-[Trophy Hunt Scoring]
-Trophies:
-  TrophyBoar: Score: 10 Biome: Meadows
-  TrophyDeer: Score: 10 Biome: Meadows
-  TrophyNeck: Score: 10 Biome: Meadows
-  TrophyEikthyr: Score: 40 Biome: Meadows
-  TrophyGreydwarf: Score: 20 Biome: Forest
-Trophy Score Total: 90
-Penalties:
-  Deaths: 2 Score: -40
-  Logouts: 0 Score: 0
-Total Score: 50
-```
+	The Chat console (and F5 console) both support the console command `/trophyhunt` which prints out the Trophy Hunt scoring in detail like so:
 
-### Console Command: `/showpath`
+	```
+	[Trophy Hunt Scoring]
+	Trophies:
+	  TrophyBoar: Score: 10 Biome: Meadows
+	  TrophyDeer: Score: 10 Biome: Meadows
+	  TrophyNeck: Score: 10 Biome: Meadows
+	  TrophyEikthyr: Score: 40 Biome: Meadows
+	  TrophyGreydwarf: Score: 20 Biome: Forest
+	Trophy Score Total: 90
+	Penalties:
+	  Deaths: 2 Score: -40
+	  Logouts: 0 Score: 0
+	Total Score: 50
+	```
 
-This will display pins on the in-game Map showing the path that the Player has traveled during the session. One pin every 100 meters or so.
+`/showpath`
+
+	This will display pins on the in-game Map showing the path that the Player has traveled during the session. One pin every 100 meters or so.
+
 
 ## Support the Valheim Speedrunning Community!
 If you'd like to donate a dollar or two to the speedrunners and the Trophy Hunt Events, please consider donating via CashApp or PayPal. All the money goes directly into the prize pool for future Trophy Hunt events! 
@@ -79,12 +92,27 @@ You can learn more on the Valheim Speedrun Discord channel here: https://discord
 	CashApp: $ARCHYCooper 
 	PayPal: https://www.paypal.com/paypalme/expertarchy
 
+`/trophyscale`
+
+	This allows the user to scale the trophy sizes (1.0 is default) for better readability at some screen resolutions. 
+
+*Experimental F5 Console Command*
+
+`trophyrush`
+
+	Experimental F5 console command `trophyrush` at the main menu, which enables Trophy Rush Mode.
+		- Trophy Rush mode causes every enemy that WOULD drop a Trophy to drop a Trophy 100% of the time. This was suggested by @FizzyP as a potential new trophy hunt contest type so it's in there for experimentation.
+		- This can only be enabled at the Main Menu via the F5 console
+		- Unfound Trophies will be colored RED in the hud to indicate Trophy Rush is enabled.
+		- NOTE! This is the ONLY feature of TrophyHuntMod which modifies the behavior of Valheim. Please use with caution!
+
 ## Known issues
 
 ## Feature Requests
 
 - Report score and trophies to the valheim.help tracker during runs
 - Kr4ken92 - I also think it would be nice to have such a feature that display the number of creature killed vs the number of trophy obtained (ex: stone golem killed 1000 / Trophy obtained 1) with a command like trophystats
+- JLPL - Add console command to show/hide the trophy icons at the bottom of the screen
 
 ## Where to Find
 You can find the github at: https://github.com/smariotti/TrophyHuntMod
