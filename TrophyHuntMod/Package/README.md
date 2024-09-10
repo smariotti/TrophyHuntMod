@@ -14,11 +14,34 @@ https://thunderstore.io/c/valheim/p/denikson/BepInExPack_Valheim/
 ## Installation (manual)
 
 Two Options:
-	1. Use r2modman to automatically install it from Thunderstore and launch Valheim. R2modman is the mod manager available for download at https://thunderstore.io
-	2. Manual: Simply copy the contents of the archive into the BepinEx/Plugins directory. This is usually found somewhere like 'C:\Program Files (x86)\Steam\steamapps\common\Valheim\BepInEx\plugins' if you've installed BepInEx according to the instructions. (https://www.nitroserv.com/en/guides/installing-mods-on-valheim-with-bepinex)
-
+- Use r2modman to automatically install it from Thunderstore and launch Valheim. R2modman is the mod manager available for download at https://thunderstore.io
+- Manual: Simply copy the contents of the archive into the BepinEx/Plugins directory. This is usually found somewhere like 'C:\Program Files (x86)\Steam\steamapps\common\Valheim\BepInEx\plugins' if you've installed BepInEx according to the instructions. (https://www.nitroserv.com/en/guides/installing-mods-on-valheim-with-bepinex)
 
 ## What's New?
+
+v0.3.2
+- Fixed UI text overrun on overall Luck tooltip for long enemy names
+- Don't display luck rating in Trophy or Luck-O-Meter tooltips if not enough enemies have been killed to really tell
+- added `/showtrophies` chat console command to toggle show/hide of trophy icons, Score, Deaths and Luck counters still display
+
+## Previous Changes
+
+v0.3.1
+- Simplified the Luck-o-Meter and added luckiest and unluckiest trophies to the tooltip
+
+v0.3.0
+- Added "Luck-o-Meter" as suggested by @da_Keepa. 
+	- Luck icon is on the left of the HUD above the Deaths counter
+	- Hover text shows luck percentage as well as overall Luck Rating
+	- Individual Trophy icons how show Luck Rating for that type of trophy
+	- Luck is calculated as actual drop rates versus documented droprates. Overall luck is aggregate luck for all trophy capabable enemies that have died at least once.
+- Trophy Rush Changes (Experimental Feature)
+	- Fixed a bug that was preventing trophies from spawning in all circumstances
+	- Added TrophyRush button to Main Menu below new logo position
+- Made trophy icons animate a little longer when they're picked up
+- Fixed a display-only bug where -10 would display as your starting score if you were playing another character, logged out, and made a new one. This just displayed wrong, and would correct itself on next score update and didn't ACTUALLY count against your score.
+- Adjusted un-found Trophy icons in the tray to be more readable, is this better? Let me know
+- Reduced size of TrophyHuntMod logo and moved it to the right side of the screen as suggested by @Kr4ken92 to play nicer with other mods
 
 v0.2.4
 - Swanky new Main Menu logo displaying "Trophy Hunt!" and the mod's version number
@@ -35,8 +58,6 @@ v0.2.4
 	- This can only be enabled at the Main Menu via the F5 console command
 	- Unfound Trophies will be colored RED in the hud to indicate Trophy Rush is enabled.
 	- NOTE! This is the ONLY feature of TrophyHuntMod which modifies the behavior of Valheim. Please use with caution!
-
-## Previous Changes
 
 v0.2.3
 - Removed "TrophyDraugrFem" from the trophy list since it's not supported in the game and does not drop.
@@ -83,18 +104,13 @@ A death counter appears to the left of the health and food bar, as deaths count 
 
 	This will display pins on the in-game Map showing the path that the Player has traveled during the session. One pin every 100 meters or so.
 
-
-## Support the Valheim Speedrunning Community!
-If you'd like to donate a dollar or two to the speedrunners and the Trophy Hunt Events, please consider donating via CashApp or PayPal. All the money goes directly into the prize pool for future Trophy Hunt events! 
-
-You can learn more on the Valheim Speedrun Discord channel here: https://discord.gg/9bCBQCPH
-
-	CashApp: $ARCHYCooper 
-	PayPal: https://www.paypal.com/paypalme/expertarchy
-
 `/trophyscale`
 
 	This allows the user to scale the trophy sizes (1.0 is default) for better readability at some screen resolutions. 
+
+`/showtrophies`
+
+	Toggles the display of Trophy icons at the bottom of the screen for when you can't even, or the display conflicts with other mods
 
 *Experimental F5 Console Command*
 
@@ -106,12 +122,19 @@ You can learn more on the Valheim Speedrun Discord channel here: https://discord
 		- Unfound Trophies will be colored RED in the hud to indicate Trophy Rush is enabled.
 		- NOTE! This is the ONLY feature of TrophyHuntMod which modifies the behavior of Valheim. Please use with caution!
 
+## Support the Valheim Speedrunning Community!
+If you'd like to donate a dollar or two to the speedrunners and the Trophy Hunt Events, please consider donating via CashApp or PayPal. All the money goes directly into the prize pool for future Trophy Hunt events! 
+
+You can learn more on the Valheim Speedrun Discord channel here: https://discord.gg/9bCBQCPH
+
+	CashApp: $ARCHYCooper 
+	PayPal: https://www.paypal.com/paypalme/expertarchy
+
 ## Known issues
 
 ## Feature Requests
 
 - Report score and trophies to the valheim.help tracker during runs
-- Kr4ken92 - I also think it would be nice to have such a feature that display the number of creature killed vs the number of trophy obtained (ex: stone golem killed 1000 / Trophy obtained 1) with a command like trophystats
 - JLPL - Add console command to show/hide the trophy icons at the bottom of the screen
 
 ## Where to Find
