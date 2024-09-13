@@ -27,7 +27,7 @@ namespace TrophyHuntMod
     {
         public const string PluginGUID = "com.oathorse.TrophyHuntMod";
         public const string PluginName = "TrophyHuntMod";
-        public const string PluginVersion = "0.3.2";
+        public const string PluginVersion = "0.3.3";
         private readonly Harmony harmony = new Harmony(PluginGUID);
 
         // Configuration variables
@@ -170,6 +170,7 @@ namespace TrophyHuntMod
         static float __m_baseTrophyScale = 1.4f;
         static float __m_userTrophyScale = 1.0f;
         static float __m_userScoreScale = 1.0f;
+        static float __m_userTrophySpacing = 0.0f;
 
         // TrophyHuntData list
         //        static List<string> __m_trophiesInObjectDB = new List<string>();
@@ -464,6 +465,46 @@ namespace TrophyHuntMod
                 }
             });
 
+            ConsoleCommand trophySpacingCommand = new ConsoleCommand("trophyspacing", "Space the trophies out (negative and positive numbers work)", delegate (ConsoleEventArgs args)
+            {
+                if (!Game.instance)
+                {
+                    PrintToConsole("'trophyspacing' console command can only be used in-game.");
+                    return;
+                }
+                
+                if (Player.m_localPlayer == null)
+                {
+                    return;
+                }
+
+                Player player = Player.m_localPlayer;
+
+                // First argument is user trophy scale
+                if (args.Length > 1)
+                {
+                    float userSpacing = float.Parse(args[1]);
+                    if (userSpacing == 0) userSpacing = 1;
+                    __m_userTrophySpacing = userSpacing;
+                }
+                else
+                {
+                    // no arguments means reset
+                    __m_userTrophySpacing = 0.0f;
+                }
+
+                Transform healthPanelTransform = Hud.instance.transform.Find("hudroot/healthpanel");
+                if (healthPanelTransform == null)
+                {
+                    Debug.LogError("Health panel transform not found.");
+
+                    return;
+                }
+
+                Player_OnSpawned_Patch.DeleteTrophyIconElements(__m_iconList);
+                Player_OnSpawned_Patch.CreateTrophyIconElements(healthPanelTransform, __m_trophyHuntData, __m_iconList);
+                Player_OnSpawned_Patch.EnableTrophyHuntIcons(player);
+            });
 
             ConsoleCommand showTrophies = new ConsoleCommand("showtrophies", "Toggle Trophy Rush Mode on and off", delegate (ConsoleEventArgs args)
             {
@@ -796,7 +837,7 @@ namespace TrophyHuntMod
                 // Add RectTransform component for positioning Sprite
                 RectTransform iconRectTransform = iconElement.AddComponent<RectTransform>();
                 iconRectTransform.sizeDelta = new Vector2(iconSize, iconSize); // Set size
-                iconRectTransform.anchoredPosition = new Vector2(xOffset + index * (iconSize + iconBorderSize), yOffset); // Set position
+                iconRectTransform.anchoredPosition = new Vector2(xOffset + index * (iconSize + iconBorderSize + __m_userTrophySpacing), yOffset); // Set position
                 iconRectTransform.localScale = new Vector3(__m_baseTrophyScale, __m_baseTrophyScale, __m_baseTrophyScale) * __m_userTrophyScale;
 
                 // Add an Image component for Sprite
@@ -815,7 +856,17 @@ namespace TrophyHuntMod
                 return iconElement;
             }
 
-            static void CreateTrophyIconElements(Transform parentTransform, TrophyHuntData[] trophies, List<GameObject> iconList)
+            public static void DeleteTrophyIconElements(List<GameObject> iconList)
+            {
+                foreach (GameObject trophyIconObject in iconList)
+                {
+                    GameObject.Destroy(trophyIconObject);
+                }
+
+                iconList.Clear();
+            }
+
+            public static void CreateTrophyIconElements(Transform parentTransform, TrophyHuntData[] trophies, List<GameObject> iconList)
             {
                 foreach (TrophyHuntData trophy in trophies)
                 {
@@ -888,6 +939,32 @@ namespace TrophyHuntMod
                 }
             }
 
+            static int ComputeTrophyScore(Player player)
+            {
+                int score = 0;
+                foreach (string trophyName in player.GetTrophies())
+                {
+                    TrophyHuntData trophyHuntData = Array.Find(__m_trophyHuntData, element => element.m_name == trophyName);
+
+                    if (trophyHuntData.m_name == trophyName)
+                    {
+                        // Add the value to our score
+                        score += trophyHuntData.m_value;
+                    }
+                }
+
+                return score;
+            }
+
+            public static void EnableTrophyHuntIcons(Player player)
+            {
+                // Enable found trophies
+                foreach (string trophyName in player.GetTrophies())
+                {
+                    EnableTrophyHuntIcon(trophyName);
+                }
+            }
+
             static void UpdateTrophyHuntUI(Player player)
             {
                 // If there's no Hud yet, don't do anything here
@@ -916,23 +993,9 @@ namespace TrophyHuntMod
                     return;
                 }
 
-                List<string> discoveredTrophies = player.GetTrophies();
+                EnableTrophyHuntIcons(player);
 
-                // Compute Score and enable all TrophyHuntIcons for trophies that have been discovered
-                //
-                int score = 0;
-                foreach (string trophyName in discoveredTrophies)
-                {
-                    TrophyHuntData trophyHuntData = Array.Find(__m_trophyHuntData, element => element.m_name == trophyName);
-
-                    if (trophyHuntData.m_name == trophyName)
-                    {
-                        // Add the value to our score
-                        score += trophyHuntData.m_value;
-
-                        EnableTrophyHuntIcon(trophyName);
-                    }
-                }
+                int score = ComputeTrophyScore(player);
 
                 // Update the deaths text and subtract deaths from score
                 //
@@ -974,9 +1037,10 @@ namespace TrophyHuntMod
             {
                 float flashDuration = 0.5f;
                 int numFlashes = 8;
-
+                
+                Vector2 originalAnchoredPosition = imageRect.anchoredPosition;
                 Vector3 originalScale = imageRect.localScale;
-
+                
                 for (int i = 0; i < numFlashes; i++)
                 {
                     for (float t = 0.0f; t < flashDuration; t += Time.deltaTime)
@@ -995,13 +1059,17 @@ namespace TrophyHuntMod
 
                         float flashScale = 1 + interpValue;
                         imageRect.localScale = new Vector3(__m_baseTrophyScale, __m_baseTrophyScale, __m_baseTrophyScale) * flashScale * __m_userTrophyScale;
+                        imageRect.anchoredPosition = imageRect.anchoredPosition + new Vector2(0, 1);
 
                         yield return null;
                     }
+
+                    imageRect.anchoredPosition = originalAnchoredPosition;
                 }
 
                 targetImage.color = Color.white;
                 imageRect.localScale = originalScale;
+                imageRect.anchoredPosition = originalAnchoredPosition;
             }
 
             static void FlashTrophy(string trophyName)

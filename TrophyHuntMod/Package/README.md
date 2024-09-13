@@ -10,7 +10,6 @@ Requires a BepInEx install.
 
 https://thunderstore.io/c/valheim/p/denikson/BepInExPack_Valheim/
 
-
 ## Installation (manual)
 
 Two Options:
@@ -19,12 +18,17 @@ Two Options:
 
 ## What's New?
 
+v0.3.3
+- Added `/scorescale` chat console command to alter the score text size. 1.0 is the default, can go as low or high as you like. Use `/scorescale 1.5` to increase the text size by 50%. Thanks @turbero.
+- Added `/trophyspacing` chat console command to pack them closer together or farther apart at the bottom of the screen. Negative values pack them tighter, positive ones space them out. 1.5 looks pretty good for me at 1920x1080 running in a window. YMMV. Thanks @Daizzer.
+- Animate the discovered trophies upwards while they pulsate and flash to make them **even more** obvious and eye-catching for players.
+
+## Previous Changes
+
 v0.3.2
 - Fixed UI text overrun on overall Luck tooltip for long enemy names
 - Don't display luck rating in Trophy or Luck-O-Meter tooltips if not enough enemies have been killed to really tell
 - added `/showtrophies` chat console command to toggle show/hide of trophy icons, Score, Deaths and Luck counters still display
-
-## Previous Changes
 
 v0.3.1
 - Simplified the Luck-o-Meter and added luckiest and unluckiest trophies to the tooltip
@@ -108,6 +112,14 @@ A death counter appears to the left of the health and food bar, as deaths count 
 
 	This allows the user to scale the trophy sizes (1.0 is default) for better readability at some screen resolutions. 
 
+`/trophyspacing`
+
+	Allows you space out the trophies to your liking. Negative values spaces them tighter, positive values space them out more. They may wrap off the end of the screen with large values.
+
+`/scorescale`
+
+	Allows the user to scale the Score text size (1.0 is default) for better readability at some screen resolutions.
+
 `/showtrophies`
 
 	Toggles the display of Trophy icons at the bottom of the screen for when you can't even, or the display conflicts with other mods
@@ -136,6 +148,8 @@ You can learn more on the Valheim Speedrun Discord channel here: https://discord
 
 - Report score and trophies to the valheim.help tracker during runs
 - JLPL - Add console command to show/hide the trophy icons at the bottom of the screen
+- Daizzer - /trophyspacing command
+
 
 ## Where to Find
 You can find the github at: https://github.com/smariotti/TrophyHuntMod
