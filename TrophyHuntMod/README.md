@@ -18,12 +18,17 @@ Two Options:
 
 ## What's New?
 
+v0.4.0
+
+- 
+- Fixed a bug where logging out, deleting your character, creating a new character with the same name and entering play would retain old player data for kills, trophy drops and /showpath pins (thanks @da_Keepa and @Xmal!)
+
+## Previous Changes
+
 v0.3.3
 - Added `/scorescale` chat console command to alter the score text size. 1.0 is the default, can go as low or high as you like. Use `/scorescale 1.5` to increase the text size by 50%. Thanks @turbero.
 - Added `/trophyspacing` chat console command to pack them closer together or farther apart at the bottom of the screen. Negative values pack them tighter, positive ones space them out. 1.5 looks pretty good for me at 1920x1080 running in a window. YMMV. Thanks @Daizzer.
 - Animate the discovered trophies upwards while they pulsate and flash to make them **even more** obvious and eye-catching for players.
-
-## Previous Changes
 
 v0.3.2
 - Fixed UI text overrun on overall Luck tooltip for long enemy names
@@ -147,8 +152,8 @@ You can learn more on the Valheim Speedrun Discord channel here: https://discord
 ## Feature Requests
 
 - Report score and trophies to the valheim.help tracker during runs
-- JLPL - Add console command to show/hide the trophy icons at the bottom of the screen
-- Daizzer - /trophyspacing command
+- Dropshadow or add dark background field to Score (Weih (Henrik))
+- Collect player kills/drops as default, enable all kills/drops as options
 
 
 ## Where to Find

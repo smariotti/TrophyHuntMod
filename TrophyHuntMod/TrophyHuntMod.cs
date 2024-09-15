@@ -27,7 +27,7 @@ namespace TrophyHuntMod
     {
         public const string PluginGUID = "com.oathorse.TrophyHuntMod";
         public const string PluginName = "TrophyHuntMod";
-        public const string PluginVersion = "0.3.3";
+        public const string PluginVersion = "0.4.0";
         private readonly Harmony harmony = new Harmony(PluginGUID);
 
         // Configuration variables
@@ -195,7 +195,7 @@ namespace TrophyHuntMod
 
         static bool __m_trophyRushEnabled = false;
 
-        static string __m_currentPlayerName = "";
+        static long __m_currentPlayerID = 0;
 
         public struct DropInfo
         {
@@ -472,7 +472,7 @@ namespace TrophyHuntMod
                     PrintToConsole("'trophyspacing' console command can only be used in-game.");
                     return;
                 }
-                
+
                 if (Player.m_localPlayer == null)
                 {
                     return;
@@ -633,12 +633,13 @@ namespace TrophyHuntMod
                     __m_logoutCount = 0;
                 }
 
+//                Debug.LogWarning($"Stored PlayerID: {__m_currentPlayerID}, m_localPlayer PlayerID: {Player.m_localPlayer.GetPlayerID()}");
+
                 // If this is a difference character, clear all in-memory stats
-                if (Player.m_localPlayer.name != __m_currentPlayerName)
+                if (__m_currentPlayerID != Player.m_localPlayer.GetPlayerID())
                 {
                     InitializeTrackedDataForNewPlayer();
                 }
-
 
                 Debug.LogWarning($"Total Logouts: {__m_logoutCount}");
 
@@ -658,7 +659,7 @@ namespace TrophyHuntMod
                     StartCollectingPlayerPath();
                 }
 
-                __m_currentPlayerName = Player.m_localPlayer.name;
+                __m_currentPlayerID = Player.m_localPlayer.GetPlayerID();
             }
 
             public static void InitializeTrackedDataForNewPlayer()
@@ -1037,10 +1038,10 @@ namespace TrophyHuntMod
             {
                 float flashDuration = 0.5f;
                 int numFlashes = 8;
-                
+
                 Vector2 originalAnchoredPosition = imageRect.anchoredPosition;
                 Vector3 originalScale = imageRect.localScale;
-                
+
                 for (int i = 0; i < numFlashes; i++)
                 {
                     for (float t = 0.0f; t < flashDuration; t += Time.deltaTime)
@@ -1421,7 +1422,7 @@ namespace TrophyHuntMod
             public static string GetLuckRatingUIString(float luckPercentage)
             {
                 int ratingIndex = GetLuckRatingIndex(luckPercentage);
-                
+
                 LuckRating luckRating = __m_luckRatingTable[ratingIndex];
 
                 return $"<color={luckRating.m_colorString}>{luckRating.m_luckString}</color>";
@@ -1462,8 +1463,8 @@ namespace TrophyHuntMod
 
                     // Ignore 100% drop trophies
                     if (data.m_dropPercent >= 100)
-                    { 
-                        continue;   
+                    {
+                        continue;
                     }
 
                     // Ignore if you haven't killed enough to get a drop
@@ -1518,7 +1519,7 @@ namespace TrophyHuntMod
 
                 string text =
                     $"<size=16><b><color=#FFB75B>Luck-O-Meter</color><b></size>\n" +
-                    $"<color=white>  Luck Score: </color><color=orange>{luckPercentStr}</color>\n" + 
+                    $"<color=white>  Luck Score: </color><color=orange>{luckPercentStr}</color>\n" +
                     $"<color=white>  Luck Rating: </color>\n";
 
                 int index = 0;
@@ -1569,7 +1570,7 @@ namespace TrophyHuntMod
                 if (desiredPosition.y > Screen.height - __m_luckTooltipWindowSize.y)
                     desiredPosition.y = Screen.height - __m_luckTooltipWindowSize.y;
 
-//                Debug.LogWarning($"Luck Tooltip x={desiredPosition.x} y={desiredPosition.y}");
+                //                Debug.LogWarning($"Luck Tooltip x={desiredPosition.x} y={desiredPosition.y}");
 
                 __m_luckTooltipBackground.transform.position = desiredPosition;
                 __m_luckTooltipObject.transform.position = new Vector3(desiredPosition.x + __m_luckTooltipTextOffset.x, desiredPosition.y - __m_luckTooltipTextOffset.y, 0f);
@@ -1670,7 +1671,7 @@ namespace TrophyHuntMod
 
                 DropInfo dropInfo = __m_trophyDropInfo[trophyName];
 
-//                Debug.LogWarning($"dropped: {dropInfo.m_trophiesDropped} killed: {dropInfo.m_numKilled} percent:{trophyHuntData.m_dropPercent}");
+                //                Debug.LogWarning($"dropped: {dropInfo.m_trophiesDropped} killed: {dropInfo.m_numKilled} percent:{trophyHuntData.m_dropPercent}");
 
                 string dropPercentStr = "0";
                 string dropRatingStr = "<n/a>";
@@ -1714,7 +1715,7 @@ namespace TrophyHuntMod
                     return;
 
                 string text = BuildTrophyTooltipText(uiObject);
-                
+
                 __m_trophyHoverText.text = text;
 
                 __m_trophyTooltipBackground.SetActive(true);
@@ -1723,7 +1724,7 @@ namespace TrophyHuntMod
                 Vector3 tooltipOffset = new Vector3(__m_trophyTooltipWindowSize.x / 2, __m_trophyTooltipWindowSize.y, 0);
                 Vector3 mousePosition = Input.mousePosition;
                 Vector3 desiredPosition = mousePosition + tooltipOffset;
-                
+
                 // Clamp the tooltip window onscreen
                 if (desiredPosition.x < 0) desiredPosition.x = 0;
                 if (desiredPosition.y < 0) desiredPosition.y = 0;
@@ -1817,7 +1818,7 @@ namespace TrophyHuntMod
                                 if (itemName.Contains("Trophy"))
                                 {
                                     Debug.Log($"Trophy {itemName} Dropped by {characterName}");
-                                    
+
                                     RecordDroppedTrophy(characterName, itemName);
 
                                     droppedTrophy = true;
@@ -1877,14 +1878,14 @@ namespace TrophyHuntMod
 
                 // Add the Button component
                 Button button = trophyRushButton.AddComponent<Button>();
-                
+
                 ColorBlock cb = button.colors;
                 cb.normalColor = Color.black;
                 cb.highlightedColor = Color.yellow;  // When hovering
                 cb.pressedColor = Color.red;      // When pressed
                 cb.selectedColor = Color.white;   // When selected
                 button.colors = cb;
-                
+
                 // Add an Image component for the button background
                 UnityEngine.UI.Image image = trophyRushButton.AddComponent<UnityEngine.UI.Image>();
                 image.color = Color.white; // Set background color
@@ -1895,7 +1896,7 @@ namespace TrophyHuntMod
 
                 // Set the Text RectTransform
                 RectTransform textRect = textObject.AddComponent<RectTransform>();
-//                textRect.sizeDelta = new Vector2(130, 40);
+                //                textRect.sizeDelta = new Vector2(130, 40);
                 textRect.anchoredPosition = new Vector2(0, 0);
 
                 // Change the button's text
@@ -1938,7 +1939,7 @@ namespace TrophyHuntMod
                             rectTransform.pivot = new Vector2(1.0f, 1.0f);
                             rectTransform.anchoredPosition = new Vector2(-20, 0); // Position below the logo
                             rectTransform.sizeDelta = new Vector2(200, 100);
-                            
+
                             // Add a TextMeshProUGUI component
                             __m_trophyHuntMainMenuText = textObject.AddComponent<TextMeshProUGUI>();
                             __m_trophyHuntMainMenuText.text = GetTrophyHuntMainMenuText();
