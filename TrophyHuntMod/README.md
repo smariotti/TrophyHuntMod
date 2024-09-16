@@ -20,8 +20,27 @@ Two Options:
 
 v0.4.0
 
-- 
+- Killed/Trophy-drop Tooltips Nerfed!
+	- These were discussed and determined to be OP.
+	- Killed/Trophy Drop tooltips *now use PLAYER enemy kills and PLAYER trophy pickups* rather than world enemy deaths and world trophy drops!
+		- This was done to prevent a cheese where you could monitor world trophy drops after, say, dragging Growths over to a Fuling village, letting madness ensue, and then checking world trophy drops to see if you should run over there and hunt for trophies.
+		- For a Trophy to count towards stats in the tooltips, it must be picked up into your inventory
+	- Luck-O-Meter now only counts Player enemy kills and picked up Trophy drops when calculating Luck Rating, Luckiest and Unluckies mobs
+	- BUT! You can now use `/showallenemydeaths` Chat Console command to see all the info including world kills and world trophy drops (this adds the data we had before back to the tooltips).
+		- WARNING: This invalidates your run for Tournament play and colors your score bright green to indicate this. EX: Use this at the end of a run to inspect actual world drops.
+	- Added a new button on the main menu "Show All Enemy Deaths" to enable/disable this prior to gameplay for the console-command shy.
+	- Note that once it's been enabled your run is invalid even if you disable it again (score remains bright green.)
+- Added "Logs: X" text to HUD to display how many Relogs have been done. Much requested. Note that `/trophyhunt` also still displays this information in the chat console and log file.
+- Added `/ignorelogouts` Chat Console command to make it so that logouts no longer count against your score. (@gregscottbailey request)
+	- WARNING: This invalidates the run for Tournament play. "Logs:" text will display dimmed and score bright green if you use this.
+- Changed Trophy animation when you get your first trophy to read better on streams (Yes, again. I think it's less jarring AND more visible now.)
+- Repositioned Deaths counter on the HUD to read better and take up less space
+- Removed Luck-O-Meter "Luck" text and repositioned icon in HUD
+- Reworked Luck-O-Meter tooltip to make it easier to read and less deluxe
+- Added black outline to Score text to make it more readable against light backgrounds like the Mountains or staring at the sun.
 - Fixed a bug where logging out, deleting your character, creating a new character with the same name and entering play would retain old player data for kills, trophy drops and /showpath pins (thanks @da_Keepa and @Xmal!)
+- Fixed a bug with Luck Rating where my logic was reversed and it would display luck ratings if no luck was calculable yet
+- Fixed a bug where animating trophy would drift upwards on screen if pausing while it was flashing
 
 ## Previous Changes
 
@@ -128,6 +147,16 @@ A death counter appears to the left of the health and food bar, as deaths count 
 `/showtrophies`
 
 	Toggles the display of Trophy icons at the bottom of the screen for when you can't even, or the display conflicts with other mods
+
+`/showallenemydeaths` 
+
+	Chat Console command to see all the info including world kills and world trophy drops (this adds the data we had before back to the tooltips).
+	- WARNING: This invalidates your run for Tournament play and colors your score bright green to indicate this.
+
+`/ignorelogouts`
+	
+	Chat Console command to make it so that logouts no longer count against your score. 
+	- WARNING: This invalidates your run for Tournament play and colors your score bright green and fades Logs: text to gray to indicate this.
 
 *Experimental F5 Console Command*
 

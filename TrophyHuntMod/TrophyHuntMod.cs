@@ -77,7 +77,7 @@ namespace TrophyHuntMod
 
         const float LOGOUT_PENALTY_GRACE_DISTANCE = 50.0f;  // total distance you're allowed to walk/run from initial spawn and get a free logout to clear wet debuff
 
-        const float DEFAULT_SCORE_FONT_SIZE = 28;
+        const float DEFAULT_SCORE_FONT_SIZE = 29;
 
         //
         // Trophy Scores updated from Discord chat 08/18/24
@@ -165,6 +165,7 @@ namespace TrophyHuntMod
         // UI Elements
         static GameObject __m_scoreTextElement = null;
         static GameObject __m_deathsTextElement = null;
+        static GameObject __m_relogsTextElement = null;
         static List<GameObject> __m_iconList = null;
 
         static float __m_baseTrophyScale = 1.4f;
@@ -191,10 +192,18 @@ namespace TrophyHuntMod
         static float __m_minPathPlayerMoveDistance = 50.0f;                     // the min distance the player has to have moved to consider storing the new path position
         static Vector3 __m_previousPlayerPos;                                   // last player position stored
 
+        // Only mod running flag
         static bool __m_onlyModRunning = false;
 
+        // Trophy rush flag
         static bool __m_trophyRushEnabled = false;
 
+        // Track all enemy deaths and trophies flag
+        static bool __m_showAllEnemyDeaths = false;
+        static bool __m_invalidForTournamentPlay = false;
+        static bool __m_ignoreLogouts = false;
+
+        // For tracking the unique ID for this user/player combo (unique to a given player character)
         static long __m_currentPlayerID = 0;
 
         public struct DropInfo
@@ -202,15 +211,18 @@ namespace TrophyHuntMod
             public DropInfo()
             {
                 m_numKilled = 0;
-                m_trophiesDropped = 0;
+                m_trophies = 0;
             }
 
             public int m_numKilled = 0;
-            public int m_trophiesDropped = 0;
+            public int m_trophies = 0;
         }
 
-        static Dictionary<string, DropInfo> __m_trophyDropInfo = new Dictionary<string, DropInfo>();
+        // ALL the killed enemies and trophy drops that happen in the game
+        static Dictionary<string, DropInfo> __m_allTrophyDropInfo = new Dictionary<string, DropInfo>();
 
+        // Just the killed enemies and trophies dropped and picked up by the player
+        static Dictionary<string, DropInfo> __m_playerTrophyDropInfo = new Dictionary<string, DropInfo>();
 
         private void Awake()
         {
@@ -248,11 +260,14 @@ namespace TrophyHuntMod
 
         public static void InitTrophyDropInfo()
         {
-            __m_trophyDropInfo.Clear();
+            __m_allTrophyDropInfo.Clear();
+            __m_playerTrophyDropInfo.Clear();
             foreach (TrophyHuntData td in __m_trophyHuntData)
             {
-                __m_trophyDropInfo.Add(td.m_name, new DropInfo());
+                __m_allTrophyDropInfo.Add(td.m_name, new DropInfo());
+                __m_playerTrophyDropInfo.Add(td.m_name, new DropInfo());
             }
+
         }
 
         // New Console Commands for TrophyHuntMod
@@ -363,7 +378,7 @@ namespace TrophyHuntMod
             //    }
             //});
 
-            ConsoleCommand trophyRush = new ConsoleCommand("trophyrush", "Toggle Trophy Rush Mode on and off", delegate (ConsoleEventArgs args)
+            ConsoleCommand trophyRushCommand = new ConsoleCommand("trophyrush", "Toggle Trophy Rush Mode on and off", delegate (ConsoleEventArgs args)
             {
                 if (Game.instance)
                 {
@@ -374,6 +389,62 @@ namespace TrophyHuntMod
                 ToggleTrophyRush();
             });
 
+            ConsoleCommand ignoreLogoutsCommand = new ConsoleCommand("ignorelogouts", "Don't subtract points for logouts", delegate (ConsoleEventArgs args)
+            {
+                if (!Game.instance)
+                {
+                    PrintToConsole("'/ignorelogouts' can only be used in gameplay.");
+                    return;
+                }
+
+                __m_ignoreLogouts = !__m_ignoreLogouts;
+
+                __m_invalidForTournamentPlay = true;
+
+                if (__m_scoreTextElement != null)
+                {
+                    if (__m_ignoreLogouts)
+                    {
+                        TMPro.TextMeshProUGUI tmText = __m_scoreTextElement.GetComponent<TMPro.TextMeshProUGUI>();
+
+                        tmText.color = Color.green;
+                    }
+                }
+
+                if (__m_relogsTextElement != null)
+                {
+                    if (__m_ignoreLogouts)
+                    {
+                        TMPro.TextMeshProUGUI tmText = __m_relogsTextElement.GetComponent<TMPro.TextMeshProUGUI>();
+
+                        tmText.color = Color.gray;
+                    }
+                }
+            });
+
+
+            ConsoleCommand showAllEnemyDeathsCommand = new ConsoleCommand("showallenemydeaths", "Toggle tracking ALL enemy deaths and trophies with JUST tracking player kills and trophies", delegate (ConsoleEventArgs args)
+            {
+                if (!Game.instance)
+                {
+                    PrintToConsole("'/showallenemydeaths' can only be used in gameplay.");
+                    return;
+                }
+
+                ToggleShowAllEnemyDeaths();
+
+                __m_invalidForTournamentPlay = true;
+
+                if (__m_scoreTextElement != null)
+                {
+                    if (__m_showAllEnemyDeaths)
+                    {
+                        TMPro.TextMeshProUGUI tmText = __m_scoreTextElement.GetComponent<TMPro.TextMeshProUGUI>();
+
+                        tmText.color = Color.green;
+                    }
+                }
+            });
 
             ConsoleCommand scoreScaleCommand = new ConsoleCommand("scorescale", "Scale the score text sizes (1.0 is default)", delegate (ConsoleEventArgs args)
             {
@@ -546,15 +617,50 @@ namespace TrophyHuntMod
             }
         }
 
+        public static void ToggleShowAllEnemyDeaths()
+        {
+            __m_showAllEnemyDeaths = !__m_showAllEnemyDeaths;
+
+            if (__m_showAllEnemyDeaths)
+            {
+                PrintToConsole($"Displaying ALL enemy deaths for kills and trophies!");
+                PrintToConsole($"WARNING: Not legal for Tournament Play!");
+            }
+            else
+            {
+                PrintToConsole($"Displaying ONLY Player enemy kills and picked up trophies!");
+            }
+
+            // If the game's running, fix the tooltip UI
+            if (Game.instance)
+            {
+                Player_OnSpawned_Patch.DeleteTrophyTooltip();
+                Player_OnSpawned_Patch.CreateTrophyTooltip();
+            }
+
+            if (__m_trophyHuntMainMenuText != null)
+            {
+                __m_trophyHuntMainMenuText.text = GetTrophyHuntMainMenuText();
+            }
+        }
+
         public static TextMeshProUGUI __m_trophyHuntMainMenuText = null;
 
         public static string GetTrophyHuntMainMenuText()
         {
             string textStr = $"<b><size=32><color=#FFB75B>TrophyHuntMod</color></size></b>\n<size=18>Version {PluginVersion}</size>";
 
+            if (__m_showAllEnemyDeaths)
+            {
+                textStr += ("\n<size=18><color=orange>Tracking ALL enemy deaths and trophies!</color>" +
+                            "\n<color=red>NOT LEGAL FOR TOURNAMENT PLAY!</color></size>");
+            }
+
             if (__m_trophyRushEnabled)
             {
-                textStr += "\n<size=24><color=red>Trophy Rush Enabled!</color></size>";
+                textStr += ("\n<size=18><color=orange>Trophy Rush Enabled!</color>" +
+                            "\n<color=red>NOT LEGAL FOR TOURNAMENT PLAY!</color></size>");
+
             }
 
             return textStr;
@@ -621,6 +727,11 @@ namespace TrophyHuntMod
                 // Cache already discovered trophies
                 __m_trophyCache = Player.m_localPlayer.GetTrophies();
 
+                if (__m_showAllEnemyDeaths || __m_trophyRushEnabled || __m_ignoreLogouts)
+                {
+                    __m_invalidForTournamentPlay = true;
+                }
+
                 // Create all the UI elements we need for this mod
                 BuildUIElements();
 
@@ -667,6 +778,12 @@ namespace TrophyHuntMod
                 // Reset logout count
                 __m_logoutCount = 0;
 
+                // Reset logout ignoring for new character
+                __m_ignoreLogouts = false;
+
+                // Reset whether we've shown enemy deaths
+                __m_invalidForTournamentPlay = false;
+
                 // Clear the map screen pin player location data
                 __m_playerPathData.Clear();
 
@@ -703,6 +820,11 @@ namespace TrophyHuntMod
                         __m_deathsTextElement = CreateDeathsElement(healthPanelTransform);
                     }
 
+                    if (__m_relogsTextElement == null)
+                    {
+                        __m_relogsTextElement = CreateRelogsElements(healthPanelTransform);
+                    }
+
                     __m_iconList = new List<GameObject>();
                     CreateTrophyIconElements(healthPanelTransform, __m_trophyHuntData, __m_iconList);
 
@@ -717,6 +839,38 @@ namespace TrophyHuntMod
                 }
             }
 
+            static GameObject CreateRelogsElements(Transform parentTransform)
+            {
+                GameObject relogsElement = new GameObject("RelogsElement");
+
+                // Set the parent to the HUD canvas
+                relogsElement.transform.SetParent(parentTransform);
+
+                // Add RectTransform component for positioning
+                RectTransform rectTransform = relogsElement.AddComponent<RectTransform>();
+                rectTransform.sizeDelta = new Vector2(60, 20); // Set size
+                rectTransform.anchoredPosition = new Vector2(-65, -105); // Set position
+
+                TMPro.TextMeshProUGUI tmText = relogsElement.AddComponent<TMPro.TextMeshProUGUI>();
+
+                tmText.text = $"Logs: {__m_logoutCount}";
+                tmText.fontSize = 16;
+                tmText.color = Color.yellow;
+                tmText.alignment = TextAlignmentOptions.Center;
+                tmText.raycastTarget = false;
+                tmText.enableAutoSizing = true;
+                tmText.fontMaterial.EnableKeyword("OUTLINE_ON");
+                tmText.outlineColor = Color.black;
+                tmText.outlineWidth = 0.06f; // Adjust the thickness
+
+                if (__m_ignoreLogouts)
+                {
+                    tmText.color = Color.gray;
+                }
+
+                return relogsElement;
+            }
+
             static GameObject CreateLuckOMeterElements(Transform parentTransform)
             {
                 Sprite luckSprite = GetTrophySprite("HelmetMidsummerCrown");
@@ -725,30 +879,28 @@ namespace TrophyHuntMod
                 luckElement.transform.SetParent(parentTransform);
 
                 RectTransform rectTransform = luckElement.AddComponent<RectTransform>();
-                rectTransform.sizeDelta = new Vector2(50, 50);
-                rectTransform.anchoredPosition = new Vector2(-75, -30);
+                rectTransform.sizeDelta = new Vector2(40, 40);
+                rectTransform.anchoredPosition = new Vector2(-70, -20);
 
                 UnityEngine.UI.Image image = luckElement.AddComponent<UnityEngine.UI.Image>();
                 image.sprite = luckSprite;
                 image.color = Color.white;
                 image.raycastTarget = true;
 
-                GameObject luckTextElement = new GameObject("LuckText");
-                luckTextElement.transform.SetParent(parentTransform);
-
-                RectTransform luckTextTransform = luckTextElement.AddComponent<RectTransform>();
-                luckTextTransform.sizeDelta = new Vector2(50, 20);
-                luckTextTransform.anchoredPosition = new Vector3(-75, -50);
-
-                TMPro.TextMeshProUGUI tmText = luckTextElement.AddComponent<TMPro.TextMeshProUGUI>();
-                tmText.text = "Luck";
-                tmText.fontSize = 14;
-                tmText.color = Color.yellow;
-                tmText.alignment = TextAlignmentOptions.Center;
-                tmText.raycastTarget = false;
+                //GameObject luckTextElement = new GameObject("LuckText");
+                //luckTextElement.transform.SetParent(parentTransform);%
+                //RectTransform luckTextTransform = luckTextElement.AddComponent<RectTransform>();
+                //luckTextTransform.sizeDelta = new Vector2(50, 20);
+                //luckTextTransform.anchoredPosition = new Vector3(-75, -50);
+                //TMPro.TextMeshProUGUI tmText = luckTextElement.AddComponent<TMPro.TextMeshProUGUI>();
+                //tmText.text = "Luck";
+                //tmText.fontSize = 14;
+                //tmText.color = Color.yellow;
+                //tmText.alignment = TextAlignmentOptions.Center;
+                //tmText.raycastTarget = false;
+                //                AddHoverTextTriggersToLuckObject(luckTextElement);
 
                 AddHoverTextTriggersToLuckObject(luckElement);
-                //                AddHoverTextTriggersToLuckObject(luckTextElement);
 
                 return luckElement;
             }
@@ -764,8 +916,8 @@ namespace TrophyHuntMod
 
                 // Add RectTransform component for positioning
                 RectTransform rectTransform = skullElement.AddComponent<RectTransform>();
-                rectTransform.sizeDelta = new Vector2(40, 40);
-                rectTransform.anchoredPosition = new Vector2(-75, -75); // Set position
+                rectTransform.sizeDelta = new Vector2(50, 50);
+                rectTransform.anchoredPosition = new Vector2(-70, -65); // Set position
 
                 // Add an Image component
                 UnityEngine.UI.Image image = skullElement.AddComponent<UnityEngine.UI.Image>();
@@ -778,7 +930,7 @@ namespace TrophyHuntMod
 
                 RectTransform deathsTextTransform = deathsTextElement.AddComponent<RectTransform>();
                 deathsTextTransform.sizeDelta = new Vector2(40, 40);
-                deathsTextTransform.anchoredPosition = new Vector2(-60, -100); // Set position
+                deathsTextTransform.anchoredPosition = rectTransform.anchoredPosition;
 
                 TMPro.TextMeshProUGUI tmText = deathsTextElement.AddComponent<TMPro.TextMeshProUGUI>();
                 tmText.text = $"{__m_deaths}";
@@ -792,16 +944,31 @@ namespace TrophyHuntMod
 
             static GameObject CreateScoreTextElement(Transform parentTransform)
             {
+                GameObject scoreBGElement = new GameObject("ScoreBG");
+                scoreBGElement.transform.SetParent(parentTransform);
+
+                Vector2 scorePos = new Vector2(-65, -140);
+                Vector2 scoreSize = new Vector2(70, 42);
+
+                //RectTransform bgTransform = scoreBGElement.AddComponent<RectTransform>();
+                //bgTransform.sizeDelta = scoreSize;
+                //bgTransform.anchoredPosition = scorePos;
+
+                //// Add an Image component for the background
+                //UnityEngine.UI.Image backgroundImage = scoreBGElement.AddComponent<UnityEngine.UI.Image>();
+                //backgroundImage.color = new Color(0, 0, 0, 0.75f); // Semi-transparent black background
+
                 // Create a new GameObject for the text
                 GameObject scoreTextElement = new GameObject("ScoreText");
 
                 // Set the parent to the HUD canvas
                 scoreTextElement.transform.SetParent(parentTransform);
 
+
                 // Add RectTransform component for positioning
                 RectTransform rectTransform = scoreTextElement.AddComponent<RectTransform>();
-                rectTransform.sizeDelta = new Vector2(200, 50); // Set size
-                rectTransform.anchoredPosition = new Vector2(-65, -140); // Set position
+                rectTransform.sizeDelta = scoreSize;
+                rectTransform.anchoredPosition = scorePos;
 
                 int scoreValue = 9999;
 
@@ -812,10 +979,19 @@ namespace TrophyHuntMod
                 tmText.color = Color.yellow;
                 tmText.alignment = TextAlignmentOptions.Center;
                 tmText.raycastTarget = false;
+                tmText.fontMaterial.EnableKeyword("OUTLINE_ON");
+                tmText.outlineColor = Color.black;
+                tmText.outlineWidth = 0.07f; // Adjust the thickness
+//                tmText.enableAutoSizing = true;
 
                 if (!__m_onlyModRunning)
                 {
                     tmText.color = Color.cyan;
+                }
+
+                if (__m_showAllEnemyDeaths || __m_invalidForTournamentPlay)
+                {
+                    tmText.color = Color.green;
                 }
 
                 return scoreTextElement;
@@ -1021,8 +1197,11 @@ namespace TrophyHuntMod
                 }
 
                 // Subtract points for logouts
-                Debug.LogWarning($"Subtracting score for {__m_logoutCount} logouts.");
-                score -= __m_logoutCount * LOGOUT_PENALTY;
+                //                Debug.LogWarning($"Subtracting score for {__m_logoutCount} logouts.");
+                if (!__m_ignoreLogouts)
+                {
+                    score -= __m_logoutCount * LOGOUT_PENALTY;
+                }
 
                 // Update the Score string
                 __m_scoreTextElement.GetComponent<TMPro.TextMeshProUGUI>().text = score.ToString();
@@ -1055,12 +1234,12 @@ namespace TrophyHuntMod
                         }
                         else
                         {
-                            targetImage.color = Color.black;
+                            targetImage.color = Color.green;
                         }
 
                         float flashScale = 1 + interpValue;
                         imageRect.localScale = new Vector3(__m_baseTrophyScale, __m_baseTrophyScale, __m_baseTrophyScale) * flashScale * __m_userTrophyScale;
-                        imageRect.anchoredPosition = imageRect.anchoredPosition + new Vector2(0, 1);
+                        imageRect.anchoredPosition = originalAnchoredPosition + (new Vector2(0, 40.0f) * flashScale);
 
                         yield return null;
                     }
@@ -1303,7 +1482,10 @@ namespace TrophyHuntMod
                         return;
                     }
 
-                    __m_logoutCount++;
+                    if (!__m_ignoreLogouts)
+                    {
+                        __m_logoutCount++;
+                    }
                 }
             }
 
@@ -1316,7 +1498,7 @@ namespace TrophyHuntMod
             static GameObject __m_luckTooltipObject = null;
             static GameObject __m_luckTooltipBackground = null;
             static TextMeshProUGUI __m_luckHoverText;
-            static Vector2 __m_luckTooltipWindowSize = new Vector2(230, 195);
+            static Vector2 __m_luckTooltipWindowSize = new Vector2(230, 140);
             static Vector2 __m_luckTooltipTextOffset = new Vector2(5, 2);
 
             public static void CreateLuckTooltip()
@@ -1400,7 +1582,7 @@ namespace TrophyHuntMod
                     new LuckRating (70.0f,      "Bad",          "#BF6000"),
                     new LuckRating (100.0f,     "Average",      "#BFBF00"),
                     new LuckRating (140.0f,     "Good",         "#00BF00"),
-                    new LuckRating (1000.0f,    "Bonkers",      "#6000BF"),
+                    new LuckRating (9999.0f,    "Bonkers",      "#6000BF"),
                 };
 
             public static int GetLuckRatingIndex(float luckPercentage)
@@ -1450,7 +1632,7 @@ namespace TrophyHuntMod
                 float unluckiestRatio = 0f;
 
                 // Compute Luck
-                foreach (KeyValuePair<string, DropInfo> entry in __m_trophyDropInfo)
+                foreach (KeyValuePair<string, DropInfo> entry in __m_playerTrophyDropInfo)
                 {
                     DropInfo di = entry.Value;
                     if (di.m_numKilled == 0)
@@ -1468,13 +1650,13 @@ namespace TrophyHuntMod
                     }
 
                     // Ignore if you haven't killed enough to get a drop
-                    if (di.m_trophiesDropped == 0 &&
+                    if (di.m_trophies == 0 ||
                         di.m_numKilled < (100 / data.m_dropPercent))
                     {
                         continue;
                     }
 
-                    float actualDropPercent = 100.0f * (float)di.m_trophiesDropped / (float)di.m_numKilled;
+                    float actualDropPercent = 100.0f * (float)di.m_trophies / (float)di.m_numKilled;
                     float wikiDropPercent = data.m_dropPercent;
 
                     float dropRatio = actualDropPercent / wikiDropPercent;
@@ -1506,34 +1688,35 @@ namespace TrophyHuntMod
                 string luckPercentStr = "<n/a>";
                 string luckRatingStr = "<n/a>";
                 float luckPercentage = 0.0f;
-                int luckRatingIndex = -1;
+//                int luckRatingIndex = -1;
 
                 if (numTrophyTypesKilled > 0)
                 {
                     luckPercentage = (100.0f * (cumulativeDropRatio / (float)numTrophyTypesKilled));
                     luckPercentStr = luckPercentage.ToString("0.0");
                     luckRatingStr = GetLuckRatingUIString(luckPercentage);
-                    luckRatingIndex = GetLuckRatingIndex(luckPercentage);
+//                    luckRatingIndex = GetLuckRatingIndex(luckPercentage);
 
                 }
 
                 string text =
                     $"<size=16><b><color=#FFB75B>Luck-O-Meter</color><b></size>\n" +
-                    $"<color=white>  Luck Score: </color><color=orange>{luckPercentStr}</color>\n" +
-                    $"<color=white>  Luck Rating: </color>\n";
+                    $"<color=white>  Player Luck Score: </color><color=orange>{luckPercentStr}</color>\n" +
+                    $"<color=white>  Player Luck Rating: </color>{luckRatingStr}\n";
 
-                int index = 0;
-                foreach (LuckRating luckRating in __m_luckRatingTable)
-                {
-                    string colorStr = "#606060";
-                    if (index == luckRatingIndex)
-                    {
-                        colorStr = luckRating.m_colorString;
-                    }
-                    text += $"      <color={colorStr}>{luckRating.m_luckString}</color>\n";
+                //int index = 0;
+                //foreach (LuckRating luckRating in __m_luckRatingTable)
+                //{
+                //    string colorStr = "#606060";
+                //    if (index == luckRatingIndex)
+                //    {
+                //        colorStr = luckRating.m_colorString;
+                //    }
+                //    text += $"      <color={colorStr}>{luckRating.m_luckString}</color>\n";
 
-                    index++;
-                }
+                //    index++;
+                //}
+
                 string luckiestColor = __m_luckRatingTable[GetLuckRatingIndex(luckiestRatio)].m_colorString;
                 string unluckiestColor = __m_luckRatingTable[GetLuckRatingIndex(unluckiestRatio)].m_colorString;
 
@@ -1589,13 +1772,19 @@ namespace TrophyHuntMod
             static GameObject __m_trophyTooltipObject = null;
             static GameObject __m_trophyTooltipBackground = null;
             static TextMeshProUGUI __m_trophyHoverText;
-            static Vector2 __m_trophyTooltipWindowSize = new Vector2(200, 95);
+            static Vector2 __m_trophyTooltipWindowSize = new Vector2(240, 95);
             static Vector2 __m_trophyTooltipTextOffset = new Vector2(5, 2);
+            static Vector2 __m_trophyTooltipAllEnemyDeathsWindowSize = new Vector2(240, 175);
 
             public static void CreateTrophyTooltip()
             {
                 Debug.LogWarning("Creating HoverText object");
 
+                Vector2 tooltipWindowSize = __m_trophyTooltipWindowSize;
+                if (__m_showAllEnemyDeaths)
+                {
+                    tooltipWindowSize = __m_trophyTooltipAllEnemyDeathsWindowSize;
+                }
 
                 // Tooltip Background
                 __m_trophyTooltipBackground = new GameObject("Tooltip Background");
@@ -1605,7 +1794,7 @@ namespace TrophyHuntMod
                 __m_trophyTooltipBackground.transform.SetParent(hudrootTransform, false);
 
                 RectTransform bgTransform = __m_trophyTooltipBackground.AddComponent<RectTransform>();
-                bgTransform.sizeDelta = __m_trophyTooltipWindowSize;
+                bgTransform.sizeDelta = tooltipWindowSize;
 
                 // Add an Image component for the background
                 UnityEngine.UI.Image backgroundImage = __m_trophyTooltipBackground.AddComponent<UnityEngine.UI.Image>();
@@ -1619,7 +1808,7 @@ namespace TrophyHuntMod
 
                 // Add a RectTransform component for positioning
                 RectTransform rectTransform = __m_trophyTooltipObject.AddComponent<RectTransform>();
-                rectTransform.sizeDelta = new Vector2(__m_trophyTooltipWindowSize.x - __m_trophyTooltipTextOffset.x, __m_trophyTooltipWindowSize.y - __m_trophyTooltipTextOffset.y);
+                rectTransform.sizeDelta = new Vector2(tooltipWindowSize.x - __m_trophyTooltipTextOffset.x, tooltipWindowSize.y - __m_trophyTooltipTextOffset.y);
 
                 // Add a TextMeshProUGUI component for displaying the tooltip text
                 __m_trophyHoverText = __m_trophyTooltipObject.AddComponent<TextMeshProUGUI>();
@@ -1629,6 +1818,21 @@ namespace TrophyHuntMod
 
                 // Initially hide the tooltip
                 __m_trophyTooltipObject.SetActive(false);
+            }
+
+            public static void DeleteTrophyTooltip()
+            {
+                if (__m_trophyTooltipObject != null)
+                {
+                    GameObject.Destroy(__m_trophyTooltipObject);
+                    __m_trophyTooltipObject = null;
+                }
+
+                if (__m_trophyTooltipBackground)
+                {
+                    GameObject.Destroy(__m_trophyTooltipBackground);
+                    __m_trophyTooltipBackground = null;
+                }
             }
 
             public static void AddHoverTextTriggersToTrophyIcon(GameObject trophyIconObject)
@@ -1658,6 +1862,32 @@ namespace TrophyHuntMod
                 trigger.triggers.Add(entryExit);
             }
 
+            public static void CalculateDropPercentAndRating(TrophyHuntData trophyHuntData, DropInfo dropInfo, out string dropPercentStr, out string dropRatingStr)
+            {
+                dropPercentStr = "0";
+                dropRatingStr = "<n/a>";
+
+                if (dropInfo.m_numKilled > 0)
+                {
+                    float dropPercent = 0.0f;
+                    float expectedDropPercent = trophyHuntData.m_dropPercent;
+
+                    dropPercent = (100.0f * ((float)dropInfo.m_trophies / (float)dropInfo.m_numKilled));
+                    dropPercentStr = dropPercent.ToString("0.0");
+
+                    // Don't compute for 100% drop enemies
+                    if (trophyHuntData.m_dropPercent < 100)
+                    {
+                        if (dropInfo.m_trophies > 0 &&
+                            dropInfo.m_numKilled >= (100 / expectedDropPercent))
+                        {
+                            float ratingPercent = 100 * (dropPercent / expectedDropPercent);
+                            dropRatingStr = GetLuckRatingUIString(ratingPercent);
+                        }
+                    }
+                }
+            }
+
             public static string BuildTrophyTooltipText(GameObject uiObject)
             {
                 if (uiObject == null)
@@ -1669,43 +1899,39 @@ namespace TrophyHuntMod
 
                 TrophyHuntData trophyHuntData = Array.Find(__m_trophyHuntData, element => element.m_name == trophyName);
 
-                DropInfo dropInfo = __m_trophyDropInfo[trophyName];
+                DropInfo allTrophyDropInfo = __m_allTrophyDropInfo[trophyName];
+                DropInfo playerDropInfo = __m_playerTrophyDropInfo[trophyName];
 
                 //                Debug.LogWarning($"dropped: {dropInfo.m_trophiesDropped} killed: {dropInfo.m_numKilled} percent:{trophyHuntData.m_dropPercent}");
 
-                string dropPercentStr = "0";
-                string dropRatingStr = "<n/a>";
-                float dropPercent = 0.0f;
+                string playerDropPercentStr = "0";
+                string playerDropRatingStr = "<n/a>";
 
-                float expectedDropPercent = trophyHuntData.m_dropPercent;
+                CalculateDropPercentAndRating(trophyHuntData, playerDropInfo, out playerDropPercentStr, out playerDropRatingStr);
 
-                if (dropInfo.m_numKilled > 0)
-                {
-                    dropPercent = (100.0f * ((float)dropInfo.m_trophiesDropped / (float)dropInfo.m_numKilled));
-                    dropPercentStr = dropPercent.ToString("0.0");
+                string allTrophyDropPercentStr = "0";
+                string allTrophyDropRatingStr = "<n/a>";
 
-                    // Don't compute for 100% drop enemies
-                    if (trophyHuntData.m_dropPercent < 100)
-                    {
-                        if (dropInfo.m_trophiesDropped > 0 ||
-                            dropInfo.m_numKilled >= (100 / expectedDropPercent))
-                        {
-                            float ratingPercent = 100 * (dropPercent / expectedDropPercent);
-                            dropRatingStr = GetLuckRatingUIString(ratingPercent);
-                        }
-                    }
-                }
+                CalculateDropPercentAndRating(trophyHuntData, allTrophyDropInfo, out allTrophyDropPercentStr, out allTrophyDropRatingStr);
 
                 string dropWikiPercentStr = trophyHuntData.m_dropPercent.ToString();
 
-
                 string text =
                     $"<size=16><b><color=#FFB75B>{trophyHuntData.m_prettyName}</color><b></size>\n" +
-                    $"<color=white>Kills: </color><color=orange>{dropInfo.m_numKilled}</color>\n" +
-                    $"<color=white>Trophies: </color><color=orange>{dropInfo.m_trophiesDropped}</color>\n" +
-                    $"<color=white>Drop Rate: </color><color=orange>{dropPercentStr}%</color> (<color=yellow>{dropWikiPercentStr}%)</color>\n" +
-                    $"<color=white>Luck Rating: <color=yellow>{dropRatingStr}</color>";
+                    $"<color=white>Player Kills: </color><color=orange>{playerDropInfo.m_numKilled}</color>\n" +
+                    $"<color=white>Trophies Picked Up: </color><color=orange>{playerDropInfo.m_trophies}</color>\n" +
+                    $"<color=white>Player Kill/Pickup Rate: </color><color=orange>{playerDropPercentStr}%</color> (<color=yellow>{dropWikiPercentStr}%)</color>\n" +
+                    $"<color=white>Player Luck Rating: <color=yellow>{playerDropRatingStr}</color>\n";
 
+                if (__m_showAllEnemyDeaths)
+                {
+                    text = text +
+                    $"<color=white>All Kills: </color><color=orange>{allTrophyDropInfo.m_numKilled}</color>\n" +
+                    $"<color=white>All Trophies: </color><color=orange>{allTrophyDropInfo.m_trophies}</color>\n" +
+                    $"<color=white>All Drop Rate: </color><color=orange>{allTrophyDropPercentStr}%</color> (<color=yellow>{dropWikiPercentStr}%)</color>\n" +
+                    $"<color=white>All Luck Rating: <color=yellow>{allTrophyDropRatingStr}</color>\n";
+
+                }
                 return text;
             }
 
@@ -1754,10 +1980,11 @@ namespace TrophyHuntMod
 
             public static void RecordDroppedTrophy(string characterName, string trophyName)
             {
-                DropInfo drop = __m_trophyDropInfo[trophyName];
-                drop.m_trophiesDropped++;
-                __m_trophyDropInfo[trophyName] = drop;
+                DropInfo drop = __m_allTrophyDropInfo[trophyName];
+                drop.m_trophies++;
+                __m_allTrophyDropInfo[trophyName] = drop;
             }
+
             public static string EnemyNameToTrophyName(string enemyName)
             {
                 int index = Array.FindIndex(__m_trophyHuntData, element => element.m_enemies.Contains(enemyName));
@@ -1766,13 +1993,39 @@ namespace TrophyHuntMod
                 return __m_trophyHuntData[index].m_name;
             }
 
-            public static void RecordTrophyCapableKill(string characterName)
+            public static void RecordPlayerPickedUpTrophy(string trophyName)
+            {
+                if (__m_playerTrophyDropInfo.ContainsKey(trophyName))
+                {
+                    DropInfo drop = __m_playerTrophyDropInfo[trophyName];
+                    drop.m_trophies++;
+                    __m_playerTrophyDropInfo[trophyName] = drop;
+                }
+            }
+
+            public static void RecordTrophyCapableKill(string characterName, bool killedByPlayer)
             {
                 string trophyName = EnemyNameToTrophyName(characterName);
-                DropInfo drop = __m_trophyDropInfo[trophyName];
-                drop.m_numKilled++;
 
-                __m_trophyDropInfo[trophyName] = drop;
+                if (killedByPlayer)
+                {
+                    Debug.Log($"{characterName} killed by Player");
+
+                    DropInfo drop = __m_playerTrophyDropInfo[trophyName];
+                    drop.m_numKilled++;
+
+                    __m_playerTrophyDropInfo[trophyName] = drop;
+
+                }
+                else
+                {
+                    Debug.Log($"{characterName} killed not by Player");
+
+                    DropInfo drop = __m_allTrophyDropInfo[trophyName];
+                    drop.m_numKilled++;
+
+                    __m_allTrophyDropInfo[trophyName] = drop;
+                }
             }
 
             // Watch character drops and see what characters drop what items (actual dropped items)
@@ -1800,7 +2053,7 @@ namespace TrophyHuntMod
 
                         Debug.Log($"Trophy-capable character {characterName} has dropped items:");
 
-                        RecordTrophyCapableKill(characterName);
+                        RecordTrophyCapableKill(characterName, false);
 
                         bool droppedTrophy = false;
 
@@ -1859,6 +2112,110 @@ namespace TrophyHuntMod
                         }
                     }
                 }
+            }
+
+            [HarmonyPatch(typeof(Character), nameof(Character.OnDeath))]
+            public class Character_OnDeath_Patch
+            {
+                static void Postfix(Character __instance)
+                {
+                    Character character = __instance;
+                    // Check if the attacker is the local player
+                    bool playerHit = false;
+                    if (Player.m_localPlayer != null &&
+                        character.m_lastHit != null && 
+                        character.m_lastHit.GetAttacker() == Player.m_localPlayer)
+                    {
+                        playerHit = true;
+                    }
+
+                    if (playerHit)
+                    {
+                        // The local player killed this enemy
+                        Debug.Log($"Player killed {__instance.name}");
+
+                        string characterName = __instance.m_name;
+                        if (CharacterCanDropTrophies(characterName))
+                        {
+                            Debug.Log($"Trophy-capable character {characterName} was killed by Player.");
+
+                            RecordTrophyCapableKill(characterName, true);
+                        }
+                    }
+                }
+            }
+            
+            // Called when an item is added to the player's inventory
+            [HarmonyPatch(typeof(Humanoid), nameof(Humanoid.Pickup))]
+            public class Humanoid_Pickup_Patch
+            {
+                // The Postfix method runs after the original method has been executed
+                static void Postfix(GameObject go, bool autoequip, bool autoPickupDelay, bool __result)
+                {
+                    ItemDrop component = go.GetComponent<ItemDrop>();
+                    ItemDrop.ItemData item = component.m_itemData;
+
+                    if (__result && item != null && item.m_dropPrefab != null)
+                    {
+                        // Log the item name to the console when the player picks it up
+                        // You can add further logic here to check the item type or trigger specific events
+                        RecordPlayerPickedUpTrophy(item.m_dropPrefab.name);
+                    }
+                }
+            }
+
+            public static void AddShowAllEnemyDeathsButton(Transform parentTransform)
+            {
+                // Clone the existing button
+                GameObject trophyRushButton = new GameObject("TrophyRushButton");
+                trophyRushButton.transform.SetParent(parentTransform);
+
+                // The UI RectTransform for the button
+                RectTransform rectTransform = trophyRushButton.AddComponent<RectTransform>();
+                rectTransform.localScale = Vector3.one;
+                rectTransform.anchorMin = new Vector2(1.0f, 0.0f);
+                rectTransform.anchorMax = new Vector2(1.0f, 0.0f);
+                rectTransform.pivot = new Vector2(1.0f, 0.0f);
+                rectTransform.anchoredPosition = new Vector2(0, -50); // Position below the logo
+                rectTransform.sizeDelta = new Vector2(200, 20);
+
+                // Add the Button component
+                Button button = trophyRushButton.AddComponent<Button>();
+
+                ColorBlock cb = button.colors;
+                cb.normalColor = Color.black;
+                cb.highlightedColor = Color.yellow;  // When hovering
+                cb.pressedColor = Color.red;      // When pressed
+                cb.selectedColor = Color.white;   // When selected
+                button.colors = cb;
+
+                // Add an Image component for the button background
+                UnityEngine.UI.Image image = trophyRushButton.AddComponent<UnityEngine.UI.Image>();
+                image.color = Color.white; // Set background color
+
+                // Create a sub-object for the text because the GameObject can't have an Image and a Text object
+                GameObject textObject = new GameObject("ShowAllEnemiesButtonText");
+                textObject.transform.SetParent(trophyRushButton.transform);
+
+                // Set the Text RectTransform
+                RectTransform textRect = textObject.AddComponent<RectTransform>();
+                //                textRect.sizeDelta = new Vector2(130, 40);
+                textRect.anchoredPosition = new Vector2(0, 0);
+
+                // Change the button's text
+                TextMeshProUGUI buttonText = textObject.AddComponent<TextMeshProUGUI>();
+                buttonText.text = "<b>Show All Enemy Deaths/Trophies<b>";
+                buttonText.fontSize = 12;
+                buttonText.color = Color.black;
+                buttonText.alignment = TextAlignmentOptions.Center;
+
+                // Set up the click listener
+                button.onClick.AddListener(ShowAllEnemyDeathsButtonClick);
+            }
+
+            public static void ShowAllEnemyDeathsButtonClick()
+            {
+                ToggleShowAllEnemyDeaths();
             }
 
             public static void AddTrophyRushButton(Transform parentTransform)
@@ -1938,7 +2295,7 @@ namespace TrophyHuntMod
                             rectTransform.anchorMax = new Vector2(1.0f, 0.5f);
                             rectTransform.pivot = new Vector2(1.0f, 1.0f);
                             rectTransform.anchoredPosition = new Vector2(-20, 0); // Position below the logo
-                            rectTransform.sizeDelta = new Vector2(200, 100);
+                            rectTransform.sizeDelta = new Vector2(200, 155);
 
                             // Add a TextMeshProUGUI component
                             __m_trophyHuntMainMenuText = textObject.AddComponent<TextMeshProUGUI>();
@@ -1953,6 +2310,8 @@ namespace TrophyHuntMod
 
 
                             AddTrophyRushButton(textObject.transform);
+                            AddShowAllEnemyDeathsButton(textObject.transform);
+
                         }
                         else
                         {
