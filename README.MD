@@ -18,8 +18,44 @@ Two Options:
 
 ## What's New?
 
-v0.4.0
+v0.5.0
+- Official support for two Game Modes (**Trophy Hunt**, and **Trophy Rush**) in UI and HUD
+	- "Toggle Trophy Rush" button on Main Menu replaced with "Toggle Game Mode" which cycles between Trophy Hunt and Trophy Rush game modes
+	- Game Mode Rules are listed under the game mode on the Main Menu including Logout and Death penalties
+	- Trophy Rush
+		- Creating new world with this option enabled will default to Trophy Rush settings in World Modifiers
+			- Resources x3
+			- Very Hard Combat
+			- Logout Penalty: -5 points
+			- Death Penalty: -5 points
+		- Once the world is created, you can still change World Modifiers for the world however you like, but having Trophy Rush enabled when creating a New World will create a world with the above modifiers by default.
+	- Trophy Hunt
+		- Standard "Normal Settings" world modifiers are applied as per normal for Valheim
+			- Resources x1
+			- Normal Combat
+			- Logout Penalty: -10 points
+			- Death Penalty: -20 points
+	- Wrote code to report game mode to online Tracker along with other data, disabled for now
+	- No longer color score green in Trophy Rush showing that it's invalid for tournament play, since this is being considered for a tournament variant. Unfound trophy icons are still dark red, indicating Trophy Rush is enabled.
+- Reordered the Trophy icons in the HUD by moving Ocean (Serpent) and the four Hildir's Quest trophies to the end of the list. Thanks for the suggestion @Warband
+- Added Score Tooltip showing score breakdown and penalty costs for the current game mode (Trophy Hunt or Trophy Rush)
+- Show All Trophy Stats Feature
+	- Added `/showalltrophystats` Chat Console command to replace the poorly-named and hard to find `/showallenemydeaths` console command. Thanks @Spazzyjones and @Threadmenace for having a hard time finding it.
+	- Removed the button from the Main Menu since the command line toggle is available in game.
+	- Fixed a bug where the tooltip would lose its shit and flash erratically when hovering over a trophy with `/showalltrophystats` enabled.
+- Fixed visual bug with Logouts count where it wouldn't update when you first started playing a new character if you'd previous had a logout on another one (actual score was still correct, though)
+- Fixed formatting error with Luck-O-Meter tooltip on luckiest and unluckiest percentages where it would display "a million trillion" decimal places.
+- Fixed Luck-O-Meter tooltip getting clipped off the left edge of the screen
+- Increased Score font size slightly
+- Made trophy pickup animation even more eye catching for better stream visibility
 
+## Previous Changes
+
+v0.4.1
+- A few visual tweaks to the Relog counter icon
+- Fixed a bug with animating Trophy offset
+
+v0.4.0
 - Killed/Trophy-drop Tooltips Nerfed!
 	- These were discussed and determined to be OP.
 	- Killed/Trophy Drop tooltips *now use PLAYER enemy kills and PLAYER trophy pickups* rather than world enemy deaths and world trophy drops!
@@ -28,7 +64,7 @@ v0.4.0
 	- Luck-O-Meter now only counts Player enemy kills and picked up Trophy drops when calculating Luck Rating, Luckiest and Unluckies mobs
 	- BUT! You can now use `/showallenemydeaths` Chat Console command to see all the info including world kills and world trophy drops (this adds the data we had before back to the tooltips).
 		- WARNING: This invalidates your run for Tournament play and colors your score bright green to indicate this. EX: Use this at the end of a run to inspect actual world drops.
-	- Added a new button on the main menu "Show All Enemy Deaths" to enable/disable this prior to gameplay for the console command shy.
+	- Added a new button on the main menu "Show All Enemy Deaths" to enable/disable this prior to gameplay for the console-command shy.
 	- Note that once it's been enabled your run is invalid even if you disable it again (score remains bright green.)
 - Added "Logs: X" text to HUD to display how many Relogs have been done. Much requested. Note that `/trophyhunt` also still displays this information in the chat console and log file.
 - Added `/ignorelogouts` Chat Console command to make it so that logouts no longer count against your score. (@gregscottbailey request)
@@ -41,8 +77,6 @@ v0.4.0
 - Fixed a bug where logging out, deleting your character, creating a new character with the same name and entering play would retain old player data for kills, trophy drops and /showpath pins (thanks @da_Keepa and @Xmal!)
 - Fixed a bug with Luck Rating where my logic was reversed and it would display luck ratings if no luck was calculable yet
 - Fixed a bug where animating trophy would drift upwards on screen if pausing while it was flashing
-
-## Previous Changes
 
 v0.3.3
 - Added `/scorescale` chat console command to alter the score text size. 1.0 is the default, can go as low or high as you like. Use `/scorescale 1.5` to increase the text size by 50%. Thanks @turbero.
@@ -148,7 +182,7 @@ A death counter appears to the left of the health and food bar, as deaths count 
 
 	Toggles the display of Trophy icons at the bottom of the screen for when you can't even, or the display conflicts with other mods
 
-`/showallenemydeaths` 
+`/showalltrophystats` 
 
 	Chat Console command to see all the info including world kills and world trophy drops (this adds the data we had before back to the tooltips).
 	- WARNING: This invalidates your run for Tournament play and colors your score bright green to indicate this.
