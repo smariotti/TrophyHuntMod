@@ -18,6 +18,25 @@ Two Options:
 
 ## What's New?
 
+v0.5.5
+- Added Biome Completion Bonuses!
+	- Implemented this so we can try it out and see what we think. Using suggested score values from @Archy
+	- Adds additional points for completing *all* of the trophies in a given Biome (bosses and Hildir quest trophies excluded)
+	    ```+20  Meadows
+	    +40  Black Forest
+	    +40  Swamp
+	    +60  Mountains
+	    +60  Plains
+	    +80  Mistlands
+	    +100 Ashlands
+	- Added festive animation to Trophy icons for when you complete a Biome. You spin me right 'round, baby, right 'round.
+	- Thanks to @Warband for the suggestion of Biome Bonuses!
+- Added Biome Bonus tally to Score tooltip
+- Removed "Total Score" from Score tooltip since it was redundant and took up space needed for Biome Bonus tallying
+- Fixed a bug with Score tooltip where it got cut off on the left side of the screen.
+
+## Previous Changes
+
 v0.5.0
 - Official support for two Game Modes (**Trophy Hunt**, and **Trophy Rush**) in UI and HUD
 	- "Toggle Trophy Rush" button on Main Menu replaced with "Toggle Game Mode" which cycles between Trophy Hunt and Trophy Rush game modes
@@ -48,8 +67,6 @@ v0.5.0
 - Fixed Luck-O-Meter tooltip getting clipped off the left edge of the screen
 - Increased Score font size slightly
 - Made trophy pickup animation even more eye catching for better stream visibility
-
-## Previous Changes
 
 v0.4.1
 - A few visual tweaks to the Relog counter icon

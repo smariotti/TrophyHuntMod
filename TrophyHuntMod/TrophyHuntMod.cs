@@ -31,7 +31,7 @@ namespace TrophyHuntMod
     {
         public const string PluginGUID = "com.oathorse.TrophyHuntMod";
         public const string PluginName = "TrophyHuntMod";
-        public const string PluginVersion = "0.5.0";
+        public const string PluginVersion = "0.5.5";
         private readonly Harmony harmony = new Harmony(PluginGUID);
 
         // Configuration variables
@@ -170,11 +170,39 @@ namespace TrophyHuntMod
             new Color(0.2f, 0.1f, 0.0f, 0.3f),  // Biome.Hildir
         };
 
+        public struct BiomeBonus
+        {
+            public BiomeBonus(Biome biome, string biomeName, int bonus, List<string> trophies)
+            {
+                m_biome = biome;
+                m_biomeName = biomeName;
+                m_bonus = bonus;
+                m_trophies = trophies;
+            }
+
+            public Biome m_biome;
+            public string m_biomeName;
+            public int m_bonus;
+            public List<string> m_trophies;
+        }
+
+        static public BiomeBonus[] __m_biomeBonuses = new BiomeBonus[]
+        {
+            new BiomeBonus(Biome.Meadows,   "Meadows",        20,      new List<string> { "TrophyBoar", "TrophyDeer", "TrophyNeck" }),
+            new BiomeBonus(Biome.Forest,    "Black Forest",   40,      new List<string> { "TrophyFrostTroll", "TrophyGreydwarf", "TrophyGreydwarfBrute", "TrophyGreydwarfShaman", "TrophySkeleton", "TrophySkeletonPoison" }),
+            new BiomeBonus(Biome.Swamp,     "Swamp",          40,      new List<string> { "TrophyAbomination", "TrophyBlob", "TrophyDraugr", "TrophyDraugrElite", "TrophyLeech", "TrophySurtling", "TrophyWraith" }),
+            new BiomeBonus(Biome.Mountains, "Mountains",      60,      new List<string> { "TrophyCultist", "TrophyFenring", "TrophyHatchling", "TrophySGolem", "TrophyUlv", "TrophyWolf" }),
+            new BiomeBonus(Biome.Plains,    "Plains",         60,      new List<string> { "TrophyDeathsquito", "TrophyGoblin", "TrophyGoblinBrute", "TrophyGoblinShaman", "TrophyGrowth", "TrophyLox" }),
+            new BiomeBonus(Biome.Mistlands, "Mistlands",      80,      new List<string> { "TrophyDvergr", "TrophyGjall", "TrophyHare", "TrophySeeker", "TrophySeekerBrute", "TrophyTick" }),
+            new BiomeBonus(Biome.Ashlands,  "Ashlands",       100,     new List<string> { "TrophyAsksvin", "TrophyBonemawSerpent", "TrophyCharredArcher", "TrophyCharredMage", "TrophyCharredMelee", "TrophyFallenValkyrie", "TrophyMorgen", "TrophyVolture" }),
+        };
+
         // UI Elements
         static GameObject __m_scoreTextElement = null;
         static GameObject __m_deathsTextElement = null;
         static GameObject __m_relogsTextElement = null;
         static List<GameObject> __m_iconList = null;
+        static List<GameObject> __m_biomeIconList = null;
 
         static float __m_baseTrophyScale = 1.4f;
         static float __m_userTrophyScale = 1.0f;
@@ -232,6 +260,9 @@ namespace TrophyHuntMod
         // Just the killed enemies and trophies dropped and picked up by the player
         static Dictionary<string, DropInfo> __m_playerTrophyDropInfo = new Dictionary<string, DropInfo>();
 
+        // Biomes we've completed 
+        static List<Biome> __m_completedBiomeBonuses = new List<Biome>();
+
         private void Awake()
         {
             // Get the list of loaded plugins
@@ -275,7 +306,7 @@ namespace TrophyHuntMod
                 __m_allTrophyDropInfo.Add(td.m_name, new DropInfo());
                 __m_playerTrophyDropInfo.Add(td.m_name, new DropInfo());
             }
-
+            __m_completedBiomeBonuses.Clear();
         }
 
         // New Console Commands for TrophyHuntMod
@@ -307,8 +338,11 @@ namespace TrophyHuntMod
                 PrintToConsole($"Penalties:");
                 PrintToConsole($"  Deaths: {__m_deaths} Score: {deathScore}");
                 PrintToConsole($"  Logouts: {__m_logoutCount} Score: {logoutScore}");
+                int biomeBonus = Player_OnSpawned_Patch.CalculateBiomeBonusScore(Player.m_localPlayer);
+                PrintToConsole($"Biome Bonus Total: {biomeBonus}");
                 score += deathScore;
                 score += logoutScore;
+                score += biomeBonus;
                 PrintToConsole($"Total Score: {score}");
 
                 return true;
@@ -899,6 +933,9 @@ namespace TrophyHuntMod
                     __m_iconList = new List<GameObject>();
                     CreateTrophyIconElements(healthPanelTransform, __m_trophyHuntData, __m_iconList);
 
+//                    __m_biomeIconList = new List<GameObject>();
+//                    CreateBiomeElements(healthPanelTransform, __m_biomeIconList);
+
                     // Create the hover text object
                     if (COLLECT_DROP_RATES)
                     {
@@ -1149,6 +1186,74 @@ namespace TrophyHuntMod
                 }
             }
 
+            //public static void DeleteBiomeElements(List<GameObject> biomeIconList)
+            //{
+            //    foreach (GameObject biomeIconObject in biomeIconList)
+            //    {
+            //        GameObject.Destroy(biomeIconObject);
+            //    }
+
+            //    biomeIconList.Clear();
+            //}
+
+            //public static void CreateBiomeElements(Transform parentTransform, List<GameObject> iconList)
+            //{
+            //    foreach (BiomeBonus biomeBonus in __m_biomeBonuses)
+            //    {
+            //        // Create a new GameObject for the icon
+            //        GameObject biomeIcon = new GameObject(biomeBonus.m_biomeName);
+            //        biomeIcon.transform.SetParent(parentTransform);
+
+            //        // Add RectTransform component for positioning Sprite
+            //        RectTransform iconRectTransform = biomeIcon.AddComponent<RectTransform>();
+
+            //        // Add an Image component for Sprite
+            //        UnityEngine.UI.Image iconImage = biomeIcon.AddComponent<UnityEngine.UI.Image>();
+            //        iconImage.color = new Color(1f, 1f, 1f, 0.5f);
+            //        iconImage.raycastTarget = false;
+
+            //        // Build the list of Biome elements from the trophy icon list
+            //        float biomeIconXPos = int.MaxValue;
+            //        float biomeIconYPos = int.MaxValue;
+
+            //        float biomeIconHeight = 0f;
+            //        float biomeIconWidth = 0f;
+
+            //        foreach (GameObject icon in iconList)
+            //        {
+            //            RectTransform iconRect = icon.GetComponent<RectTransform>();
+
+            //            // What biome is this trophy in?
+            //            TrophyHuntData trophyHuntData = Array.Find(__m_trophyHuntData, element => element.m_name == icon.name);
+
+            //            // If it's not the biome we're looking for, ignore it
+            //            if (trophyHuntData.m_biome != biomeBonus.m_biome)
+            //            {
+            //                continue;
+            //            }
+
+            //            // Only build the icon rectangle for the biome we're looking at
+            //            if (iconRect.anchoredPosition.x < biomeIconXPos)
+            //            {
+            //                biomeIconXPos = iconRect.anchoredPosition.x;
+            //            }
+
+            //            // Lazy grab, they're all at the same Y level
+            //            biomeIconYPos = iconRect.anchoredPosition.y;
+                        
+            //            biomeIconWidth += iconRect.sizeDelta.x;
+
+            //            // Lazy grab, assume they're all the same height
+            //            biomeIconHeight = iconRect.sizeDelta.y;
+            //        }
+
+            //        iconRectTransform.sizeDelta = new Vector2(biomeIconWidth, biomeIconHeight);
+            //        iconRectTransform.anchoredPosition = new Vector2(biomeIconXPos, biomeIconYPos);
+
+            //        __m_biomeIconList.Add(biomeIcon);
+            //    }
+            //}
+
             static Sprite GetTrophySprite(string trophyPrefabName)
             {
                 // Ensure the ObjectDB is loaded
@@ -1203,7 +1308,7 @@ namespace TrophyHuntMod
                 }
             }
 
-            static int ComputeTrophyScore(Player player)
+            static int CalculateTrophyScore(Player player)
             {
                 int score = 0;
                 foreach (string trophyName in player.GetTrophies())
@@ -1220,6 +1325,66 @@ namespace TrophyHuntMod
                 return score;
             }
 
+            static void CalculateBiomeBonusStats(Biome biome, out int numCollected, out int numTotal, out int biomeScore)
+            {
+                BiomeBonus biomeBonus = Array.Find(__m_biomeBonuses, element => element.m_biome == biome);
+
+                numCollected = 0;
+                numTotal = biomeBonus.m_trophies.Count;
+                biomeScore = biomeBonus.m_bonus;
+
+                foreach (string trophyName in biomeBonus.m_trophies)
+                {
+                    if (__m_trophyCache.Contains(trophyName))
+                    {
+                        numCollected++;
+                    }
+                }
+            }
+
+            public static int CalculateBiomeBonusScore(Player player)
+            {
+                int bonusScore = 0;
+
+                foreach (BiomeBonus biomeBonus in __m_biomeBonuses)
+                {
+                    int numCollected = 0;
+                    int numTotal = 0;
+                    int biomeScore = 0;
+
+                    CalculateBiomeBonusStats(biomeBonus.m_biome, out numCollected, out numTotal, out biomeScore);
+
+                    if (numCollected == numTotal)
+                    {
+                        bonusScore += biomeScore;
+                    }
+                }
+
+                return bonusScore;
+            }
+
+            // Returns TRUE if the trophy completes the set for a biome and adds that biome to the list of completed ones
+            public static bool UpdateBiomeBonusTrophies(string trophyName)
+            {
+                TrophyHuntData trophyHuntData = Array.Find(__m_trophyHuntData, element => element.m_name == trophyName);
+
+                int numCollected = 0;
+                int numTotal = 0;
+                int biomeScore = 0;
+
+                CalculateBiomeBonusStats(trophyHuntData.m_biome, out numCollected, out numTotal, out biomeScore);
+
+                if (numCollected == numTotal && !__m_completedBiomeBonuses.Contains(trophyHuntData.m_biome))
+                {
+                    PrintToConsole($"Biome Completed! {trophyHuntData.m_biome.ToString()}");
+
+                    __m_completedBiomeBonuses.Add(trophyHuntData.m_biome);
+
+                    return true;
+                }
+
+                return false;
+            }
             public static void EnableTrophyHuntIcons(Player player)
             {
                 // Enable found trophies
@@ -1228,6 +1393,16 @@ namespace TrophyHuntMod
                     EnableTrophyHuntIcon(trophyName);
                 }
             }
+
+            public static void EnableBiomes(Player player)
+            {
+                // Enable found trophies
+                foreach (string trophyName in player.GetTrophies())
+                {
+                    EnableTrophyHuntIcon(trophyName);
+                }
+            }
+
 
             static void UpdateTrophyHuntUI(Player player)
             {
@@ -1258,8 +1433,9 @@ namespace TrophyHuntMod
                 }
 
                 EnableTrophyHuntIcons(player);
+                EnableBiomes(player);
 
-                int score = ComputeTrophyScore(player);
+                int score = CalculateTrophyScore(player);
 
                 // Update the deaths text and subtract deaths from score
                 //
@@ -1290,6 +1466,8 @@ namespace TrophyHuntMod
                 {
                     score += CalculateLogoutPenalty();
                 }
+
+                score += CalculateBiomeBonusScore(player);
 
                 // Update the Score string
                 __m_scoreTextElement.GetComponent<TMPro.TextMeshProUGUI>().text = score.ToString();
@@ -1387,6 +1565,22 @@ namespace TrophyHuntMod
                 imageRect.anchoredPosition = originalAnchoredPosition;
             }
 
+            static IEnumerator FlashBiomeImage(UnityEngine.UI.Image targetImage, RectTransform imageRect)
+            {
+                float flashDuration = 6f;
+
+                Quaternion originalRotation = imageRect.rotation;
+
+                for (float t = 0.0f; t < flashDuration; t += Time.deltaTime)
+                {
+                    imageRect.localEulerAngles += new Vector3(0f, 0f, t);
+
+                    yield return null;
+                }
+
+                imageRect.rotation = originalRotation;
+            }
+
             static void FlashTrophy(string trophyName)
             {
                 GameObject iconGameObject = __m_iconList.Find(gameObject => gameObject.name == trophyName);
@@ -1411,6 +1605,32 @@ namespace TrophyHuntMod
                 }
             }
 
+            static void FlashBiomeTrophies(string trophyName)
+            {
+                TrophyHuntData trophyHuntData = Array.Find(__m_trophyHuntData, element => element.m_name == trophyName);
+
+                BiomeBonus biomeBonus = Array.Find(__m_biomeBonuses, element => element.m_biome == trophyHuntData.m_biome);
+
+                foreach(string biomeTrophyName in biomeBonus.m_trophies)
+                {
+                    GameObject iconGameObject = __m_iconList.Find(gameObject => gameObject.name == biomeTrophyName);
+                    if (iconGameObject != null)
+                    {
+                        UnityEngine.UI.Image image = iconGameObject.GetComponent<UnityEngine.UI.Image>();
+                        if (image != null)
+                        {
+                            RectTransform imageRect = iconGameObject.GetComponent<RectTransform>();
+
+                            if (imageRect != null)
+                            {
+                                // Flash it with a CoRoutine
+                                __m_trophyHuntMod.StartCoroutine(FlashBiomeImage(image, imageRect));
+                            }
+                        }
+                    }
+                }
+            }
+
             [HarmonyPatch(typeof(Player), nameof(Player.AddTrophy), new[] { typeof(ItemDrop.ItemData) })]
             public static class Player_AddTrophy_Patch
             {
@@ -1430,6 +1650,12 @@ namespace TrophyHuntMod
 
                             // Update Trophy cache
                             __m_trophyCache = player.GetTrophies();
+
+                            // Did we complete a biome bonus with this trophy?
+                            if (UpdateBiomeBonusTrophies(name))
+                            {
+                                FlashBiomeTrophies(name);
+                            }
 
                             UpdateTrophyHuntUI(player);
                         }
@@ -1634,7 +1860,7 @@ namespace TrophyHuntMod
             static GameObject __m_scoreTooltipObject = null;
             static GameObject __m_scoreTooltipBackground = null;
             static TextMeshProUGUI __m_scoreTooltipText;
-            static Vector2 __m_scoreTooltipWindowSize = new Vector2(220, 210);
+            static Vector2 __m_scoreTooltipWindowSize = new Vector2(290, 290);
             static Vector2 __m_scoreTooltipTextOffset = new Vector2(5, 2);
 
             public static void CreateScoreTooltip()
@@ -1717,7 +1943,20 @@ namespace TrophyHuntMod
                 text += $"  Trophies:\n    Num: <color=orange>{trophyCount}</color> <color=yellow>({CalculateTrophyPoints().ToString()} Points)</color>\n";
                 text += $"  Logouts: (Penalty: <color=red>{GetLogoutPointCost()}</color>)\n    Num: <color=orange>{__m_logoutCount}</color> <color=yellow>({CalculateLogoutPenalty().ToString()} Points)</color>\n";
                 text += $"  Deaths: (Penalty: <color=red>{GetDeathPointCost()}</color>)\n    Num: <color=orange>{__m_deaths}</color> <color=yellow>({CalculateDeathPenalty().ToString()} Points)</color>\n";
-                text += $"\n<size=18>  Total Score:\n    <color=yellow>{(CalculateTrophyPoints() + CalculateLogoutPenalty() + CalculateDeathPenalty()).ToString()} Points</color></size>\n";
+                text += $"  Biome Bonuses:\n";
+                foreach (BiomeBonus biomeBonus in __m_biomeBonuses)
+                {
+                    int numCollected, numTotal, biomeScore;
+                    
+                    CalculateBiomeBonusStats(biomeBonus.m_biome, out numCollected, out numTotal, out biomeScore);
+
+                    int bonusScore = 0;
+                    if (numCollected == numTotal)
+                    {
+                        bonusScore = biomeScore;
+                    }
+                    text += $"    {biomeBonus.m_biomeName} (+{biomeBonus.m_bonus}): <color=orange>{numCollected}/{numTotal}</color> <color=yellow>({bonusScore} Points)</color>\n";
+                }
                 text += $"</color></size>";
                 return text;
             }
@@ -1740,8 +1979,8 @@ namespace TrophyHuntMod
                 Vector3 desiredPosition = mousePosition + tooltipOffset;
 
                 // Clamp the tooltip window onscreen
-                if (desiredPosition.x < 150) desiredPosition.x = 150;
-                if (desiredPosition.y < 150) desiredPosition.y = 150;
+                if (desiredPosition.x < 200) desiredPosition.x = 200;
+                if (desiredPosition.y < 200) desiredPosition.y = 200;
                 if (desiredPosition.x > Screen.width - __m_scoreTooltipWindowSize.x)
                     desiredPosition.x = Screen.width - __m_scoreTooltipWindowSize.x;
                 if (desiredPosition.y > Screen.height - __m_scoreTooltipWindowSize.y)
@@ -1765,7 +2004,7 @@ namespace TrophyHuntMod
             static GameObject __m_luckTooltipObject = null;
             static GameObject __m_luckTooltipBackground = null;
             static TextMeshProUGUI __m_luckTooltip;
-            static Vector2 __m_luckTooltipWindowSize = new Vector2(230, 135);
+            static Vector2 __m_luckTooltipWindowSize = new Vector2(220, 135);
             static Vector2 __m_luckTooltipTextOffset = new Vector2(5, 2);
 
             public static void CreateLuckTooltip()
