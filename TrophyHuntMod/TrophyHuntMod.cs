@@ -836,6 +836,9 @@ namespace TrophyHuntMod
                 // Reset logout ignoring for new character
                 __m_ignoreLogouts = false;
 
+                // New players never start with show-all-stats
+                __m_showAllTrophyStats = false;
+
                 // Reset whether we've shown enemy deaths
                 __m_invalidForTournamentPlay = false;
 
