@@ -686,14 +686,14 @@ namespace TrophyHuntMod
             if (__m_trophyRushEnabled)
             {
                 // Trophy Rush game mode
-                text += "\n<align=\"left\"><size=18>Game Mode: <color=orange>Trophy Rush</color></size>\n";
+                text += "\n<align=\"left\"><size=18>Game Mode: <color=orange>Trophy Rush</color></size>\n<size=12> <color=yellow>NOTE:</color> To use existing world, requires changing World Modifiers manually!</size>\n";
                 resourceMultiplier = 3f;
                 combatDifficulty = "Very Hard";
             }
             else
             {
                 // Trophy Hunt game mode
-                text += "\n<align=\"left\"><size=18>Game Mode: <color=yellow>Trophy Hunt</color></size>\n<size=12> <color=yellow>NOTE:</color> To use existing world, requires changing World Modifiers manually!</size>\n";
+                text += "\n<align=\"left\"><size=18>Game Mode: <color=yellow>Trophy Hunt</color></size>\n";
             }
 
             text += "<align=\"left\"><size=14>    Rules:\n";
