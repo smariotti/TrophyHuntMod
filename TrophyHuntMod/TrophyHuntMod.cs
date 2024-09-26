@@ -31,7 +31,7 @@ namespace TrophyHuntMod
     {
         public const string PluginGUID = "com.oathorse.TrophyHuntMod";
         public const string PluginName = "TrophyHuntMod";
-        public const string PluginVersion = "0.5.5";
+        public const string PluginVersion = "0.5.6";
         private readonly Harmony harmony = new Harmony(PluginGUID);
 
         // Configuration variables
@@ -693,7 +693,7 @@ namespace TrophyHuntMod
             else
             {
                 // Trophy Hunt game mode
-                text += "\n<align=\"left\"><size=18>Game Mode: <color=yellow>Trophy Hunt</color></size>\n";
+                text += "\n<align=\"left\"><size=18>Game Mode: <color=yellow>Trophy Hunt</color></size>\n<size=12> <color=yellow>NOTE:</color> To use existing world, requires changing World Modifiers manually!</size>\n";
             }
 
             text += "<align=\"left\"><size=14>    Rules:\n";
@@ -1731,7 +1731,7 @@ namespace TrophyHuntMod
                 public string trophies;
                 public int deaths;
                 public int logouts;
- //               public string gamemode;
+                public string gamemode;
             }
 
             private static void SendScoreToLeaderboard(int score)
@@ -1752,7 +1752,7 @@ namespace TrophyHuntMod
                     trophies = trophyList,
                     deaths = __m_deaths,
                     logouts = __m_logoutCount,
-//                    gamemode = __m_trophyRushEnabled ? "TrophyRush" : "TrophyHunt"
+                    gamemode = __m_trophyRushEnabled ? "TrophyRush" : "TrophyHunt"
                 };
 
                 // Start the coroutine to post the data

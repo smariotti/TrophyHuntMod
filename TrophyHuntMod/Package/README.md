@@ -18,6 +18,13 @@ Two Options:
 
 ## What's New?
 
+v0.5.6
+- Fixed a bug where `/showalltrophystats` would persist when switching characters and/or game modes
+- Enabled reporting of gamemode to Tracker backend at valheim.help for future experiments and embiggenings
+- Added clarifying UI text for Trophy Rush if using it on an existing world.
+
+## Previous Changes
+
 v0.5.5
 - Added Biome Completion Bonuses!
 	- Implemented this so we can try it out and see what we think. Using suggested score values from @Archy
@@ -34,8 +41,6 @@ v0.5.5
 - Added Biome Bonus tally to Score tooltip
 - Removed "Total Score" from Score tooltip since it was redundant and took up space needed for Biome Bonus tallying
 - Fixed a bug with Score tooltip where it got cut off on the left side of the screen.
-
-## Previous Changes
 
 v0.5.0
 - Official support for two Game Modes (**Trophy Hunt**, and **Trophy Rush**) in UI and HUD
