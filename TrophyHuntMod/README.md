@@ -18,12 +18,17 @@ Two Options:
 
 ## What's New?
 
+v0.5.7
+- Accidentally put the Trophy Rush clarification text on the Trophy Hunt description, oops.. moved it to the Trophy Rush description as intended. Don't program when totally knackered.
+- Fixed a bug where clicking the "Toggle Game Mode" button and then hitting enter at the main menu would press the button again AND advance the Valheim UI screen, resulting in the wrong game mode being selected accidentally.
+- Cleaned up some UI to make room for future changes.
+
+## Previous Changes
+
 v0.5.6
 - Fixed a bug where `/showalltrophystats` would persist when switching characters and/or game modes
 - Enabled reporting of gamemode to Tracker backend at valheim.help for future experiments and embiggenings
 - Added clarifying UI text for Trophy Rush if using it on an existing world.
-
-## Previous Changes
 
 v0.5.5
 - Added Biome Completion Bonuses!

@@ -232,7 +232,30 @@ namespace TrophyHuntMod
         static bool __m_onlyModRunning = false;
 
         // Trophy rush flag
-        static bool __m_trophyRushEnabled = false;
+        public enum TrophyGameMode
+        {
+            TrophyHunt,
+            TrophyRush,
+            TrophyFiesta,
+            
+            Max
+        }
+
+//        static bool __m_trophyRushEnabled = false;
+
+        // TrophyHuntMod current Game Mode
+        static TrophyGameMode __m_trophyGameMode = TrophyGameMode.TrophyHunt;
+
+        static bool __m_fiestaFlashing = false;
+        static Color[] __m_fiestaColors = new Color[]
+        {
+            Color.red,
+            Color.green,
+            Color.blue,
+            Color.cyan,
+            Color.magenta,
+            Color.yellow,
+        };
 
         // Track all enemy deaths and trophies flag
         static bool __m_showAllTrophyStats = false;
@@ -634,14 +657,14 @@ namespace TrophyHuntMod
 
         public static void ToggleTrophyRush()
         {
-            __m_trophyRushEnabled = !__m_trophyRushEnabled;
-
-            string enabledStr = "OFF";
-            if (__m_trophyRushEnabled)
+            __m_trophyGameMode += 1;
+            if (__m_trophyGameMode >= TrophyGameMode.Max)
             {
-                enabledStr = "ON";
+                __m_trophyGameMode = TrophyGameMode.TrophyHunt;
             }
-            PrintToConsole($"Trophy Rush mode is set to {enabledStr}!");
+
+            //__m_trophyRushEnabled = !__m_trophyRushEnabled;
+
             if (__m_trophyHuntMainMenuText != null)
             {
                 __m_trophyHuntMainMenuText.text = GetTrophyHuntMainMenuText();
@@ -683,26 +706,36 @@ namespace TrophyHuntMod
 
             float resourceMultiplier = 1f;
             string combatDifficulty = "Normal";
-            if (__m_trophyRushEnabled)
+            string dropRate = "Normal";
+            switch (__m_trophyGameMode)
             {
-                // Trophy Rush game mode
-                text += "\n<align=\"left\"><size=18>Game Mode: <color=orange>Trophy Rush</color></size>\n<size=12> <color=yellow>NOTE:</color> To use existing world, requires changing World Modifiers manually!</size>\n";
-                resourceMultiplier = 3f;
-                combatDifficulty = "Very Hard";
-            }
-            else
-            {
-                // Trophy Hunt game mode
-                text += "\n<align=\"left\"><size=18>Game Mode: <color=yellow>Trophy Hunt</color></size>\n";
+                case TrophyGameMode.TrophyHunt:
+                    // Trophy Hunt game mode
+                    text += "\n<align=\"left\"><size=18>Game Mode: <color=yellow>Trophy Hunt</color></size>\n";
+                    break;
+                case TrophyGameMode.TrophyRush:
+                    // Trophy Rush game mode
+                    text += "\n<align=\"left\"><size=18>Game Mode: <color=orange>Trophy Rush</color></size>\n<size=12> <color=yellow>NOTE:</color> To use existing world, change World Modifiers manually!</size>\n";
+                    resourceMultiplier = 3f;
+                    combatDifficulty = "Very Hard";
+                    dropRate = "100%";
+                    break;
+                case TrophyGameMode.TrophyFiesta:
+                    text += "\n<align=\"left\"><size=18>Game Mode: <color=yellow>Trophy</color> <color=green>F</color><color=purple>i</color><color=red>e</color><color=yellow>s</color><color=orange>t</color><color=blue>a</color></size>\n";
+                    text += "\n<align=\"left\"><size=14><color=yellow>    Nothing to see here.</color></size>\n";
+                    break;
             }
 
-            text += "<align=\"left\"><size=14>    Rules:\n";
-            text += $"<align=\"left\">      * Resources: <color=orange>{resourceMultiplier}x</color>\n";
-            text += $"<align=\"left\">      * Combat Difficulty: <color=orange>{combatDifficulty}</color>\n";
-            text += $"<align=\"left\">      * Logout Penalty: <color=red>{Player_OnSpawned_Patch.GetLogoutPointCost()}</color>\n";
-            text += $"<align=\"left\">      * Death Penalty: <color=red>{Player_OnSpawned_Patch.GetDeathPointCost()}</color>\n";
-
-            text += "</size>";
+            if (__m_trophyGameMode != TrophyGameMode.TrophyFiesta)
+            {
+                text += "<align=\"left\"><size=14>    Rules:\n";
+                text += $"<align=\"left\">      * Resources: <color=orange>{resourceMultiplier}x</color>\n";
+                text += $"<align=\"left\">      * Combat Difficulty: <color=orange>{combatDifficulty}</color>\n";
+                text += $"<align=\"left\">      * Trophy Drop Rate: <color=orange>{dropRate}</color>\n";
+                text += $"<align=\"left\">      * Logout Penalty: <color=red>{Player_OnSpawned_Patch.GetLogoutPointCost()}</color>\n";
+                text += $"<align=\"left\">      * Death Penalty: <color=red>{Player_OnSpawned_Patch.GetDeathPointCost()}</color>\n";
+                text += "</size>";
+            }
 
             return text;
         }
@@ -870,7 +903,8 @@ namespace TrophyHuntMod
             public static int GetDeathPointCost()
             {
                 int deathCost = TROPHY_HUNT_DEATH_PENALTY;
-                if (__m_trophyRushEnabled)
+//                if (__m_trophyRushEnabled)
+                if (__m_trophyGameMode == TrophyGameMode.TrophyRush)
                     deathCost = TROPHY_RUSH_DEATH_PENALTY;
 
                 return deathCost;
@@ -886,7 +920,8 @@ namespace TrophyHuntMod
             public static int GetLogoutPointCost()
             {
                 int logoutCost = TROPHY_HUNT_LOGOUT_PENALTY;
-                if (__m_trophyRushEnabled)
+                //                if (__m_trophyRushEnabled)
+                if (__m_trophyGameMode == TrophyGameMode.TrophyRush)
                     logoutCost = TROPHY_RUSH_LOGOUT_PENALTY;
 
                 return logoutCost;
@@ -1150,7 +1185,8 @@ namespace TrophyHuntMod
                 iconImage.color = new Color(0.0f, 0.2f, 0.1f, 0.95f);
                 iconImage.raycastTarget = true;
 
-                if (__m_trophyRushEnabled)
+//                if (__m_trophyRushEnabled)
+                if (__m_trophyGameMode == TrophyGameMode.TrophyRush)
                 {
                     iconImage.color = new Color(0.5f, 0.0f, 0.0f);
                 }
@@ -1186,6 +1222,12 @@ namespace TrophyHuntMod
                     iconElement.name = trophy.m_name;
 
                     iconList.Add(iconElement);
+                }
+
+                if (__m_trophyGameMode == TrophyGameMode.TrophyFiesta)
+                {
+                    __m_fiestaFlashing = true;
+                    __m_trophyHuntMod.StartCoroutine(FlashTrophyFiesta());
                 }
             }
 
@@ -1584,6 +1626,66 @@ namespace TrophyHuntMod
                 imageRect.rotation = originalRotation;
             }
 
+
+            static IEnumerator FlashTrophyFiesta()
+            {
+                int startingColorIndex = 0;
+                float elapsedTime = 0f;
+                float flashInterval = 0.6f;
+
+                while (__m_fiestaFlashing)
+                {
+                    elapsedTime += Time.deltaTime;
+                    if (elapsedTime > flashInterval)
+                    {
+                        elapsedTime = 0f;
+
+                        int iconIndex = 0;
+                        foreach (GameObject go in __m_iconList)
+                        {
+                            if (go != null)
+                            {
+                                UnityEngine.UI.Image image = go.GetComponent<UnityEngine.UI.Image>();
+
+                                if (image != null)
+                                {
+                                    int colorIndex = (startingColorIndex + iconIndex) % __m_fiestaColors.Length;
+
+                                    if (image.color != Color.white)
+                                    {
+                                        Color color = __m_fiestaColors[colorIndex];
+                                        color.a = 0.5f;
+                                        image.color = color;
+                                    }
+                                }
+                            }
+
+                            iconIndex++;
+                        }
+
+                        if (++startingColorIndex >= __m_fiestaColors.Length)
+                        {
+                            startingColorIndex = 0;
+                        }
+                    }
+
+                    yield return null;
+                }
+
+                foreach (GameObject go in __m_iconList)
+                {
+                    if (go != null)
+                    {
+                        UnityEngine.UI.Image image = go.GetComponent<UnityEngine.UI.Image>();
+
+                        if (image != null)
+                        {
+                            image.color = Color.white;
+                        }
+                    }
+                }
+            }
+
             static void FlashTrophy(string trophyName)
             {
                 GameObject iconGameObject = __m_iconList.Find(gameObject => gameObject.name == trophyName);
@@ -1633,6 +1735,7 @@ namespace TrophyHuntMod
                     }
                 }
             }
+
 
             [HarmonyPatch(typeof(Player), nameof(Player.AddTrophy), new[] { typeof(ItemDrop.ItemData) })]
             public static class Player_AddTrophy_Patch
@@ -1752,7 +1855,9 @@ namespace TrophyHuntMod
                     trophies = trophyList,
                     deaths = __m_deaths,
                     logouts = __m_logoutCount,
-                    gamemode = __m_trophyRushEnabled ? "TrophyRush" : "TrophyHunt"
+                    gamemode = (__m_trophyGameMode == TrophyGameMode.TrophyHunt) 
+                                    ? "TrophyHunt" : (__m_trophyGameMode == TrophyGameMode.TrophyRush) 
+                                    ? "TrophyRush" : "TrophyFiesta" //__m_trophyRushEnabled ? "TrophyRush" : "TrophyHunt"
                 };
 
                 // Start the coroutine to post the data
@@ -1935,9 +2040,22 @@ namespace TrophyHuntMod
             {
                 string text = "<n/a>";
 
-                string gameModeText = "Trophy Hunt";
-                if (__m_trophyRushEnabled)
-                    gameModeText = "Trophy Rush";
+                string gameModeText = "";
+
+                switch (__m_trophyGameMode)
+                {
+                    case TrophyGameMode.TrophyHunt:
+                        gameModeText = "Trophy Hunt";
+                        break;
+                    case TrophyGameMode.TrophyRush:
+                        gameModeText = "Trophy Rush";
+                        break;
+                    case TrophyGameMode.TrophyFiesta:
+                        gameModeText = "Trophy Fiesta";
+                        break;
+                }
+//                if (__m_trophyRushEnabled)
+//                    gameModeText = "Trophy Rush";
 
                 int trophyCount = __m_trophyCache.Count;
 
@@ -2602,10 +2720,11 @@ namespace TrophyHuntMod
                             Debug.Log($"Trophy-capable character {characterName} had null drop list");
                         }
 
-                        if (__m_trophyRushEnabled && !droppedTrophy)
-                        {
-                            string trophyName = EnemyNameToTrophyName(characterName);
-                            Debug.Log($"Trophy Rush: No dropped {trophyName} for {characterName}");
+//                        if (__m_trophyRushEnabled && !droppedTrophy)
+                        if (__m_trophyGameMode == TrophyGameMode.TrophyRush && !droppedTrophy)
+                            {
+                                string trophyName = EnemyNameToTrophyName(characterName);
+//                            Debug.Log($"Trophy Rush: No dropped {trophyName} for {characterName}");
 
                             List<Drop> dropList = __instance.m_drops;
 
@@ -2615,11 +2734,11 @@ namespace TrophyHuntMod
                             {
                                 KeyValuePair<GameObject, int> newDropItem = new KeyValuePair<GameObject, int>(trophyDrop.m_prefab, 1);
 
-                                Debug.Log($"Trophy Rush: Adding {newDropItem.Key.name} for {characterName}");
+//                                Debug.Log($"Trophy Rush: Adding {newDropItem.Key.name} for {characterName}");
 
                                 if (__result == null)
                                 {
-                                    Debug.Log($"Trophy Rush: Empty drop list for {characterName}, adding {newDropItem.Key.name}");
+//                                    Debug.Log($"Trophy Rush: Empty drop list for {characterName}, adding {newDropItem.Key.name}");
 
                                     __result = new List<KeyValuePair<GameObject, int>>();
                                 }
@@ -2736,10 +2855,10 @@ namespace TrophyHuntMod
                 ToggleShowAllTrophyStats();
             }
 
-            public static void AddTrophyRushButton(Transform parentTransform)
+            public static void AddToggleGameModeButton(Transform parentTransform)
             {
                 // Clone the existing button
-                GameObject trophyRushButton = new GameObject("TrophyRushButton");
+                GameObject trophyRushButton = new GameObject("ToggleGameModeButton");
                 trophyRushButton.transform.SetParent(parentTransform);
 
                 // The UI RectTransform for the button
@@ -2748,7 +2867,7 @@ namespace TrophyHuntMod
                 rectTransform.anchorMin = new Vector2(1.0f, 0.0f);
                 rectTransform.anchorMax = new Vector2(1.0f, 0.0f);
                 rectTransform.pivot = new Vector2(1.0f, 0.0f);
-                rectTransform.anchoredPosition = new Vector2(-80, -65); // Position below the logo
+                rectTransform.anchoredPosition = new Vector2(-80, -75); // Position below the logo
                 rectTransform.sizeDelta = new Vector2(200, 25);
 
                 // Add the Button component
@@ -2761,12 +2880,16 @@ namespace TrophyHuntMod
                 cb.selectedColor = Color.white;   // When selected
                 button.colors = cb;
 
+                Navigation nav = new Navigation();
+                nav.mode = Navigation.Mode.None;
+                button.navigation = nav;
+
                 // Add an Image component for the button background
                 UnityEngine.UI.Image image = trophyRushButton.AddComponent<UnityEngine.UI.Image>();
                 image.color = Color.white; // Set background color
 
                 // Create a sub-object for the text because the GameObject can't have an Image and a Text object
-                GameObject textObject = new GameObject("TrophyRushButtonText");
+                GameObject textObject = new GameObject("ToggleGameModeButtonText");
                 textObject.transform.SetParent(trophyRushButton.transform);
 
                 // Set the Text RectTransform
@@ -2829,7 +2952,7 @@ namespace TrophyHuntMod
                             __m_trophyHuntMainMenuText.font = Resources.Load<TMP_FontAsset>("Valheim-AveriaSerifLibre");
                             __m_trophyHuntMainMenuText.fontStyle = FontStyles.Bold;
 
-                            AddTrophyRushButton(textObject.transform);
+                            AddToggleGameModeButton(textObject.transform);
 
                             // Don't bother adding this button to the main menu, but keep the code around for new buttons
                             //
@@ -2862,15 +2985,16 @@ namespace TrophyHuntMod
 
                     if (FejdStartup.m_instance.m_world != null)
                     {
-                        Debug.LogWarning("FejdStartup.m_instance.m_world.m_startingGlobalKeys 1");
+                        Debug.LogWarning("FejdStartup.m_instance.m_world.m_startingGlobalKeys");
                         foreach (string key in FejdStartup.m_instance.m_world.m_startingGlobalKeys)
                         {
                             Debug.LogWarning($"  world key: {key}");
                         }
 
-                        if (__m_trophyRushEnabled)
-                        {
-                            FejdStartup.m_instance.m_world.m_startingGlobalKeys.Clear();
+//                        if (__m_trophyRushEnabled)
+                        if (__m_trophyGameMode == TrophyGameMode.TrophyRush)
+                            {
+                                FejdStartup.m_instance.m_world.m_startingGlobalKeys.Clear();
 
                             FejdStartup.m_instance.m_world.m_startingGlobalKeys.Add("playerdamage 70");
                             FejdStartup.m_instance.m_world.m_startingGlobalKeys.Add("enemydamage 200");
@@ -2882,7 +3006,7 @@ namespace TrophyHuntMod
                             FejdStartup.m_instance.m_world.SaveWorldMetaData(DateTime.Now);
                             __instance.UpdateWorldList(centerSelection: true);
 
-                            Debug.LogWarning("FejdStartup.m_instance.m_world.m_startingGlobalKeys 2");
+//                            Debug.LogWarning("FejdStartup.m_instance.m_world.m_startingGlobalKeys 2");
                             foreach (string key in FejdStartup.m_instance.m_world.m_startingGlobalKeys)
                             {
                                 Debug.LogWarning($"  world key: {key}");
@@ -2938,6 +3062,47 @@ namespace TrophyHuntMod
                             }
                         }
             */
+
+            // Inventory Tracking
+            [HarmonyPatch(typeof(Inventory), nameof(Inventory.AddItem), new[] { typeof(ItemDrop.ItemData) })]
+            public static class Inventory_AddItem_Patch
+            {
+                static void Postfix(Inventory __instance, ItemDrop.ItemData item, bool __result)
+                {
+                    if (__instance == Player.m_localPlayer.GetInventory())
+                    {
+                        if (__result)
+                        {
+                            // Item successfully added to inventory
+                            Debug.LogError($"Item added to inventory: {item.m_shared.m_name}");
+                        }
+                    }
+                }
+            }
+
+            [HarmonyPatch(typeof(Inventory), nameof(Inventory.RemoveItem), new[] { typeof(ItemDrop.ItemData), typeof(int) })]
+            public static class Inventory_RemoveItem_Patch
+            {
+                static void Postfix(Inventory __instance, ItemDrop.ItemData item, int amount, bool __result)
+                {
+                    if (__instance == Player.m_localPlayer.GetInventory())
+                    {
+                        if (__result)
+                        {
+                            // Item successfully removed from inventory
+                            Debug.LogError($"Item removed from inventory: {item.m_shared.m_name} (Amount: {amount})");
+                        }
+
+                        Inventory playerInventory = Player.m_localPlayer.GetInventory();
+                        bool hasItem = playerInventory.ContainsItem(item);
+
+                        if (hasItem)
+                        {
+                            Debug.LogError($"Player has item: {item.m_shared.m_name}");
+                        }
+                    }
+                }
+            }
         }
     }
 }
