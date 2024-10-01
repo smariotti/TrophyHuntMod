@@ -19,9 +19,26 @@ Two Options:
 ## What's New?
 
 v0.5.7
-- Accidentally put the Trophy Rush clarification text on the Trophy Hunt description, oops.. moved it to the Trophy Rush description as intended. Don't program when totally knackered.
+- Trophy Hunt and Trophy Rush balance changes!
+	- Trophy Hunt
+		- Removed Biome Bonuses from Trophy Hunt game mode.
+	- Trophy Rush
+		- Decreased Trophy Rush resource drop rate to 2x (was 3x)
+		- Increased Trophy Rush death penalty to -10 Points (was -5 Points)
+		- Added Trophy Rush "/die" penalty at -20 Points
+- Added Trophy Saga game mode (experimental, use at your own risk)
+	- Resources drop rate at 1.5x
+	- Combat mode is Hard
+	- Trophies drop at higher than wiki rates
+	- No biome bonuses
+	- Svartalfar powers!
+		- All ores and scrap player picks up *off the ground* Insta-Smelt(tm) when they hit your inventory thanks to svartalf hand magic
+		- Boats are twice as fast due to svartalf sail strength
+	- Logouts and Deaths are both -5 Points
+- Accidentally put the Trophy Rush clarification text on the Trophy Hunt description, oops.. moved it to the Trophy Rush description as intended.
 - Fixed a bug where clicking the "Toggle Game Mode" button and then hitting enter at the main menu would press the button again AND advance the Valheim UI screen, resulting in the wrong game mode being selected accidentally.
-- Cleaned up some UI to make room for future changes.
+- Cleaned up some UI code to make room for future changes.
+- Fixed a bug where changing game modes or Worlds wouldn't reset stats, logouts and other session-specific data
 
 ## Previous Changes
 
