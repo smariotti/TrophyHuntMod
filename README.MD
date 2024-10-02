@@ -18,6 +18,14 @@ Two Options:
 
 ## What's New?
 
+v0.5.8
+- Trophy Saga
+	- Made unfound trophies dark blue to denote Saga mode
+	- Upped Death Penalty to -30 points
+	- Upped Logout Penalty to -15 points
+
+## Previous Changes
+
 v0.5.7
 - Trophy Hunt and Trophy Rush balance changes!
 	- Trophy Hunt
@@ -39,8 +47,6 @@ v0.5.7
 - Fixed a bug where clicking the "Toggle Game Mode" button and then hitting enter at the main menu would press the button again AND advance the Valheim UI screen, resulting in the wrong game mode being selected accidentally.
 - Cleaned up some UI code to make room for future changes.
 - Fixed a bug where changing game modes or Worlds wouldn't reset stats, logouts and other session-specific data
-
-## Previous Changes
 
 v0.5.6
 - Fixed a bug where `/showalltrophystats` would persist when switching characters and/or game modes

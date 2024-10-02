@@ -33,7 +33,7 @@ namespace TrophyHuntMod
     {
         public const string PluginGUID = "com.oathorse.TrophyHuntMod";
         public const string PluginName = "TrophyHuntMod";
-        public const string PluginVersion = "0.5.7";
+        public const string PluginVersion = "0.5.8";
         private readonly Harmony harmony = new Harmony(PluginGUID);
 
         // Configuration variables
@@ -84,8 +84,8 @@ namespace TrophyHuntMod
         const int TROPHY_RUSH_SLASHDIE_PENALTY = -10;
         const int TROPHY_RUSH_LOGOUT_PENALTY = -5;
 
-        const int TROPHY_SAGA_DEATH_PENALTY = -5;
-        const int TROPHY_SAGA_LOGOUT_PENALTY = -5;
+        const int TROPHY_SAGA_DEATH_PENALTY = -30;
+        const int TROPHY_SAGA_LOGOUT_PENALTY = -15;
         const float TROPHY_SAGA_SAILING_SPEED_MULTIPLIER = 2.0f;
         const float TROPHY_SAGA_DROP_MULTIPLIER = 1.5f;
 
@@ -1264,6 +1264,10 @@ namespace TrophyHuntMod
                 if (GetGameMode() == TrophyGameMode.TrophyRush)
                 {
                     iconImage.color = new Color(0.5f, 0.0f, 0.0f);
+                }
+                else if (GetGameMode() == TrophyGameMode.TrophySaga)
+                {
+                    iconImage.color = new Color(0f, 0f, 0.5f);
                 }
 
                 AddTooltipTriggersToTrophyIcon(iconElement);
