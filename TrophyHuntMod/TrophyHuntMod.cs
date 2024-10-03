@@ -33,7 +33,7 @@ namespace TrophyHuntMod
     {
         public const string PluginGUID = "com.oathorse.TrophyHuntMod";
         public const string PluginName = "TrophyHuntMod";
-        public const string PluginVersion = "0.5.8";
+        public const string PluginVersion = "0.5.9";
         private readonly Harmony harmony = new Harmony(PluginGUID);
 
         // Configuration variables
@@ -87,7 +87,7 @@ namespace TrophyHuntMod
         const int TROPHY_SAGA_DEATH_PENALTY = -30;
         const int TROPHY_SAGA_LOGOUT_PENALTY = -15;
         const float TROPHY_SAGA_SAILING_SPEED_MULTIPLIER = 2.0f;
-        const float TROPHY_SAGA_DROP_MULTIPLIER = 1.5f;
+        const float TROPHY_SAGA_DROP_MULTIPLIER = 1.25f;
 
         const string LEADERBOARD_URL = "https://valheim.help/api/trackhunt";
 
@@ -912,7 +912,7 @@ namespace TrophyHuntMod
 
                 // Store the current session data to help determine the player changing these
                 // things at the main menu
-                __m_storedPlayerID = Player.m_localPlayer.GetPlayerID();
+                __m_storedPlayerID = Player.m_localPlayer.GetPlayerID();    
                 __m_storedGameMode = __m_trophyGameMode;
                 __m_storedWorldSeed = WorldGenerator.instance.m_world.m_seedName;
             }
@@ -2928,7 +2928,7 @@ namespace TrophyHuntMod
                 { "CopperScrap",        "Copper" }
             };
 
-            public static void ConvertMetal(GameObject go)
+             public static void ConvertMetal(GameObject go)
             {
                 ZNetScene zNetScene = ZNetScene.instance;
                 if (zNetScene == null)
@@ -2946,32 +2946,102 @@ namespace TrophyHuntMod
 
                 ItemDrop.ItemData item = itemDrop.m_itemData;
 
-                string cookedMetalName;
+                Debug.LogWarning($"ConvertMetal(): For item {itemDrop.m_itemData.m_shared.m_name} weight {itemDrop.m_itemData.m_shared.m_weight}");
 
+                string cookedMetalName;
                 if (__m_metalConversions.TryGetValue(item.m_dropPrefab.name, out cookedMetalName))
                 {
                     GameObject metalPrefab = zNetScene.GetPrefab(cookedMetalName);
-                    if (metalPrefab != null)
-                    {
-                        Debug.LogWarning($"Found {metalPrefab.name} prefab");
-                    }
-                    
                     GameObject tempMetalObject = UnityEngine.Object.Instantiate<GameObject>(metalPrefab);
+
                     if (tempMetalObject)
                     {
-                        Debug.LogWarning("Created new Copper game object");
+                        Debug.LogWarning($"ConvertMetal(): Created {tempMetalObject.name}");
 
                         ItemDrop tempItemDrop = tempMetalObject.GetComponent<ItemDrop>();
-                        ItemDrop.ItemData copperItem = tempItemDrop.m_itemData;
+
+                        if (metalPrefab != null)
+                        {
+                            Debug.LogWarning($"ConvertMetal(): Ingot {tempItemDrop.m_itemData.m_shared.m_name} weight {tempItemDrop.m_itemData.m_shared.m_weight}");
+                        }
 
                         int stackSize = itemDrop.m_itemData.m_stack;
 
                         // Replace the ore/scrap itemdata with the cooked metal itemdata
-                        itemDrop.m_itemData = copperItem.Clone();
+                        ItemDrop.ItemData tempItemData = tempItemDrop.m_itemData;
+                        itemDrop.m_itemData = tempItemData.Clone();
                         itemDrop.m_itemData.m_stack = stackSize;
-
-//                        GameObject.Destroy(tempMetalObject);
                     }
+                }
+            }
+
+            [HarmonyPatch(typeof(ItemDrop.ItemData), nameof(ItemDrop.ItemData.GetWeight))]
+            public class Humanoid_ItemDrop_ItemData_GetWeight_Patch
+            {
+                static bool Prefix(ItemDrop.ItemData __instance, ref float __result)
+                {
+                    if (GetGameMode() != TrophyGameMode.TrophySaga)
+                    {
+                        return true;
+                    }
+                    
+                    if (__instance == null)
+                        return true;
+
+                    if (__instance.m_dropPrefab == null)
+                        return true;
+
+                    string cookedMetalName;
+                    if (__m_metalConversions.TryGetValue(__instance.m_dropPrefab.name, out cookedMetalName))
+                    {
+//                        Debug.LogWarning($"GetWeight(): Found {__instance.m_dropPrefab.name} => {cookedMetalName}");
+
+                        GameObject ingotPrefab = ZNetScene.instance.GetPrefab(cookedMetalName);
+                        ItemDrop.ItemData ingotItemData = ingotPrefab.GetComponent<ItemDrop>().m_itemData;
+                        if (ingotItemData != null)
+                        {
+                            __result = ingotItemData.m_shared.m_weight * ingotItemData.m_stack;
+                        }
+
+                        return false;
+                    }
+
+                    return true;
+                }
+            }
+
+            [HarmonyPatch(typeof(ItemDrop.ItemData), nameof(ItemDrop.ItemData.GetNonStackedWeight))]
+            public class Humanoid_ItemDrop_ItemData_GetNonStackedWeight_Patch
+            {
+                static bool Prefix(ItemDrop.ItemData __instance, ref float __result)
+                {
+                    if (GetGameMode() != TrophyGameMode.TrophySaga)
+                    {
+                        return true;
+                    }
+
+                    if (__instance == null)
+                        return true;
+
+                    if (__instance.m_dropPrefab == null)
+                        return true;
+
+                    string cookedMetalName;
+                    if (__m_metalConversions.TryGetValue(__instance.m_dropPrefab.name, out cookedMetalName))
+                    {
+//                        Debug.LogWarning($"GetNonStackedWeight(): Found {__instance.m_dropPrefab.name} => {cookedMetalName}");
+
+                        GameObject ingotPrefab = ZNetScene.instance.GetPrefab(cookedMetalName);
+                        ItemDrop.ItemData ingotItemData = ingotPrefab.GetComponent<ItemDrop>().m_itemData;
+                        if (ingotItemData != null)
+                        {
+                            __result = ingotItemData.m_shared.m_weight;
+                        }
+
+                        return false;
+                    }
+
+                    return true;
                 }
             }
 

@@ -18,13 +18,17 @@ Two Options:
 
 ## What's New?
 
+v0.5.9
+- Fixed a Trophy Saga side effect where ore weight was used to calculate inventory weight instead of metal bar weight, which often inexplicably weighs more than the ore it comes from
+- Reduced Trophy drop rate in Trophy Saga (still higher than default wiki trophy drop rates)
+
+## Previous Changes
+
 v0.5.8
 - Trophy Saga
 	- Made unfound trophies dark blue to denote Saga mode
 	- Upped Death Penalty to -30 points
 	- Upped Logout Penalty to -15 points
-
-## Previous Changes
 
 v0.5.7
 - Trophy Hunt and Trophy Rush balance changes!
