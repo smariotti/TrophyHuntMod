@@ -18,11 +18,15 @@ Two Options:
 
 ## What's New?
 
+v0.5.10
+- Trophy Saga: Fixed a bug with insta-smelt where ores from chests would register as 1-weight when moved to player inventory. Thanks @SobewanKenob!
+- Trophy Saga: Added ability to insta-smelt directly out of chests (no long requires tossing ores on the ground and picking them up)
+
+## Previous Changes
+
 v0.5.9
 - Fixed a Trophy Saga side effect where ore weight was used to calculate inventory weight instead of metal bar weight, which often inexplicably weighs more than the ore it comes from
 - Reduced Trophy drop rate in Trophy Saga (still higher than default wiki trophy drop rates)
-
-## Previous Changes
 
 v0.5.8
 - Trophy Saga
@@ -245,16 +249,6 @@ A death counter appears to the left of the health and food bar, as deaths count 
 	
 	Chat Console command to make it so that logouts no longer count against your score. 
 	- WARNING: This invalidates your run for Tournament play and colors your score bright green and fades Logs: text to gray to indicate this.
-
-*Experimental F5 Console Command*
-
-`trophyrush`
-
-	Experimental F5 console command `trophyrush` at the main menu, which enables Trophy Rush Mode.
-		- Trophy Rush mode causes every enemy that WOULD drop a Trophy to drop a Trophy 100% of the time. This was suggested by @FizzyP as a potential new trophy hunt contest type so it's in there for experimentation.
-		- This can only be enabled at the Main Menu via the F5 console
-		- Unfound Trophies will be colored RED in the hud to indicate Trophy Rush is enabled.
-		- NOTE! This is the ONLY feature of TrophyHuntMod which modifies the behavior of Valheim. Please use with caution!
 
 ## Support the Valheim Speedrunning Community!
 If you'd like to donate a dollar or two to the speedrunners and the Trophy Hunt Events, please consider donating via CashApp or PayPal. All the money goes directly into the prize pool for future Trophy Hunt events! 

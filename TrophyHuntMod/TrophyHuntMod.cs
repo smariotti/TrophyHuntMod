@@ -33,7 +33,7 @@ namespace TrophyHuntMod
     {
         public const string PluginGUID = "com.oathorse.TrophyHuntMod";
         public const string PluginName = "TrophyHuntMod";
-        public const string PluginVersion = "0.5.9";
+        public const string PluginVersion = "0.5.10";
         private readonly Harmony harmony = new Harmony(PluginGUID);
 
         // Configuration variables
@@ -274,6 +274,8 @@ namespace TrophyHuntMod
         static bool __m_invalidForTournamentPlay = false;
         static bool __m_ignoreLogouts = false;
 
+        static bool __m_instaSmelt = true;
+
         // For tracking the unique ID for this user/player combo (unique to a given player character)
         static long __m_storedPlayerID = 0;
         static TrophyGameMode __m_storedGameMode = TrophyGameMode.Max;
@@ -400,43 +402,43 @@ namespace TrophyHuntMod
                 ShowPlayerPath(!__m_pathAddedToMinimap);
             });
 
-/*
-            ConsoleCommand dumpEnemies = new ConsoleCommand("dumpenemies", "Dump the names of enemies that can drop trophies and what trophies they drop", delegate (ConsoleEventArgs args)
-            {
-                Debug.Log("Dumping enemy names:");
-
-                // Get the ZNetScene instance
-                ZNetScene zNetScene = ZNetScene.instance;
-
-                // Loop through all prefabs in the ZNetScene
-                foreach (GameObject prefab in zNetScene.m_prefabs)
-                {
-                    if (prefab == null) continue;
-
-                    // Check if the prefab has a Character component
-                    Character character = prefab.GetComponent<Character>();
-                    if (character != null)
-                    {
-                        CharacterDrop charDrop = character.GetComponent<CharacterDrop>();
-                        if (charDrop != null)
+            /*
+                        ConsoleCommand dumpEnemies = new ConsoleCommand("dumpenemies", "Dump the names of enemies that can drop trophies and what trophies they drop", delegate (ConsoleEventArgs args)
                         {
-                            foreach (Drop drop in charDrop.m_drops)
-                            {
-                                if (drop == null) continue;
-                                if (drop.m_prefab == null) continue;
-                                string dropName = drop.m_prefab.name;
+                            Debug.Log("Dumping enemy names:");
 
-                                if (dropName.Contains("Trophy"))
+                            // Get the ZNetScene instance
+                            ZNetScene zNetScene = ZNetScene.instance;
+
+                            // Loop through all prefabs in the ZNetScene
+                            foreach (GameObject prefab in zNetScene.m_prefabs)
+                            {
+                                if (prefab == null) continue;
+
+                                // Check if the prefab has a Character component
+                                Character character = prefab.GetComponent<Character>();
+                                if (character != null)
                                 {
-                                    Debug.Log($"{dropName},{character.m_name}");
+                                    CharacterDrop charDrop = character.GetComponent<CharacterDrop>();
+                                    if (charDrop != null)
+                                    {
+                                        foreach (Drop drop in charDrop.m_drops)
+                                        {
+                                            if (drop == null) continue;
+                                            if (drop.m_prefab == null) continue;
+                                            string dropName = drop.m_prefab.name;
+
+                                            if (dropName.Contains("Trophy"))
+                                            {
+                                                Debug.Log($"{dropName},{character.m_name}");
+                                            }
+                                        }
+
+                                    }
                                 }
                             }
-
-                        }
-                    }
-                }
-            });
-*/
+                        });
+            */
             //ConsoleCommand dumpDropRates = new ConsoleCommand("dumpdroprates", "Dump the drop counts and rates to a logfile", delegate (ConsoleEventArgs args)
             //{
             //    PrintToConsole($"{"TrophyName",-18} {"Killed",-7} {"Dropped",-8} {"Rate",-6}%");
@@ -451,6 +453,7 @@ namespace TrophyHuntMod
             //    }
             //});
 
+            /*
             ConsoleCommand trophyRushCommand = new ConsoleCommand("trophyrush", "Toggle Trophy Rush Mode on and off", delegate (ConsoleEventArgs args)
             {
                 if (Game.instance)
@@ -461,6 +464,20 @@ namespace TrophyHuntMod
 
                 ToggleTrophyRush();
             });
+            */
+            ConsoleCommand trophyRushCommand = new ConsoleCommand("instasmelt", "Toggle Insta-Smelt", delegate (ConsoleEventArgs args)
+            {
+                if (!Game.instance)
+                {
+                    return;
+                }
+
+                __m_instaSmelt = !__m_instaSmelt;
+
+                PrintToConsole($"Instasmelt: {__m_instaSmelt}");
+
+            });
+
 
             ConsoleCommand ignoreLogoutsCommand = new ConsoleCommand("ignorelogouts", "Don't subtract points for logouts", delegate (ConsoleEventArgs args)
             {
@@ -2928,53 +2945,48 @@ namespace TrophyHuntMod
                 { "CopperScrap",        "Copper" }
             };
 
-             public static void ConvertMetal(GameObject go)
+            public static void ConvertMetal(ref ItemDrop.ItemData itemData)
             {
+                if (itemData == null)
+                    return;
+
                 ZNetScene zNetScene = ZNetScene.instance;
                 if (zNetScene == null)
                 {
                     return;
                 }
 
-                if (go == null)
-                    return;
-
-
-                ItemDrop itemDrop = go.GetComponent<ItemDrop>();
-                if (itemDrop == null)
-                    return;
-
-                ItemDrop.ItemData item = itemDrop.m_itemData;
-
-                Debug.LogWarning($"ConvertMetal(): For item {itemDrop.m_itemData.m_shared.m_name} weight {itemDrop.m_itemData.m_shared.m_weight}");
-
                 string cookedMetalName;
-                if (__m_metalConversions.TryGetValue(item.m_dropPrefab.name, out cookedMetalName))
+                if (__m_metalConversions.TryGetValue(itemData.m_dropPrefab.name, out cookedMetalName))
                 {
                     GameObject metalPrefab = zNetScene.GetPrefab(cookedMetalName);
                     GameObject tempMetalObject = UnityEngine.Object.Instantiate<GameObject>(metalPrefab);
 
                     if (tempMetalObject)
                     {
-                        Debug.LogWarning($"ConvertMetal(): Created {tempMetalObject.name}");
+//                        Debug.LogWarning($"ConvertMetal(): Created {tempMetalObject.name}");
 
                         ItemDrop tempItemDrop = tempMetalObject.GetComponent<ItemDrop>();
 
-                        if (metalPrefab != null)
-                        {
-                            Debug.LogWarning($"ConvertMetal(): Ingot {tempItemDrop.m_itemData.m_shared.m_name} weight {tempItemDrop.m_itemData.m_shared.m_weight}");
-                        }
+                        //if (metalPrefab != null)
+                        //{
+                        //    Debug.LogWarning($"ConvertMetal(): Ingot {tempItemDrop.m_itemData.m_shared.m_name} weight {tempItemDrop.m_itemData.m_shared.m_weight}");
+                        //}
 
-                        int stackSize = itemDrop.m_itemData.m_stack;
+                        int stackSize = itemData.m_stack;
 
                         // Replace the ore/scrap itemdata with the cooked metal itemdata
                         ItemDrop.ItemData tempItemData = tempItemDrop.m_itemData;
-                        itemDrop.m_itemData = tempItemData.Clone();
-                        itemDrop.m_itemData.m_stack = stackSize;
+                        itemData = tempItemData.Clone();
+                        itemData.m_stack = stackSize;
                     }
                 }
             }
 
+            // Trophy Saga Insta-Smelt
+            //
+            // Patch GetWeight and GetNonStackedWeight to calculate Ore weights as the bar weights
+            //
             [HarmonyPatch(typeof(ItemDrop.ItemData), nameof(ItemDrop.ItemData.GetWeight))]
             public class Humanoid_ItemDrop_ItemData_GetWeight_Patch
             {
@@ -3000,7 +3012,7 @@ namespace TrophyHuntMod
                         ItemDrop.ItemData ingotItemData = ingotPrefab.GetComponent<ItemDrop>().m_itemData;
                         if (ingotItemData != null)
                         {
-                            __result = ingotItemData.m_shared.m_weight * ingotItemData.m_stack;
+                            __result = ingotItemData.m_shared.m_weight * __instance.m_stack;
                         }
 
                         return false;
@@ -3053,23 +3065,22 @@ namespace TrophyHuntMod
                 static void Prefix(Humanoid __instance, GameObject go, bool autoequip, bool autoPickupDelay, bool __result)
                 {
                     // Before pickup occurs, see if it's auto-smeltable ore and convert it
-
-                    // It's not a trophy pickup, see if it's a smeltable ore
-                    if (GetGameMode() != TrophyGameMode.TrophySaga)
-                    {
-                        return;
-                    }
-
                     if (__instance == null || __instance != Player.m_localPlayer)
                     {
                         return;
                     }
 
-                    ItemDrop itemDrop = go.GetComponent<ItemDrop>();
-                    if (itemDrop == null)
-                        return;
-                    
-                    ConvertMetal(go);
+                    if (GetGameMode() == TrophyGameMode.TrophySaga)
+                    {
+                        if (__m_instaSmelt)
+                        {
+                            ItemDrop itemDrop = go.GetComponent<ItemDrop>();
+                            if (itemDrop != null)
+                            {
+                                ConvertMetal(ref itemDrop.m_itemData);
+                            }
+                        }
+                    }
                 }
 
                 // Check picked up item to see if Trophy
@@ -3307,115 +3318,117 @@ namespace TrophyHuntMod
                 }
             }
 
-// Uncomment to inspect current world modifiers when hitting World Modifiers button
- /*           
-                        [HarmonyPatch (typeof(FejdStartup), nameof(FejdStartup.OnServerOptions))]
-                        public class ServerOptionsGUI_Initizalize_Patch
+            // Uncomment to inspect current world modifiers when hitting World Modifiers button
+            /*           
+                                   [HarmonyPatch (typeof(FejdStartup), nameof(FejdStartup.OnServerOptions))]
+                                   public class ServerOptionsGUI_Initizalize_Patch
+                                   {
+                                       static void Postfix(FejdStartup __instance)
+                                       {
+                                           ServerOptionsGUI serverOptionsGUI = __instance.m_serverOptions;
+
+                                           Debug.LogError("OnServerOptions:");
+
+                                           foreach (KeyUI entry in ServerOptionsGUI.m_modifiers)
+                                           {
+                                               Debug.LogWarning($"  KeyUI: {entry.ToString()}");
+                                               if (entry.GetType() == typeof(KeySlider))
+                                               {
+                                                   KeySlider slider = entry as KeySlider;
+
+
+                                                   Debug.LogWarning($"  {slider.m_modifier.ToString()}");
+
+                                                   foreach (KeySlider.SliderSetting setting in slider.m_settings)
+                                                   {
+                                                       Debug.LogWarning($"    {setting.m_name}, {setting.m_modifierValue.ToString()}");
+
+                                                       foreach(string key in setting.m_keys)
+                                                       {
+                                                           Debug.LogWarning($"      {key}");
+                                                       }
+                                                   }
+                                               }
+                                           }
+
+                                           World world = FejdStartup.m_instance.m_world;
+                                           if (world != null)
+                                           {
+                                               Debug.LogWarning("FejdStartup.m_instance.m_world.m_startingGlobalKeys");
+                                               foreach (string key in world.m_startingGlobalKeys)
+                                               {
+                                                   Debug.LogWarning($"  world key: {key}");
+                                               }
+                                           }
+                                       }
+                                   }
+           */
+
+            //
+            // Inventory Tracking
+            //
+            [HarmonyPatch(typeof(Inventory), nameof(Inventory.AddItem), new[] { typeof(ItemDrop.ItemData) })]
+            public static class Inventory_AddItem_Patch
+            {
+                static void Prefix(Inventory __instance, ref ItemDrop.ItemData item, bool __result)
+                {
+                    if (__instance != null && Player.m_localPlayer != null
+                        && __instance == Player.m_localPlayer.GetInventory())
+                    {
+                        if (GetGameMode() == TrophyGameMode.TrophySaga)
                         {
-                            static void Postfix(FejdStartup __instance)
+                            // Item successfully added to inventory
+                            if (__m_instaSmelt)
                             {
-                                ServerOptionsGUI serverOptionsGUI = __instance.m_serverOptions;
+                                ConvertMetal(ref item);
+                            }
+                        }
+                    }
+                }
+            }
+            /*
 
-                                Debug.LogError("OnServerOptions:");
-
-                                foreach (KeyUI entry in ServerOptionsGUI.m_modifiers)
+                        [HarmonyPatch(typeof(Inventory), nameof(Inventory.RemoveItem), new[] { typeof(ItemDrop.ItemData), typeof(int) })]
+                        public static class Inventory_RemoveItem_Patch
+                        {
+                            static void Postfix(Inventory __instance, ItemDrop.ItemData item, int amount, bool __result)
+                            {
+                                if (__instance == Player.m_localPlayer.GetInventory())
                                 {
-                                    Debug.LogWarning($"  KeyUI: {entry.ToString()}");
-                                    if (entry.GetType() == typeof(KeySlider))
+                                    if (__result)
                                     {
-                                        KeySlider slider = entry as KeySlider;
-
-
-                                        Debug.LogWarning($"  {slider.m_modifier.ToString()}");
-
-                                        foreach (KeySlider.SliderSetting setting in slider.m_settings)
-                                        {
-                                            Debug.LogWarning($"    {setting.m_name}, {setting.m_modifierValue.ToString()}");
-
-                                            foreach(string key in setting.m_keys)
-                                            {
-                                                Debug.LogWarning($"      {key}");
-                                            }
-                                        }
+                                        // Item successfully removed from inventory
+                                        Debug.LogError($"Item removed from inventory: {item.m_shared.m_name} (Amount: {amount})");
                                     }
-                                }
 
-                                World world = FejdStartup.m_instance.m_world;
-                                if (world != null)
-                                {
-                                    Debug.LogWarning("FejdStartup.m_instance.m_world.m_startingGlobalKeys");
-                                    foreach (string key in world.m_startingGlobalKeys)
+                                    Inventory playerInventory = Player.m_localPlayer.GetInventory();
+                                    bool hasItem = playerInventory.ContainsItem(item);
+
+                                    if (hasItem)
                                     {
-                                        Debug.LogWarning($"  world key: {key}");
+                                        Debug.LogError($"Player has item: {item.m_shared.m_name}");
                                     }
                                 }
                             }
                         }
-*/            
 
-// Future Trophy Fiesta patches
-/*
-            // Inventory Tracking
-            [HarmonyPatch(typeof(Inventory), nameof(Inventory.AddItem), new[] { typeof(ItemDrop.ItemData) })]
-            public static class Inventory_AddItem_Patch
-            {
-                static void Postfix(Inventory __instance, ItemDrop.ItemData item, bool __result)
-                {
-                    Debug.LogError($"Inventory.AddItem() attempt: {item.m_shared.m_name} ({item.m_dropPrefab.name})");
-
-                    if (__instance != null && Player.m_localPlayer != null
-                        && __instance == Player.m_localPlayer.GetInventory())
-                    {
-                        if (__result)
+                        [HarmonyPatch(typeof(Inventory), nameof(Inventory.Changed))]
+                        public static class Inventory_Changed_Patch
                         {
-                            // Item successfully added to inventory
-                            Debug.LogError($"Item added to inventory: {item.m_shared.m_name}");
+                            static void Postfix(Inventory __instance)
+                            {
+                                if (__instance != null && Player.m_localPlayer != null
+                                    && __instance == Player.m_localPlayer.GetInventory())
+                                {
+                                    Debug.LogWarning($"Player Inventory Changed");
+                                    //foreach(ItemDrop.ItemData item in __instance.m_inventory)
+                                    //{
+                                    //    Debug.LogWarning($"  item: {item.m_shared.m_name} ({item.m_dropPrefab.name}) {item.m_stack}");
+                                    //}
+                                }
+                            }
                         }
-                    }
-                }
-            }
-
-            [HarmonyPatch(typeof(Inventory), nameof(Inventory.RemoveItem), new[] { typeof(ItemDrop.ItemData), typeof(int) })]
-            public static class Inventory_RemoveItem_Patch
-            {
-                static void Postfix(Inventory __instance, ItemDrop.ItemData item, int amount, bool __result)
-                {
-                    if (__instance == Player.m_localPlayer.GetInventory())
-                    {
-                        if (__result)
-                        {
-                            // Item successfully removed from inventory
-                            Debug.LogError($"Item removed from inventory: {item.m_shared.m_name} (Amount: {amount})");
-                        }
-
-                        Inventory playerInventory = Player.m_localPlayer.GetInventory();
-                        bool hasItem = playerInventory.ContainsItem(item);
-
-                        if (hasItem)
-                        {
-                            Debug.LogError($"Player has item: {item.m_shared.m_name}");
-                        }
-                    }
-                }
-            }
-
-            [HarmonyPatch(typeof(Inventory), nameof(Inventory.Changed))]
-            public static class Inventory_Changed_Patch
-            {
-                static void Postfix(Inventory __instance)
-                {
-                    if (__instance != null && Player.m_localPlayer != null
-                        && __instance == Player.m_localPlayer.GetInventory())
-                    {
-                        Debug.LogWarning($"Player Inventory Changed");
-                        //foreach(ItemDrop.ItemData item in __instance.m_inventory)
-                        //{
-                        //    Debug.LogWarning($"  item: {item.m_shared.m_name} ({item.m_dropPrefab.name}) {item.m_stack}");
-                        //}
-                    }
-                }
-            }
-*/
+            */
 
             // Catch /die console command to track it
             [HarmonyPatch(typeof(ConsoleCommand), nameof(ConsoleCommand.RunAction), new[] { typeof(ConsoleEventArgs)})]
