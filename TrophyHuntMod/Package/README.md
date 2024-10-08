@@ -18,11 +18,26 @@ Two Options:
 
 ## What's New?
 
+v0.5.12
+- Added "Earned Points/Penalties" lines to Score tooltip to make it easier to read and to reinforce what a disaster you are for dying at all. 
+- Trophy Saga balance changes
+  - Enabled Biome Bonuses for Saga mode
+  - Increased Resource Rate to 2x (was 1.5x)
+  - Slightly increased Trophy drop rate
+  - Fixed Trophy Saga description text. Forgot to add "Raids Disabled"
+
+## Previous Changes
+
+v0.5.11
+- Decreased distance between Map pins for `/showpath` for better player path display during `exploremap` sessions after runs
+- Trophy Saga
+  - Disabled Raids in Saga mode to decrease potential player time near their bases
+- Experimental
+  - Added `/elderpowercutsalltrees` Chat Console command (off by default, invalidates session for tournament play) which allows all trees to be cut down by all axes if The Elder Forsaken Power is **currently active**
+
 v0.5.10
 - Trophy Saga: Fixed a bug with insta-smelt where ores from chests would register as 1-weight when moved to player inventory. Thanks @SobewanKenob!
 - Trophy Saga: Added ability to insta-smelt directly out of chests (no long requires tossing ores on the ground and picking them up)
-
-## Previous Changes
 
 v0.5.9
 - Fixed a Trophy Saga side effect where ore weight was used to calculate inventory weight instead of metal bar weight, which often inexplicably weighs more than the ore it comes from

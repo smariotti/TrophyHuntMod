@@ -33,14 +33,12 @@ namespace TrophyHuntMod
     {
         public const string PluginGUID = "com.oathorse.TrophyHuntMod";
         public const string PluginName = "TrophyHuntMod";
-        public const string PluginVersion = "0.5.10";
+        public const string PluginVersion = "0.5.12";
         private readonly Harmony harmony = new Harmony(PluginGUID);
 
         // Configuration variables
         private const Boolean DUMP_TROPHY_DATA = false;
         private const Boolean UPDATE_LEADERBOARD = true;
-        private const Boolean COLLECT_PLAYER_PATH = true;
-        private const Boolean COLLECT_DROP_RATES = true;
 
         static TrophyHuntMod __m_trophyHuntMod;
 
@@ -87,7 +85,7 @@ namespace TrophyHuntMod
         const int TROPHY_SAGA_DEATH_PENALTY = -30;
         const int TROPHY_SAGA_LOGOUT_PENALTY = -15;
         const float TROPHY_SAGA_SAILING_SPEED_MULTIPLIER = 2.0f;
-        const float TROPHY_SAGA_DROP_MULTIPLIER = 1.25f;
+        const float TROPHY_SAGA_DROP_MULTIPLIER = 1.35f;
 
         const string LEADERBOARD_URL = "https://valheim.help/api/trackhunt";
 
@@ -211,7 +209,6 @@ namespace TrophyHuntMod
         static GameObject __m_deathsTextElement = null;
         static GameObject __m_relogsTextElement = null;
         static List<GameObject> __m_iconList = null;
-        static List<GameObject> __m_biomeIconList = null;
 
         static float __m_baseTrophyScale = 1.4f;
         static float __m_userTrophyScale = 1.0f;
@@ -235,7 +232,7 @@ namespace TrophyHuntMod
         static List<Vector3> __m_playerPathData = new List<Vector3>();   // list of player positions during the session
         static bool __m_collectingPlayerPath = false;                           // are we actively asynchronously collecting the player position?
         static float __m_playerPathCollectionInterval = 8.0f;                   // seconds between checks to see if we can store the current player position
-        static float __m_minPathPlayerMoveDistance = 50.0f;                     // the min distance the player has to have moved to consider storing the new path position
+        static float __m_minPathPlayerMoveDistance = 30.0f;                     // the min distance the player has to have moved to consider storing the new path position
         static Vector3 __m_previousPlayerPos;                                   // last player position stored
 
         // Only mod running flag
@@ -274,7 +271,13 @@ namespace TrophyHuntMod
         static bool __m_invalidForTournamentPlay = false;
         static bool __m_ignoreLogouts = false;
 
+        // Used by TrophySaga, true if all ores turn into bars when entering inventory
+        // also treats all ore weights as their bar weights across the game
+        //
         static bool __m_instaSmelt = true;
+
+        // If enabled, Elder power
+        static bool __m_elderPowerCutsAllTrees = false;
 
         // For tracking the unique ID for this user/player combo (unique to a given player character)
         static long __m_storedPlayerID = 0;
@@ -330,10 +333,7 @@ namespace TrophyHuntMod
 
             // Create the drop data for collecting info about trophy drops vs. kills
             //
-            if (COLLECT_DROP_RATES)
-            {
-                InitTrophyDropInfo();
-            }
+            InitTrophyDropInfo();
         }
 
         public static void InitTrophyDropInfo()
@@ -379,7 +379,7 @@ namespace TrophyHuntMod
                 PrintToConsole($"  Logouts: {__m_logoutCount} Score: {logoutScore}");
 
                 int biomeBonus = 0;
-                if (GetGameMode() == TrophyGameMode.TrophyRush)
+                if (GetGameMode() == TrophyGameMode.TrophyRush || GetGameMode() == TrophyGameMode.TrophySaga)
                 {
                     Player_OnSpawned_Patch.CalculateBiomeBonusScore(Player.m_localPlayer);
                     PrintToConsole($"Biome Bonus Total: {biomeBonus}");
@@ -392,6 +392,7 @@ namespace TrophyHuntMod
                 return true;
             });
 
+
             ConsoleCommand showPathCommand = new ConsoleCommand("showpath", "Show the path the player took", delegate (ConsoleEventArgs args)
             {
                 if (!Game.instance)
@@ -403,69 +404,7 @@ namespace TrophyHuntMod
             });
 
             /*
-                        ConsoleCommand dumpEnemies = new ConsoleCommand("dumpenemies", "Dump the names of enemies that can drop trophies and what trophies they drop", delegate (ConsoleEventArgs args)
-                        {
-                            Debug.Log("Dumping enemy names:");
-
-                            // Get the ZNetScene instance
-                            ZNetScene zNetScene = ZNetScene.instance;
-
-                            // Loop through all prefabs in the ZNetScene
-                            foreach (GameObject prefab in zNetScene.m_prefabs)
-                            {
-                                if (prefab == null) continue;
-
-                                // Check if the prefab has a Character component
-                                Character character = prefab.GetComponent<Character>();
-                                if (character != null)
-                                {
-                                    CharacterDrop charDrop = character.GetComponent<CharacterDrop>();
-                                    if (charDrop != null)
-                                    {
-                                        foreach (Drop drop in charDrop.m_drops)
-                                        {
-                                            if (drop == null) continue;
-                                            if (drop.m_prefab == null) continue;
-                                            string dropName = drop.m_prefab.name;
-
-                                            if (dropName.Contains("Trophy"))
-                                            {
-                                                Debug.Log($"{dropName},{character.m_name}");
-                                            }
-                                        }
-
-                                    }
-                                }
-                            }
-                        });
-            */
-            //ConsoleCommand dumpDropRates = new ConsoleCommand("dumpdroprates", "Dump the drop counts and rates to a logfile", delegate (ConsoleEventArgs args)
-            //{
-            //    PrintToConsole($"{"TrophyName",-18} {"Killed",-7} {"Dropped",-8} {"Rate",-6}%");
-            //    foreach (KeyValuePair<string, DropInfo> entry in __m_trophyDropInfo)
-            //    {
-            //        TrophyHuntData trophyHuntData = Array.Find(__m_trophyHuntData, element => element.m_name == entry.Key);
-            //        string enemyName = trophyHuntData.m_prettyName;
-            //        string percentStr = "n/a";
-            //        if (entry.Value.m_numKilled > 0)
-            //            percentStr = (100.0f * (float)entry.Value.m_trophiesDropped / (float)entry.Value.m_numKilled).ToString("0.0");
-            //        PrintToConsole($"{enemyName,-18} {entry.Value.m_numKilled,-7} {entry.Value.m_trophiesDropped,-8} {percentStr,-6}%");
-            //    }
-            //});
-
-            /*
-            ConsoleCommand trophyRushCommand = new ConsoleCommand("trophyrush", "Toggle Trophy Rush Mode on and off", delegate (ConsoleEventArgs args)
-            {
-                if (Game.instance)
-                {
-                    PrintToConsole("'/trophyrush' console command can only be used at the main menu via the F5 console.");
-                    return;
-                }
-
-                ToggleTrophyRush();
-            });
-            */
-            ConsoleCommand trophyRushCommand = new ConsoleCommand("instasmelt", "Toggle Insta-Smelt", delegate (ConsoleEventArgs args)
+            ConsoleCommand instaSmelt = new ConsoleCommand("instasmelt", "Toggle Insta-Smelt", delegate (ConsoleEventArgs args)
             {
                 if (!Game.instance)
                 {
@@ -477,7 +416,7 @@ namespace TrophyHuntMod
                 PrintToConsole($"Instasmelt: {__m_instaSmelt}");
 
             });
-
+            */
 
             ConsoleCommand ignoreLogoutsCommand = new ConsoleCommand("ignorelogouts", "Don't subtract points for logouts", delegate (ConsoleEventArgs args)
             {
@@ -680,7 +619,26 @@ namespace TrophyHuntMod
 
                 ShowTrophies(__m_showingTrophies);
             });
+
+            ConsoleCommand elderPowerCutsAllTrees = new ConsoleCommand("elderpowercutsalltrees", "All trees are choppable while elder power active", delegate (ConsoleEventArgs args)
+            {
+                __m_elderPowerCutsAllTrees = !__m_elderPowerCutsAllTrees;
+                PrintToConsole($"elder power cuts all trees: {__m_elderPowerCutsAllTrees}");
+
+                if (__m_elderPowerCutsAllTrees)
+                {
+                    __m_invalidForTournamentPlay = true;
+
+                    if (__m_scoreTextElement != null)
+                    {
+                        TMPro.TextMeshProUGUI tmText = __m_scoreTextElement.GetComponent<TMPro.TextMeshProUGUI>();
+
+                        tmText.color = Color.green;
+                    }
+                }
+            });
         }
+        #endregion
 
         public static bool __m_showingTrophies = true;
 
@@ -692,7 +650,7 @@ namespace TrophyHuntMod
             }
         }
 
-        public static void ToggleTrophyRush()
+        public static void ToggleGameMode()
         {
             __m_trophyGameMode += 1;
 //            if (__m_trophyGameMode >= TrophyGameMode.Max)
@@ -768,10 +726,10 @@ namespace TrophyHuntMod
                     text += "\n<align=\"left\"><size=18>Game Mode: <color=yellow>Trophy Saga</color></size>";
                     text += "\n<align=\"center\"><size=12> <color=yellow>NOTE:</color> To use existing world, change World Modifiers manually!</size>\n";
                     text += "<align=\"center\"><size=14><color=red>EXPERIMENTAL!</color>\n</size>";
-                    resourceMultiplier = 1.5f;
+                    resourceMultiplier = 2.0f;
                     combatDifficulty = "Hard";
                     dropRate = "Increased";
-                    hasBiomeBonuses = false;
+                    hasBiomeBonuses = true;
                     break;
                 case TrophyGameMode.TrophyFiesta:
                     text += "\n<align=\"left\"><size=18>Game Mode: <color=yellow>Trophy</color> <color=green>F</color><color=purple>i</color><color=red>e</color><color=yellow>s</color><color=orange>t</color><color=blue>a</color></size>\n";
@@ -787,12 +745,13 @@ namespace TrophyHuntMod
                 text += $"<align=\"left\">      * Trophy Drop Rate: <color=orange>{dropRate}</color>\n";
                 if (GetGameMode() == TrophyGameMode.TrophySaga)
                 {
-                    text += $"<align=\"left\">      * Boat Speed is Doubled.\n";
-                    text += $"<align=\"left\">      * Ores insta-smelt on pickup\n";
+                    text += $"<align=\"left\">      * Boat Speed is <color=orange>doubled</color>\n";
+                    text += $"<align=\"left\">      * Ores <color=orange>Insta-smelt</color> on pickup\n";
+                    text += $"<align=\"left\">      * Raids are <color=orange>disabled</color>\n";
                 }
                 if (hasBiomeBonuses)
                 {
-                    text += $"<align=\"left\">      * <color=orange>Biome Bonuses</color> for trophy sets.\n";
+                    text += $"<align=\"left\">      * <color=orange>Biome Bonuses</color> for trophy sets!\n";
                 }
                 text += $"<align=\"left\">      * Logout Penalty: <color=red>{Player_OnSpawned_Patch.GetLogoutPointCost()}</color>\n";
                 text += $"<align=\"left\">      * Death Penalty: <color=red>{Player_OnSpawned_Patch.GetDeathPointCost()}</color>\n";
@@ -850,7 +809,6 @@ namespace TrophyHuntMod
             }
 
         }
-        #endregion
 
         // OnSpawned() is required instead of Awake
         //   this is because at Awake() time, Player.m_trophyList and Player.m_localPlayer haven't been initialized yet
@@ -920,18 +878,17 @@ namespace TrophyHuntMod
 
 
                 // Start collecting player position map pin data
-                if (COLLECT_PLAYER_PATH)
-                {
-                    ShowPlayerPath(false);
-                    StopCollectingPlayerPath();
-                    StartCollectingPlayerPath();
-                }
+                ShowPlayerPath(false);
+                StopCollectingPlayerPath();
+                StartCollectingPlayerPath();
 
                 // Store the current session data to help determine the player changing these
                 // things at the main menu
                 __m_storedPlayerID = Player.m_localPlayer.GetPlayerID();    
                 __m_storedGameMode = __m_trophyGameMode;
                 __m_storedWorldSeed = WorldGenerator.instance.m_world.m_seedName;
+
+//                FiestaTrophies.Initialize();
             }
 
             public static void InitializeTrackedDataForNewPlayer()
@@ -1067,11 +1024,8 @@ namespace TrophyHuntMod
 //                    CreateBiomeElements(healthPanelTransform, __m_biomeIconList);
 
                     // Create the hover text object
-                    if (COLLECT_DROP_RATES)
-                    {
-                        CreateTrophyTooltip();
-                        CreateLuckTooltip();
-                    }
+                    CreateTrophyTooltip();
+                    CreateLuckTooltip();
 
                     CreateLuckOMeterElements(healthPanelTransform);
 
@@ -1137,19 +1091,6 @@ namespace TrophyHuntMod
                 image.sprite = luckSprite;
                 image.color = Color.white;
                 image.raycastTarget = true;
-
-                //GameObject luckTextElement = new GameObject("LuckText");
-                //luckTextElement.transform.SetParent(parentTransform);%
-                //RectTransform luckTextTransform = luckTextElement.AddComponent<RectTransform>();
-                //luckTextTransform.sizeDelta = new Vector2(50, 20);
-                //luckTextTransform.anchoredPosition = new Vector3(-75, -50);
-                //TMPro.TextMeshProUGUI tmText = luckTextElement.AddComponent<TMPro.TextMeshProUGUI>();
-                //tmText.text = "Luck";
-                //tmText.fontSize = 14;
-                //tmText.color = Color.yellow;
-                //tmText.alignment = TextAlignmentOptions.Center;
-                //tmText.raycastTarget = false;
-                //                AddTooltipTriggersToLuckObject(luckTextElement);
 
                 AddTooltipTriggersToLuckObject(luckElement);
 
@@ -1326,74 +1267,6 @@ namespace TrophyHuntMod
                     __m_trophyHuntMod.StartCoroutine(FlashTrophyFiesta());
                 }
             }
-
-            //public static void DeleteBiomeElements(List<GameObject> biomeIconList)
-            //{
-            //    foreach (GameObject biomeIconObject in biomeIconList)
-            //    {
-            //        GameObject.Destroy(biomeIconObject);
-            //    }
-
-            //    biomeIconList.Clear();
-            //}
-
-            //public static void CreateBiomeElements(Transform parentTransform, List<GameObject> iconList)
-            //{
-            //    foreach (BiomeBonus biomeBonus in __m_biomeBonuses)
-            //    {
-            //        // Create a new GameObject for the icon
-            //        GameObject biomeIcon = new GameObject(biomeBonus.m_biomeName);
-            //        biomeIcon.transform.SetParent(parentTransform);
-
-            //        // Add RectTransform component for positioning Sprite
-            //        RectTransform iconRectTransform = biomeIcon.AddComponent<RectTransform>();
-
-            //        // Add an Image component for Sprite
-            //        UnityEngine.UI.Image iconImage = biomeIcon.AddComponent<UnityEngine.UI.Image>();
-            //        iconImage.color = new Color(1f, 1f, 1f, 0.5f);
-            //        iconImage.raycastTarget = false;
-
-            //        // Build the list of Biome elements from the trophy icon list
-            //        float biomeIconXPos = int.MaxValue;
-            //        float biomeIconYPos = int.MaxValue;
-
-            //        float biomeIconHeight = 0f;
-            //        float biomeIconWidth = 0f;
-
-            //        foreach (GameObject icon in iconList)
-            //        {
-            //            RectTransform iconRect = icon.GetComponent<RectTransform>();
-
-            //            // What biome is this trophy in?
-            //            TrophyHuntData trophyHuntData = Array.Find(__m_trophyHuntData, element => element.m_name == icon.name);
-
-            //            // If it's not the biome we're looking for, ignore it
-            //            if (trophyHuntData.m_biome != biomeBonus.m_biome)
-            //            {
-            //                continue;
-            //            }
-
-            //            // Only build the icon rectangle for the biome we're looking at
-            //            if (iconRect.anchoredPosition.x < biomeIconXPos)
-            //            {
-            //                biomeIconXPos = iconRect.anchoredPosition.x;
-            //            }
-
-            //            // Lazy grab, they're all at the same Y level
-            //            biomeIconYPos = iconRect.anchoredPosition.y;
-                        
-            //            biomeIconWidth += iconRect.sizeDelta.x;
-
-            //            // Lazy grab, assume they're all the same height
-            //            biomeIconHeight = iconRect.sizeDelta.y;
-            //        }
-
-            //        iconRectTransform.sizeDelta = new Vector2(biomeIconWidth, biomeIconHeight);
-            //        iconRectTransform.anchoredPosition = new Vector2(biomeIconXPos, biomeIconYPos);
-
-            //        __m_biomeIconList.Add(biomeIcon);
-            //    }
-            //}
 
             static Sprite GetTrophySprite(string trophyPrefabName)
             {
@@ -1608,7 +1481,7 @@ namespace TrophyHuntMod
                     score += CalculateLogoutPenalty();
                 }
 
-                if (GetGameMode() == TrophyGameMode.TrophyRush)
+                if (GetGameMode() == TrophyGameMode.TrophyRush || GetGameMode() == TrophyGameMode.TrophySaga)
                 {
                     score += CalculateBiomeBonusScore(player);
                 }
@@ -1856,7 +1729,7 @@ namespace TrophyHuntMod
                             // Update Trophy cache
                             __m_trophyCache = player.GetTrophies();
 
-                            if (GetGameMode() == TrophyGameMode.TrophyRush)
+                            if (GetGameMode() == TrophyGameMode.TrophyRush || GetGameMode() == TrophyGameMode.TrophySaga)
                             {
                                 // Did we complete a biome bonus with this trophy?
                                 if (UpdateBiomeBonusTrophies(name))
@@ -1958,7 +1831,8 @@ namespace TrophyHuntMod
                     logouts = __m_logoutCount,
                     gamemode = (GetGameMode() == TrophyGameMode.TrophyHunt) 
                                     ? "TrophyHunt" : (GetGameMode() == TrophyGameMode.TrophyRush) 
-                                    ? "TrophyRush" : "TrophyFiesta" //__m_trophyRushEnabled ? "TrophyRush" : "TrophyHunt"
+                                    ? "TrophyRush" : (GetGameMode() == TrophyGameMode.TrophySaga)
+                                    ? "TrophySaga" : "TrophyFiesta" //__m_trophyRushEnabled ? "TrophyRush" : "TrophyHunt"
                 };
 
                 // Start the coroutine to post the data
@@ -2069,8 +1943,9 @@ namespace TrophyHuntMod
             static GameObject __m_scoreTooltipObject = null;
             static GameObject __m_scoreTooltipBackground = null;
             static TextMeshProUGUI __m_scoreTooltipText;
-            static Vector2 __m_trophyHuntScoreTooltipWindowSize = new Vector2(240, 155);
-            static Vector2 __m_trophyRushScoreTooltipWindowSize = new Vector2(290, 320);
+            static Vector2 __m_trophyHuntScoreTooltipWindowSize = new Vector2(240, 215);
+            static Vector2 __m_trophyRushScoreTooltipWindowSize = new Vector2(290, 380);
+            static Vector2 __m_trophySagaScoreTooltipWindowSize = new Vector2(290, 345);
             static Vector2 __m_scoreTooltipTextOffset = new Vector2(5, 2);
 
             public static void CreateScoreTooltip()
@@ -2082,6 +1957,10 @@ namespace TrophyHuntMod
                 if (GetGameMode() == TrophyGameMode.TrophyRush)
                 {
                     tooltipWindowSize = __m_trophyRushScoreTooltipWindowSize;
+                }
+                else if (GetGameMode() == TrophyGameMode.TrophySaga)
+                {
+                    tooltipWindowSize = __m_trophySagaScoreTooltipWindowSize;
                 }
 
                 // Set %the parent to the HUD
@@ -2117,11 +1996,6 @@ namespace TrophyHuntMod
 
             public static void AddTooltipTriggersToScoreObject(GameObject uiObject)
             {
-                if (!COLLECT_DROP_RATES)
-                {
-                    return;
-                }
-
                 // Add EventTrigger component if not already present
                 EventTrigger trigger = uiObject.GetComponent<EventTrigger>();
                 if (trigger != null)
@@ -2169,6 +2043,8 @@ namespace TrophyHuntMod
 //                    gameModeText = "Trophy Rush";
 
                 int trophyCount = __m_trophyCache.Count;
+                int earnedPoints = CalculateTrophyPoints();
+                int penaltyPoints = CalculateLogoutPenalty() + CalculateDeathPenalty();
 
                 text = $"<size=20><b><color=#FFB75B>{gameModeText}</color><b></size>\n";
                 text += $"<size=14><color=white>\n";
@@ -2178,9 +2054,10 @@ namespace TrophyHuntMod
                 if (GetGameMode() == TrophyGameMode.TrophyRush)
                 {
                     text += $"  /die's: (Penalty: <color=red>{TROPHY_RUSH_SLASHDIE_PENALTY}</color>)\n    Num: <color=orange>{__m_slashDieCount}</color> <color=yellow>({__m_slashDieCount * TROPHY_RUSH_SLASHDIE_PENALTY} Points)</color>\n";
+                    penaltyPoints += __m_slashDieCount * TROPHY_RUSH_SLASHDIE_PENALTY;
                 }
 
-                if (GetGameMode() == TrophyGameMode.TrophyRush)
+                if (GetGameMode() == TrophyGameMode.TrophyRush || GetGameMode() == TrophyGameMode.TrophySaga)
                 {
                     text += $"  Biome Bonuses:\n";
                     foreach (BiomeBonus biomeBonus in __m_biomeBonuses)
@@ -2194,9 +2071,13 @@ namespace TrophyHuntMod
                         {
                             bonusScore = biomeScore;
                         }
-                        text += $"    {biomeBonus.m_biomeName} (+{biomeBonus.m_bonus}): <color=orange>{numCollected}/{numTotal}</color> <color=yellow>({bonusScore} Points)</color>\n";
+                        text += $"    {biomeBonus.m_biomeName} (+{biomeBonus.m_bonus}): <color=orange>{numCollected}/{numTotal}</color> <color=yellow>(+{bonusScore} Points)</color>\n";
+
+                        earnedPoints += bonusScore;
                     }
                 }
+
+                text += $"\n<size=17>  Earned Points: <color=orange>{earnedPoints}</color>\n  Penalties: <color=orange>{penaltyPoints}</color></size>\n";
 
                 text += $"</color></size>";
                 return text;
@@ -2219,6 +2100,10 @@ namespace TrophyHuntMod
                 if (GetGameMode() == TrophyGameMode.TrophyRush)
                 {
                     tooltipWindowSize = __m_trophyRushScoreTooltipWindowSize;
+                }
+                else if (GetGameMode() == TrophyGameMode.TrophySaga)
+                {
+                    tooltipWindowSize = __m_trophySagaScoreTooltipWindowSize;
                 }
 
                 Vector3 tooltipOffset = new Vector3(tooltipWindowSize.x / 2, tooltipWindowSize.y, 0);
@@ -2292,11 +2177,6 @@ namespace TrophyHuntMod
 
             public static void AddTooltipTriggersToLuckObject(GameObject uiObject)
             {
-                if (!COLLECT_DROP_RATES)
-                {
-                    return;
-                }
-
                 // Add EventTrigger component if not already present
                 EventTrigger trigger = uiObject.GetComponent<EventTrigger>();
                 if (trigger != null)
@@ -2592,11 +2472,6 @@ namespace TrophyHuntMod
 
             public static void AddTooltipTriggersToTrophyIcon(GameObject trophyIconObject)
             {
-                if (!COLLECT_DROP_RATES)
-                {
-                    return;
-                }
-
                 // Add EventTrigger component if not already present
                 EventTrigger trigger = trophyIconObject.GetComponent<EventTrigger>();
                 if (trigger != null)
@@ -2801,11 +2676,6 @@ namespace TrophyHuntMod
             {
                 static void Postfix(CharacterDrop __instance, ref List<KeyValuePair<GameObject, int>> __result)
                 {
-                    if (!COLLECT_DROP_RATES)
-                    {
-                        return;
-                    }
-
                     if (__instance != null)
                     {
                         Character character = __instance.GetComponent<Character>();
@@ -3168,7 +3038,7 @@ namespace TrophyHuntMod
                 rectTransform.anchorMin = new Vector2(1.0f, 0.0f);
                 rectTransform.anchorMax = new Vector2(1.0f, 0.0f);
                 rectTransform.pivot = new Vector2(1.0f, 0.0f);
-                rectTransform.anchoredPosition = new Vector2(-80, -85); // Position below the logo
+                rectTransform.anchoredPosition = new Vector2(-80, -110); // Position below the logo
                 rectTransform.sizeDelta = new Vector2(200, 25);
 
                 // Add the Button component
@@ -3211,7 +3081,7 @@ namespace TrophyHuntMod
 
             public static void TrophyRushButtonClick()
             {
-                ToggleTrophyRush();
+                ToggleGameMode();
             }
 
             [HarmonyPatch(typeof(FejdStartup), nameof(FejdStartup.Start))]
@@ -3261,6 +3131,14 @@ namespace TrophyHuntMod
 
                             // HACK
                             //GameObject copperPrefab = GameObject.Find("Copper");
+
+//                            FiestaTrophies.Initialize();
+
+                            //foreach (GameObject go in ObjectDB.m_instance.m_items)
+                            //{
+                            //    Debug.Log(go);
+                            //}
+
                         }
                         else
                         {
@@ -3309,8 +3187,9 @@ namespace TrophyHuntMod
                             FejdStartup.m_instance.m_world.m_startingGlobalKeys.Add("enemydamage 150");
                             FejdStartup.m_instance.m_world.m_startingGlobalKeys.Add("enemyspeedsize 110");
                             FejdStartup.m_instance.m_world.m_startingGlobalKeys.Add("enemyleveluprate 120");
-                            FejdStartup.m_instance.m_world.m_startingGlobalKeys.Add("resourcerate 150");
-                            FejdStartup.m_instance.m_world.m_startingGlobalKeys.Add("preset combat_hard:deathpenalty_default: resources_more: raids_default: portals_default");
+                            FejdStartup.m_instance.m_world.m_startingGlobalKeys.Add("resourcerate 200");
+                            FejdStartup.m_instance.m_world.m_startingGlobalKeys.Add("eventrate 0");
+                            FejdStartup.m_instance.m_world.m_startingGlobalKeys.Add("preset combat_hard:deathpenalty_default: resources_muchmore: raids_none: portals_default");
                             FejdStartup.m_instance.m_world.SaveWorldMetaData(DateTime.Now);
                             __instance.UpdateWorldList(centerSelection: true);
                         }
@@ -3319,7 +3198,7 @@ namespace TrophyHuntMod
             }
 
             // Uncomment to inspect current world modifiers when hitting World Modifiers button
-            /*           
+                       
                                    [HarmonyPatch (typeof(FejdStartup), nameof(FejdStartup.OnServerOptions))]
                                    public class ServerOptionsGUI_Initizalize_Patch
                                    {
@@ -3362,7 +3241,7 @@ namespace TrophyHuntMod
                                            }
                                        }
                                    }
-           */
+           
 
             //
             // Inventory Tracking
@@ -3461,6 +3340,48 @@ namespace TrophyHuntMod
                 }
             }
 
+            // Ability to chop down any tree with any axe if the elder power is active
+            //
+            [HarmonyPatch(typeof(TreeBase), nameof(TreeBase.Damage))]
+            public static class TreeBase_Damage_Patch
+            {
+                static void Prefix(TreeBase __instance, ref HitData hit)
+                {
+                   
+                    if (__m_elderPowerCutsAllTrees)
+                    {
+                        Player player = Player.m_localPlayer;
+
+                        if (player != null && player.GetGuardianPowerName() =="GP_TheElder" && player.m_guardianPowerCooldown > 0.0f)
+                        {
+                            hit.m_toolTier = (short)__instance.m_minToolTier;
+                        }
+                    }
+                    //Debug.LogWarning($"Guardian Power: {player.GetGuardianPowerName()}");
+                    //Debug.LogWarning($"Treebase.m_minToolTier: {__instance.m_minToolTier}");
+                    //Debug.LogWarning($"HitData.m_toolTier: {hit.m_toolTier}");
+                }
+            }
+            [HarmonyPatch(typeof(TreeLog), nameof(TreeLog.Damage))]
+            public static class TreeLog_Damage_Patch
+            {
+                static void Prefix(TreeLog __instance, ref HitData hit)
+                {
+
+                    if (__m_elderPowerCutsAllTrees)
+                    {
+                        Player player = Player.m_localPlayer;
+
+                        if (player != null && player.GetGuardianPowerName() == "GP_TheElder" && player.m_guardianPowerCooldown > 0.0f)
+                        {
+                            hit.m_toolTier = (short)__instance.m_minToolTier;
+                        }
+                    }
+                    //Debug.LogWarning($"Guardian Power: {player.GetGuardianPowerName()}");
+                    //Debug.LogWarning($"Treebase.m_minToolTier: {__instance.m_minToolTier}");
+                    //Debug.LogWarning($"HitData.m_toolTier: {hit.m_toolTier}");
+                }
+            }
         }
     }
 }

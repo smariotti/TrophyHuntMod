@@ -59,6 +59,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Properties\IgnoreAccessModifiers.cs" />
+    <Compile Include="TrophyConsoleCommands.cs" />
+    <Compile Include="TrophyFiesta.cs" />
     <Compile Include="TrophyHuntMod.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
