@@ -33,7 +33,7 @@ namespace TrophyHuntMod
     {
         public const string PluginGUID = "com.oathorse.TrophyHuntMod";
         public const string PluginName = "TrophyHuntMod";
-        public const string PluginVersion = "0.5.12";
+        public const string PluginVersion = "0.5.13";
         private readonly Harmony harmony = new Harmony(PluginGUID);
 
         // Configuration variables
@@ -275,6 +275,7 @@ namespace TrophyHuntMod
         // also treats all ore weights as their bar weights across the game
         //
         static bool __m_instaSmelt = true;
+        static bool __m_trophySagaMegingjordAwarded = false;
 
         // If enabled, Elder power
         static bool __m_elderPowerCutsAllTrees = false;
@@ -748,6 +749,8 @@ namespace TrophyHuntMod
                     text += $"<align=\"left\">      * Boat Speed is <color=orange>doubled</color>\n";
                     text += $"<align=\"left\">      * Ores <color=orange>Insta-smelt</color> on pickup\n";
                     text += $"<align=\"left\">      * Raids are <color=orange>disabled</color>\n";
+                    text += $"<align=\"left\">      * Fermenter output is <color=orange>doubled</color>\n";
+                    text += $"<align=\"left\">      * Greylings can <color=orange>drop useful items</color>\n";
                 }
                 if (hasBiomeBonuses)
                 {
@@ -884,11 +887,11 @@ namespace TrophyHuntMod
 
                 // Store the current session data to help determine the player changing these
                 // things at the main menu
-                __m_storedPlayerID = Player.m_localPlayer.GetPlayerID();    
+                __m_storedPlayerID = Player.m_localPlayer.GetPlayerID();
                 __m_storedGameMode = __m_trophyGameMode;
                 __m_storedWorldSeed = WorldGenerator.instance.m_world.m_seedName;
 
-//                FiestaTrophies.Initialize();
+                //                FiestaTrophies.Initialize();
             }
 
             public static void InitializeTrackedDataForNewPlayer()
@@ -1020,8 +1023,8 @@ namespace TrophyHuntMod
                     __m_iconList = new List<GameObject>();
                     CreateTrophyIconElements(healthPanelTransform, __m_trophyHuntData, __m_iconList);
 
-//                    __m_biomeIconList = new List<GameObject>();
-//                    CreateBiomeElements(healthPanelTransform, __m_biomeIconList);
+                    //                    __m_biomeIconList = new List<GameObject>();
+                    //                    CreateBiomeElements(healthPanelTransform, __m_biomeIconList);
 
                     // Create the hover text object
                     CreateTrophyTooltip();
@@ -1218,7 +1221,7 @@ namespace TrophyHuntMod
                 iconImage.color = new Color(0.0f, 0.2f, 0.1f, 0.95f);
                 iconImage.raycastTarget = true;
 
-//                if (__m_trophyRushEnabled)
+                //                if (__m_trophyRushEnabled)
                 if (GetGameMode() == TrophyGameMode.TrophyRush)
                 {
                     iconImage.color = new Color(0.5f, 0.0f, 0.0f);
@@ -1525,7 +1528,7 @@ namespace TrophyHuntMod
 
                         float flashScale = 1 + (1.5f * interpValue);
                         imageRect.localScale = new Vector3(__m_baseTrophyScale, __m_baseTrophyScale, __m_baseTrophyScale) * flashScale * __m_userTrophyScale;
-                        imageRect.anchoredPosition = originalAnchoredPosition + (new Vector2(0, 150.0f) * (float)Math.Sin((float)interpValue/2f));
+                        imageRect.anchoredPosition = originalAnchoredPosition + (new Vector2(0, 150.0f) * (float)Math.Sin((float)interpValue / 2f));
 
                         yield return null;
                     }
@@ -1688,7 +1691,7 @@ namespace TrophyHuntMod
 
                 BiomeBonus biomeBonus = Array.Find(__m_biomeBonuses, element => element.m_biome == trophyHuntData.m_biome);
 
-                foreach(string biomeTrophyName in biomeBonus.m_trophies)
+                foreach (string biomeTrophyName in biomeBonus.m_trophies)
                 {
                     GameObject iconGameObject = __m_iconList.Find(gameObject => gameObject.name == biomeTrophyName);
                     if (iconGameObject != null)
@@ -1829,8 +1832,8 @@ namespace TrophyHuntMod
                     trophies = trophyList,
                     deaths = __m_deaths,
                     logouts = __m_logoutCount,
-                    gamemode = (GetGameMode() == TrophyGameMode.TrophyHunt) 
-                                    ? "TrophyHunt" : (GetGameMode() == TrophyGameMode.TrophyRush) 
+                    gamemode = (GetGameMode() == TrophyGameMode.TrophyHunt)
+                                    ? "TrophyHunt" : (GetGameMode() == TrophyGameMode.TrophyRush)
                                     ? "TrophyRush" : (GetGameMode() == TrophyGameMode.TrophySaga)
                                     ? "TrophySaga" : "TrophyFiesta" //__m_trophyRushEnabled ? "TrophyRush" : "TrophyHunt"
                 };
@@ -2039,8 +2042,8 @@ namespace TrophyHuntMod
                         gameModeText = "Trophy Fiesta";
                         break;
                 }
-//                if (__m_trophyRushEnabled)
-//                    gameModeText = "Trophy Rush";
+                //                if (__m_trophyRushEnabled)
+                //                    gameModeText = "Trophy Rush";
 
                 int trophyCount = __m_trophyCache.Count;
                 int earnedPoints = CalculateTrophyPoints();
@@ -2669,6 +2672,49 @@ namespace TrophyHuntMod
                 }
             }
 
+            public struct SagaModeGreylingDrop
+            {
+                public SagaModeGreylingDrop(string itemName, float dropPercent, int dropAmountMin, int dropAmountMax)
+                {
+                    m_itemName = itemName;
+                    m_dropPercent = dropPercent;
+                    m_dropAmountMin = dropAmountMin;
+                    m_dropAmountMax = dropAmountMax;
+                }
+
+                public string m_itemName;
+                public float m_dropPercent;
+                public int m_dropAmountMin;
+                public int m_dropAmountMax;
+            }
+
+            static public SagaModeGreylingDrop[] __m_greylingDrops = new SagaModeGreylingDrop[]
+            {
+                new SagaModeGreylingDrop("Finewood",        3f,  1, 2),
+                new SagaModeGreylingDrop("Coal",            3f,  1, 2),
+                new SagaModeGreylingDrop("TrophyDeer",      2f,  1, 1),
+                new SagaModeGreylingDrop("RoundLog",        3f,  1, 2),
+                new SagaModeGreylingDrop("ArrowFlint",      2f,  2, 4),
+                new SagaModeGreylingDrop("BoneFragments",   5f,  1, 2),
+                new SagaModeGreylingDrop("Flint",           5f,  1, 2),
+                new SagaModeGreylingDrop("LeatherScraps",   4f,  1, 2),
+                new SagaModeGreylingDrop("DeerHide",        4f,  1, 2),
+                new SagaModeGreylingDrop("DeerMeat",        5f,  1, 2),
+                new SagaModeGreylingDrop("RawMeat",         5f,  1, 2),
+                new SagaModeGreylingDrop("CookedMeat",      3f,  1, 2),
+                new SagaModeGreylingDrop("Feathers",        4f,  1, 2),
+                new SagaModeGreylingDrop("CookedDeerMeat",  3f,  1, 2),
+                new SagaModeGreylingDrop("Acorn",           1f,  1, 1),
+                new SagaModeGreylingDrop("CarrotSeeds",     2f,  1, 1),
+                new SagaModeGreylingDrop("QueenBee",        2f,  1, 1),
+                new SagaModeGreylingDrop("Honey",           3f,  1, 1),
+
+
+                new SagaModeGreylingDrop("BeltStrength",    10f, 1, 1),
+
+            };
+
+
             // Watch character drops and see what characters drop what items (actual dropped items)
             //
             [HarmonyPatch(typeof(CharacterDrop), nameof(CharacterDrop.GenerateDropList))]
@@ -2681,9 +2727,51 @@ namespace TrophyHuntMod
                         Character character = __instance.GetComponent<Character>();
 
                         string characterName = character.m_name;
-
                         if (!CharacterCanDropTrophies(characterName))
                         {
+                            // Saga only Greyling drops
+                            if (GetGameMode() == TrophyGameMode.TrophySaga && characterName == "$enemy_greyling")
+                            {
+                                Debug.LogError("Greyling dropping stuff");
+
+                                List<Drop> dropList = __instance.m_drops;
+
+                                foreach (SagaModeGreylingDrop greylingDrop in __m_greylingDrops)
+                                {
+                                    System.Random randomizer = new System.Random();
+                                    float randValue = (float)randomizer.NextDouble() * 100f;
+
+                                    if (randValue < greylingDrop.m_dropPercent)
+                                    {
+                                        if (greylingDrop.m_itemName == "BeltStrength")
+                                        {
+                                            if (__m_trophySagaMegingjordAwarded)
+                                            {
+                                                continue;
+                                            }
+                                            else
+                                            {
+                                                __m_trophySagaMegingjordAwarded = true;
+                                            }
+                                        }
+
+                                        Debug.LogError($"Dropping {greylingDrop.m_itemName}");
+
+                                        GameObject prefab = ObjectDB.instance.GetItemPrefab(greylingDrop.m_itemName);
+                                        if (prefab != null)
+                                        {
+                                            int itemCount = randomizer.Next(greylingDrop.m_dropAmountMin, greylingDrop.m_dropAmountMax);
+
+                                            KeyValuePair<GameObject, int> newDropItem = new KeyValuePair<GameObject, int>(prefab, itemCount);
+
+                                            if (__result != null)
+                                            {
+                                                __result.Add(newDropItem);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                             return;
                         }
 
@@ -3038,7 +3126,7 @@ namespace TrophyHuntMod
                 rectTransform.anchorMin = new Vector2(1.0f, 0.0f);
                 rectTransform.anchorMax = new Vector2(1.0f, 0.0f);
                 rectTransform.pivot = new Vector2(1.0f, 0.0f);
-                rectTransform.anchoredPosition = new Vector2(-80, -110); // Position below the logo
+                rectTransform.anchoredPosition = new Vector2(-80, -120); // Position below the logo
                 rectTransform.sizeDelta = new Vector2(200, 25);
 
                 // Add the Button component
@@ -3106,7 +3194,7 @@ namespace TrophyHuntMod
                             rectTransform.anchorMin = new Vector2(0.5f, 0.6f);
                             rectTransform.anchorMax = new Vector2(1.0f, 0.6f);
                             rectTransform.pivot = new Vector2(1.0f, 1.0f);
-                            rectTransform.anchoredPosition = new Vector2(-20, 0); // Position below the logo
+                            rectTransform.anchoredPosition = new Vector2(-20, 20); // Position below the logo
                             rectTransform.sizeDelta = new Vector2(-650, 185);
 
                             // Add a TextMeshProUGUI component
@@ -3382,6 +3470,25 @@ namespace TrophyHuntMod
                     //Debug.LogWarning($"HitData.m_toolTier: {hit.m_toolTier}");
                 }
             }
+
+            // In trophy saga, fermenter output is doubled
+            //
+            [HarmonyPatch(typeof(Fermenter), nameof(Fermenter.DelayedTap))]
+            public static class Fermenter_DelayedTap_Patch
+            {
+                static void Prefix(Fermenter __instance)
+                {
+                    if (__instance != null && GetGameMode() == TrophyGameMode.TrophySaga)
+                    {
+                        Fermenter.ItemConversion itemConversion = __instance.GetItemConversion(__instance.m_delayedTapItem);
+                        if (itemConversion != null)
+                        {
+                            itemConversion.m_producedItems *= 2;
+                        }
+                    }
+                }
+            }
+
         }
     }
 }

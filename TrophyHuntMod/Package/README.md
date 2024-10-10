@@ -18,6 +18,13 @@ Two Options:
 
 ## What's New?
 
+v0.5.13
+- Trophy Saga
+  - Loki has been meddling. Greylings can now drop various useful items. One of them is **VERY** useful.
+  - Svartalfar Fermenter overclocking has resulted in double output for all Fermenters
+
+## Previous Changes
+
 v0.5.12
 - Added "Earned Points/Penalties" lines to Score tooltip to make it easier to read and to reinforce what a disaster you are for dying at all. 
 - Trophy Saga balance changes
@@ -25,8 +32,6 @@ v0.5.12
   - Increased Resource Rate to 2x (was 1.5x)
   - Slightly increased Trophy drop rate
   - Fixed Trophy Saga description text. Forgot to add "Raids Disabled"
-
-## Previous Changes
 
 v0.5.11
 - Decreased distance between Map pins for `/showpath` for better player path display during `exploremap` sessions after runs
