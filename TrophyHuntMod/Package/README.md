@@ -18,12 +18,16 @@ Two Options:
 
 ## What's New?
 
+v0.5.14
+- Trophy Saga
+  - Tweaks to Greyling drop rates after some playtesting
+
+## Previous Changes
+
 v0.5.13
 - Trophy Saga
   - Loki has been meddling. Greylings can now drop various useful items. One of them is **VERY** useful.
   - Svartalfar Fermenter overclocking has resulted in double output for all Fermenters
-
-## Previous Changes
 
 v0.5.12
 - Added "Earned Points/Penalties" lines to Score tooltip to make it easier to read and to reinforce what a disaster you are for dying at all. 
@@ -56,7 +60,7 @@ v0.5.8
 
 v0.5.7
 - Trophy Hunt and Trophy Rush balance changes!
-	- Trophy Hunt
+	- Trophy Huntw
 		- Removed Biome Bonuses from Trophy Hunt game mode.
 	- Trophy Rush
 		- Decreased Trophy Rush resource drop rate to 2x (was 3x)

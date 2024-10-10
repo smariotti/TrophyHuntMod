@@ -33,7 +33,7 @@ namespace TrophyHuntMod
     {
         public const string PluginGUID = "com.oathorse.TrophyHuntMod";
         public const string PluginName = "TrophyHuntMod";
-        public const string PluginVersion = "0.5.13";
+        public const string PluginVersion = "0.5.14";
         private readonly Harmony harmony = new Harmony(PluginGUID);
 
         // Configuration variables
@@ -896,6 +896,9 @@ namespace TrophyHuntMod
 
             public static void InitializeTrackedDataForNewPlayer()
             {
+                // Saga mode tracking, drop only one megingjord per session-player
+                __m_trophySagaMegingjordAwarded = false;
+
                 // Reset logout count
                 __m_logoutCount = 0;
 
@@ -2690,27 +2693,27 @@ namespace TrophyHuntMod
 
             static public SagaModeGreylingDrop[] __m_greylingDrops = new SagaModeGreylingDrop[]
             {
-                new SagaModeGreylingDrop("Finewood",        3f,  1, 2),
+                new SagaModeGreylingDrop("Finewood",        5f,  1, 2),
                 new SagaModeGreylingDrop("Coal",            3f,  1, 2),
-                new SagaModeGreylingDrop("TrophyDeer",      2f,  1, 1),
-                new SagaModeGreylingDrop("RoundLog",        3f,  1, 2),
-                new SagaModeGreylingDrop("ArrowFlint",      2f,  2, 4),
-                new SagaModeGreylingDrop("BoneFragments",   5f,  1, 2),
-                new SagaModeGreylingDrop("Flint",           5f,  1, 2),
-                new SagaModeGreylingDrop("LeatherScraps",   4f,  1, 2),
-                new SagaModeGreylingDrop("DeerHide",        4f,  1, 2),
-                new SagaModeGreylingDrop("DeerMeat",        5f,  1, 2),
-                new SagaModeGreylingDrop("RawMeat",         5f,  1, 2),
-                new SagaModeGreylingDrop("CookedMeat",      3f,  1, 2),
-                new SagaModeGreylingDrop("Feathers",        4f,  1, 2),
-                new SagaModeGreylingDrop("CookedDeerMeat",  3f,  1, 2),
-                new SagaModeGreylingDrop("Acorn",           1f,  1, 1),
-                new SagaModeGreylingDrop("CarrotSeeds",     2f,  1, 1),
+                new SagaModeGreylingDrop("TrophyDeer",      3f,  1, 1),
+                new SagaModeGreylingDrop("RoundLog",        4f,  1, 2),
+                new SagaModeGreylingDrop("ArrowFlint",      3f,  2, 4),
+                new SagaModeGreylingDrop("BoneFragments",   6f,  1, 2),
+                new SagaModeGreylingDrop("Flint",           6f,  1, 2),
+                new SagaModeGreylingDrop("LeatherScraps",   5f,  1, 2),
+                new SagaModeGreylingDrop("DeerHide",        5f,  1, 2),
+                new SagaModeGreylingDrop("DeerMeat",        6f,  1, 2),
+                new SagaModeGreylingDrop("RawMeat",         6f,  1, 2),
+                new SagaModeGreylingDrop("CookedMeat",      5f,  1, 2),
+                new SagaModeGreylingDrop("Feathers",        6f,  1, 2),
+                new SagaModeGreylingDrop("CookedDeerMeat",  6f,  1, 2),
+                new SagaModeGreylingDrop("Acorn",           2f,  1, 1),
+                new SagaModeGreylingDrop("CarrotSeeds",     3f,  1, 1),
                 new SagaModeGreylingDrop("QueenBee",        2f,  1, 1),
-                new SagaModeGreylingDrop("Honey",           3f,  1, 1),
+                new SagaModeGreylingDrop("Honey",           5f,  1, 1),
 
 
-                new SagaModeGreylingDrop("BeltStrength",    10f, 1, 1),
+                new SagaModeGreylingDrop("BeltStrength",    12f, 1, 1),
 
             };
 
