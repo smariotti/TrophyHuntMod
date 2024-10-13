@@ -33,7 +33,7 @@ namespace TrophyHuntMod
     {
         public const string PluginGUID = "com.oathorse.TrophyHuntMod";
         public const string PluginName = "TrophyHuntMod";
-        public const string PluginVersion = "0.5.14";
+        public const string PluginVersion = "0.6.0";
         private readonly Harmony harmony = new Harmony(PluginGUID);
 
         // Configuration variables
@@ -728,7 +728,7 @@ namespace TrophyHuntMod
                     text += "\n<align=\"center\"><size=12> <color=yellow>NOTE:</color> To use existing world, change World Modifiers manually!</size>\n";
                     text += "<align=\"center\"><size=14><color=red>EXPERIMENTAL!</color>\n</size>";
                     resourceMultiplier = 2.0f;
-                    combatDifficulty = "Hard";
+                    combatDifficulty = "Normal";
                     dropRate = "Increased";
                     hasBiomeBonuses = true;
                     break;
@@ -749,7 +749,7 @@ namespace TrophyHuntMod
                     text += $"<align=\"left\">      * Boat Speed is <color=orange>doubled</color>\n";
                     text += $"<align=\"left\">      * Ores <color=orange>Insta-smelt</color> on pickup\n";
                     text += $"<align=\"left\">      * Raids are <color=orange>disabled</color>\n";
-                    text += $"<align=\"left\">      * Fermenter output is <color=orange>doubled</color>\n";
+                    text += $"<align=\"left\">      * Speedy <color=orange>Fermenter</color> and <color=orange>crops</color>\n";
                     text += $"<align=\"left\">      * Greylings can <color=orange>drop useful items</color>\n";
                 }
                 if (hasBiomeBonuses)
@@ -2693,27 +2693,27 @@ namespace TrophyHuntMod
 
             static public SagaModeGreylingDrop[] __m_greylingDrops = new SagaModeGreylingDrop[]
             {
-                new SagaModeGreylingDrop("Finewood",        5f,  1, 2),
-                new SagaModeGreylingDrop("Coal",            3f,  1, 2),
-                new SagaModeGreylingDrop("TrophyDeer",      3f,  1, 1),
-                new SagaModeGreylingDrop("RoundLog",        4f,  1, 2),
-                new SagaModeGreylingDrop("ArrowFlint",      3f,  2, 4),
-                new SagaModeGreylingDrop("BoneFragments",   6f,  1, 2),
-                new SagaModeGreylingDrop("Flint",           6f,  1, 2),
-                new SagaModeGreylingDrop("LeatherScraps",   5f,  1, 2),
-                new SagaModeGreylingDrop("DeerHide",        5f,  1, 2),
-                new SagaModeGreylingDrop("DeerMeat",        6f,  1, 2),
-                new SagaModeGreylingDrop("RawMeat",         6f,  1, 2),
-                new SagaModeGreylingDrop("CookedMeat",      5f,  1, 2),
-                new SagaModeGreylingDrop("Feathers",        6f,  1, 2),
-                new SagaModeGreylingDrop("CookedDeerMeat",  6f,  1, 2),
-                new SagaModeGreylingDrop("Acorn",           2f,  1, 1),
-                new SagaModeGreylingDrop("CarrotSeeds",     3f,  1, 1),
-                new SagaModeGreylingDrop("QueenBee",        2f,  1, 1),
-                new SagaModeGreylingDrop("Honey",           5f,  1, 1),
+                new SagaModeGreylingDrop("Finewood",        6,  1, 3),
+                new SagaModeGreylingDrop("Coal",            5,  1, 2),
+                new SagaModeGreylingDrop("TrophyDeer",      6,  1, 1),
+                new SagaModeGreylingDrop("RoundLog",        8,  1, 3),
+                new SagaModeGreylingDrop("ArrowFlint",      6,  2, 4),
+                new SagaModeGreylingDrop("BoneFragments",   8,  1, 2),
+                new SagaModeGreylingDrop("Flint",           8,  1, 3),
+                new SagaModeGreylingDrop("LeatherScraps",   6,  1, 2),
+                new SagaModeGreylingDrop("DeerHide",        6,  1, 2),
+                new SagaModeGreylingDrop("DeerMeat",        8,  1, 2),
+                new SagaModeGreylingDrop("RawMeat",         8,  1, 2),
+                new SagaModeGreylingDrop("CookedMeat",      6,  1, 2),
+                new SagaModeGreylingDrop("Feathers",        8,  1, 2),
+                new SagaModeGreylingDrop("CookedDeerMeat",  8,  1, 2),
+                new SagaModeGreylingDrop("Acorn",           4,  1, 1),
+                new SagaModeGreylingDrop("CarrotSeeds",     6,  1, 1),
+                new SagaModeGreylingDrop("QueenBee",        4,  1, 1),
+                new SagaModeGreylingDrop("Honey",           6,  1, 1),
 
 
-                new SagaModeGreylingDrop("BeltStrength",    12f, 1, 1),
+                new SagaModeGreylingDrop("BeltStrength",    8,  1, 1),
 
             };
 
@@ -2903,7 +2903,9 @@ namespace TrophyHuntMod
                 { "BlackMetalScrap",    "BlackMetal" },
                 { "FlametalOreNew",     "FlametalNew" },
                 { "BronzeScrap",        "Bronze" },
-                { "CopperScrap",        "Copper" }
+                { "CopperScrap",        "Copper" },
+
+//                { "Sap",                "Eitr"}
             };
 
             public static void ConvertMetal(ref ItemDrop.ItemData itemData)
@@ -3274,13 +3276,20 @@ namespace TrophyHuntMod
                         {
                             FejdStartup.m_instance.m_world.m_startingGlobalKeys.Clear();
 
-                            FejdStartup.m_instance.m_world.m_startingGlobalKeys.Add("playerdamage 85");
-                            FejdStartup.m_instance.m_world.m_startingGlobalKeys.Add("enemydamage 150");
-                            FejdStartup.m_instance.m_world.m_startingGlobalKeys.Add("enemyspeedsize 110");
-                            FejdStartup.m_instance.m_world.m_startingGlobalKeys.Add("enemyleveluprate 120");
+                            // Trying new tack with World Modifiers: portal everything, normal combat, no raids, double resources
                             FejdStartup.m_instance.m_world.m_startingGlobalKeys.Add("resourcerate 200");
                             FejdStartup.m_instance.m_world.m_startingGlobalKeys.Add("eventrate 0");
-                            FejdStartup.m_instance.m_world.m_startingGlobalKeys.Add("preset combat_hard:deathpenalty_default: resources_muchmore: raids_none: portals_default");
+                            FejdStartup.m_instance.m_world.m_startingGlobalKeys.Add("teleportall");
+                            FejdStartup.m_instance.m_world.m_startingGlobalKeys.Add("preset combat_default:deathpenalty_default:resources_muchmore:raids_none:portals_casual");
+
+                            //FejdStartup.m_instance.m_world.m_startingGlobalKeys.Add("playerdamage 85");
+                            //FejdStartup.m_instance.m_world.m_startingGlobalKeys.Add("enemydamage 150");
+                            //FejdStartup.m_instance.m_world.m_startingGlobalKeys.Add("enemyspeedsize 110");
+                            //FejdStartup.m_instance.m_world.m_startingGlobalKeys.Add("enemyleveluprate 120");
+                            //FejdStartup.m_instance.m_world.m_startingGlobalKeys.Add("resourcerate 200");
+                            //FejdStartup.m_instance.m_world.m_startingGlobalKeys.Add("eventrate 0");
+                            //FejdStartup.m_instance.m_world.m_startingGlobalKeys.Add("preset combat_hard:deathpenalty_default: resources_muchmore: raids_none: portals_default");
+
                             FejdStartup.m_instance.m_world.SaveWorldMetaData(DateTime.Now);
                             __instance.UpdateWorldList(centerSelection: true);
                         }
@@ -3289,7 +3298,7 @@ namespace TrophyHuntMod
             }
 
             // Uncomment to inspect current world modifiers when hitting World Modifiers button
-                       
+            /*           
                                    [HarmonyPatch (typeof(FejdStartup), nameof(FejdStartup.OnServerOptions))]
                                    public class ServerOptionsGUI_Initizalize_Patch
                                    {
@@ -3332,7 +3341,7 @@ namespace TrophyHuntMod
                                            }
                                        }
                                    }
-           
+           */
 
             //
             // Inventory Tracking
@@ -3356,49 +3365,47 @@ namespace TrophyHuntMod
                     }
                 }
             }
-            /*
 
-                        [HarmonyPatch(typeof(Inventory), nameof(Inventory.RemoveItem), new[] { typeof(ItemDrop.ItemData), typeof(int) })]
-                        public static class Inventory_RemoveItem_Patch
-                        {
-                            static void Postfix(Inventory __instance, ItemDrop.ItemData item, int amount, bool __result)
-                            {
-                                if (__instance == Player.m_localPlayer.GetInventory())
-                                {
-                                    if (__result)
-                                    {
-                                        // Item successfully removed from inventory
-                                        Debug.LogError($"Item removed from inventory: {item.m_shared.m_name} (Amount: {amount})");
-                                    }
+            //[HarmonyPatch(typeof(Inventory), nameof(Inventory.RemoveItem), new[] { typeof(ItemDrop.ItemData), typeof(int) })]
+            //public static class Inventory_RemoveItem_Patch
+            //{
+            //    static void Postfix(Inventory __instance, ItemDrop.ItemData item, int amount, bool __result)
+            //    {
+            //        if (__instance == Player.m_localPlayer.GetInventory())
+            //        {
+            //            if (__result)
+            //            {
+            //                // Item successfully removed from inventory
+            //                Debug.LogError($"Item removed from inventory: {item.m_shared.m_name} (Amount: {amount})");
+            //            }
 
-                                    Inventory playerInventory = Player.m_localPlayer.GetInventory();
-                                    bool hasItem = playerInventory.ContainsItem(item);
+            //            Inventory playerInventory = Player.m_localPlayer.GetInventory();
+            //            bool hasItem = playerInventory.ContainsItem(item);
 
-                                    if (hasItem)
-                                    {
-                                        Debug.LogError($"Player has item: {item.m_shared.m_name}");
-                                    }
-                                }
-                            }
-                        }
+            //            if (hasItem)
+            //            {
+            //                Debug.LogError($"Player has item: {item.m_shared.m_name}");
+            //            }
+            //        }
+            //    }
+            //}
 
-                        [HarmonyPatch(typeof(Inventory), nameof(Inventory.Changed))]
-                        public static class Inventory_Changed_Patch
-                        {
-                            static void Postfix(Inventory __instance)
-                            {
-                                if (__instance != null && Player.m_localPlayer != null
-                                    && __instance == Player.m_localPlayer.GetInventory())
-                                {
-                                    Debug.LogWarning($"Player Inventory Changed");
-                                    //foreach(ItemDrop.ItemData item in __instance.m_inventory)
-                                    //{
-                                    //    Debug.LogWarning($"  item: {item.m_shared.m_name} ({item.m_dropPrefab.name}) {item.m_stack}");
-                                    //}
-                                }
-                            }
-                        }
-            */
+            //[HarmonyPatch(typeof(Inventory), nameof(Inventory.Changed))]
+            //public static class Inventory_Changed_Patch
+            //{
+            //    static void Postfix(Inventory __instance)
+            //    {
+            //        if (__instance != null && Player.m_localPlayer != null
+            //            && __instance == Player.m_localPlayer.GetInventory())
+            //        {
+            //            Debug.LogWarning($"Player Inventory Changed");
+            //            //foreach(ItemDrop.ItemData item in __instance.m_inventory)
+            //            //{
+            //            //    Debug.LogWarning($"  item: {item.m_shared.m_name} ({item.m_dropPrefab.name}) {item.m_stack}");
+            //            //}
+            //        }
+            //    }
+            //}
 
             // Catch /die console command to track it
             [HarmonyPatch(typeof(ConsoleCommand), nameof(ConsoleCommand.RunAction), new[] { typeof(ConsoleEventArgs)})]
@@ -3474,6 +3481,26 @@ namespace TrophyHuntMod
                 }
             }
 
+
+            // In trophy saga, fermentation time is greatly reduced
+
+            [HarmonyPatch(typeof(Fermenter), nameof(Fermenter.AddItem))]
+            public static class Fermenter_AddItem_Patch
+            {
+                static void Postfix(Fermenter __instance, Humanoid user, ItemDrop.ItemData item, ref bool __result)
+                {
+                    if (__instance != null && GetGameMode() == TrophyGameMode.TrophySaga)
+                    {
+                        Debug.LogWarning("Fermenter.AddItem()");
+
+                        if (__result)
+                        {
+                            __instance.m_fermentationDuration = 10;
+                        }
+                    }
+                }
+            }
+
             // In trophy saga, fermenter output is doubled
             //
             [HarmonyPatch(typeof(Fermenter), nameof(Fermenter.DelayedTap))]
@@ -3483,15 +3510,173 @@ namespace TrophyHuntMod
                 {
                     if (__instance != null && GetGameMode() == TrophyGameMode.TrophySaga)
                     {
+
                         Fermenter.ItemConversion itemConversion = __instance.GetItemConversion(__instance.m_delayedTapItem);
                         if (itemConversion != null)
                         {
-                            itemConversion.m_producedItems *= 2;
+                            itemConversion.m_producedItems = (int) ((float)itemConversion.m_producedItems * 1.5f);
                         }
                     }
                 }
             }
 
+            // In trophy saga, Planted plants grow to maturity as soon as possible
+            //
+            [HarmonyPatch(typeof(Plant), nameof(Plant.TimeSincePlanted))]
+            public static class Plant_GetGrowTime_Patch
+            {
+                static void Postfix(Plant __instance, ref double __result)
+                {
+                    if (__instance != null && GetGameMode() == TrophyGameMode.TrophySaga)
+                    {
+                        Debug.LogWarning("Plant.TimeSincePlanted()");
+
+                        __result = (double)__instance.m_growTimeMax + 1;
+                    }
+                }
+            }
+
+            // Let's not fuck with cooking stations
+            //
+            //[HarmonyPatch(typeof(CookingStation), MethodType.Constructor)]
+            //public static class CookingStation_Constructor_Patch
+            //{
+            //    static void Postfix(CookingStation __instance)
+            //    {
+            //        if (__instance != null && GetGameMode() == TrophyGameMode.TrophySaga)
+            //        {
+            //            Debug.LogWarning($"CookingStation() {__instance.m_name}");
+            //        }
+            //    }
+            //}
+
+            [HarmonyPatch(typeof(Smelter), nameof(Smelter.Awake))]
+            public static class Smelter_Awake_Patch
+            {
+                static void Postfix(Smelter __instance)
+                {
+                    if (__instance != null && GetGameMode() == TrophyGameMode.TrophySaga)
+                    {
+                        Debug.LogWarning($"Smelter.Awake() {__instance.m_name}");
+                        //foreach (Smelter.ItemConversion item in __instance.m_conversion)
+                        //{
+                        //    Debug.LogWarning($" {item.m_from.name} to {item.m_to.name}");
+                        //}
+                        
+                        if (__instance.m_name.Contains("eitr"))
+                        {
+                            __instance.m_secPerProduct = 1f;
+                        }
+                        else
+                        {
+                            __instance.m_secPerProduct = 0.03f;
+                            //                        __instance.m_fuelPerProduct = 0;
+                            //                        __instance.m_maxOre = 0;
+                        }
+                    }
+                }
+            }
+
+            // If it's an Eitr Refiner, auto-add the "ore" (Softtissue) when Sap is added to remove Softtisue requirement
+            [HarmonyPatch(typeof(Smelter), nameof(Smelter.OnAddFuel))]
+            public static class Smelter_OnAddFuel_Patch
+            {
+                static void Postfix(Smelter __instance, Switch sw, Humanoid user, ItemDrop.ItemData item, bool __result)
+                {
+                    if (__instance != null && GetGameMode() == TrophyGameMode.TrophySaga)
+                    {
+                        Debug.LogWarning($"Smelter.OnAddFuel() {__instance.m_name}");
+
+                        if (__instance.m_name.Contains("eitr"))
+                        {
+                            // Add ore if not full
+                            if (__instance.GetQueueSize() < __instance.m_maxOre)
+                            {
+                                __instance.m_nview.InvokeRPC("RPC_AddOre", "Softtissue");
+                            }
+                        }
+                    }
+                }
+            }
+
+            //[HarmonyPatch(typeof(LoadingIndicator), nameof(LoadingIndicator.Awake))]
+            //public static class LoadingIndicator_Awake_Patch
+            //{
+            //    static void Postfix(LoadingIndicator __instance)
+            //    {
+            //        if (__instance != null)
+            //        {
+            //            Debug.LogWarning($"LoadingIndicator.Awake() {__instance.m_spinner.name}");
+
+            //            Transform trophyImageTransform = InventoryGui.instance.transform.Find("root/Info/Trophies/Image");
+            //            if (trophyImageTransform != null)
+            //            {
+            //                Debug.LogError("Found trophies image");
+            //                UnityEngine.UI.Image trophyImage = trophyImageTransform.GetComponent<UnityEngine.UI.Image>();
+
+            //                __instance.m_progressIndicator = trophyImage;
+            //            }
+
+            //        }
+            //    }
+            //}
+
+
+            // Eitr Refinery
+            // "eitrrefinery"
+            // insta-sap, Sap (0.2 weight to Eitr 5.0 weight)
+            // Soft Tissue: "SoftTissue" "$item_softtissue"
+            // Sap: "Sap" "$item_sap" 0.2 weight
+            // Eitr: "Eitr" "$item_eitr" 5.0 weight
+            //
+            // Sap converts to Eitr when picked up?
+            //
+
+            // Boss Drops
+            //
+            // Eikthyr
+            //  Hard Antler: "HardAntler" "$item_hardantler"
+            //  Not dropped by anyone else
+            //
+            // Elder
+            //  Crypt Key: "CryptKey" "$item_cryptkey"
+            //  Also dropped by Greyling Brutes? 25%
+            //
+            // Bonemass
+            //  Wishbone: "Wishbone" "$item_wishbone"
+            //  Dropped by Oozers, 50%?
+            //
+            // Moder
+            //  Dragon Tear: "DragonTear" "$item_dragontear"
+            //  Dropped by Drakes, 10%?
+            //
+            // Yagluth
+            //  Torn Spirit: "YagluthDrop" "$item_yagluththing"
+            //  Dropped by Fuling Shaman, 25%?
+            //
+            // Queen
+            //  Majestic Carapace: "QueenDrop" "$item_seekerqueen_drop"
+            //  Dropped by Seeker Soldiers, 25%?
+            //
+
+
+            // Spinning Wheel
+            // "piece_spinningwheel"
+            //   
+
+            // Windmill
+            // "Windmill"
+            // Windmill(), has m_smelter that makes it?
+
+
+            // Oven
+            // "piece_oven"
+            // CookingStation()
+            // m_smelter
+            //
+
+
+            // END Harmony Patch area
         }
     }
 }

@@ -18,12 +18,28 @@ Two Options:
 
 ## What's New?
 
-v0.5.13
+v0.5.16
 - Trophy Saga
-  - Loki has been meddling. Greylings can drop useful items. Some of them **VERY** useful.
-  - Svartalf Fermenter overclocking results in double output for all Fermenters
+  - Bah! Forgot to update the main menu description text for Saga. Again. Nothing else changed, just the description text.
 
 ## Previous Changes
+
+v0.5.15
+- Trophy Saga
+  - Yeast and bacteria collected from soil at the roots of the World Tree have been dispersed throughout the tenth world. These ancient micro-organisms were once known only to the three goddesses of past, present and future. The Norns' secret has escaped!
+	- Fermenters now create mead in seconds instead of days
+	- Crops grow to full maturity in seconds instead of days
+  - Loki continues to toy with the kleptomaniac Greylings!
+	- Drop rates of Greyling items adjusted
+
+v0.5.14
+- Trophy Saga
+  - Tweaks to Greyling drop rates after some playtesting
+
+v0.5.13
+- Trophy Saga
+  - Loki has been meddling. Greylings can now drop various useful items. One of them is **VERY** useful.
+  - Svartalfar Fermenter overclocking has resulted in double output for all Fermenters
 
 v0.5.12
 - Added "Earned Points/Penalties" lines to Score tooltip to make it easier to read and to reinforce what a disaster you are for dying at all. 
@@ -56,7 +72,7 @@ v0.5.8
 
 v0.5.7
 - Trophy Hunt and Trophy Rush balance changes!
-	- Trophy Hunt
+	- Trophy Huntw
 		- Removed Biome Bonuses from Trophy Hunt game mode.
 	- Trophy Rush
 		- Decreased Trophy Rush resource drop rate to 2x (was 3x)
