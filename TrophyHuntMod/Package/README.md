@@ -18,11 +18,36 @@ Two Options:
 
 ## What's New?
 
+v0.6.0
+- Trophy Saga
+  - Combat Difficulty is now set to **Normal** (was Hard)
+  - Portals now allow **all** items through (metals, eggs, etc.)
+  - Biome Boss Minions now have a chance to drop Boss Items
+	- Black Forest: Greydwarf Brute has a chance to drop Crypt Key
+	- Swamp: Oozers have a chance to drop Wishbone
+	- Mountains: Drakes have a chance to drop Moder's Tears
+	- Plains: Fuling Shaman have a chance to drop Torn Spirit
+	- Mistlands: Seeker Soldiers have a chance to drop Majestic Carapace
+  - Hildir Mini-bosses always drop their Biome's Boss Item
+  - Rancid Remains always drops his mace (Iron Mace, non-poisonous)
+  - Production buildings that take time to process **all** take only seconds
+	- Fermenter (as in previous version)
+	- Charcoal Kiln
+	- Spinning Wheel
+	- Windmill
+	- Eitr Refiner (this also **no longer requires Soft Tissue**, just Sap)
+	- NOTE: Cooking buildings are unchanged from vanilla (Cooking Station, Iron Cooking Station, Cauldron, Stone Oven)
+  - All planted seeds and saplings grow to maturity within 10 seconds (as in previous version)
+  - Greyling drop rates adjusted again, Greylings have a chance to drop Megingjord
+- Fixed a glitch with Geirrhafa's trophy where it would stick to the player in game modes where Biome Bonuses were enabled
+- Updated Trophy Saga description text
+
+
+## Previous Changes
+
 v0.5.16
 - Trophy Saga
   - Bah! Forgot to update the main menu description text for Saga. Again. Nothing else changed, just the description text.
-
-## Previous Changes
 
 v0.5.15
 - Trophy Saga
