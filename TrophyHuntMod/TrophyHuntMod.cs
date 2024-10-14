@@ -91,7 +91,7 @@ namespace TrophyHuntMod
 
         const float LOGOUT_PENALTY_GRACE_DISTANCE = 50.0f;  // total distance you're allowed to walk/run from initial spawn and get a free logout to clear wet debuff
 
-        const float DEFAULT_SCORE_FONT_SIZE = 30;
+        const float DEFAULT_SCORE_FONT_SIZE = 25;
 
         //
         // Trophy Scores updated from Discord chat 08/18/24
@@ -211,8 +211,8 @@ namespace TrophyHuntMod
         static List<GameObject> __m_iconList = null;
 
         static float __m_baseTrophyScale = 1.4f;
-        static float __m_userTrophyScale = 1.0f;
-        static float __m_userScoreScale = 1.0f;
+        static float __m_userIconScale = 1.0f;
+        static float __m_userTextScale = 1.0f;
         static float __m_userTrophySpacing = 0.0f;
 
         // TrophyHuntData list
@@ -490,25 +490,28 @@ namespace TrophyHuntMod
                 {
                     float userScale = float.Parse(args[1]);
                     if (userScale == 0) userScale = 1;
-                    __m_userScoreScale = userScale;
+                    __m_userTextScale = userScale;
 
                 }
                 else
                 {
                     // no arguments means reset
-                    __m_userScoreScale = 1.0f;
+                    __m_userTextScale = 1.0f;
                 }
 
+                RectTransform textTransform = __m_scoreTextElement.GetComponent<RectTransform>();
+                textTransform.localScale = new Vector3(__m_userTextScale, __m_userTextScale, __m_userTextScale);
+
                 // Readjust the UI elements' trophy sizes
-                Player player = Player.m_localPlayer;
-                if (player != null)
-                {
-                    TextMeshProUGUI textElement = __m_scoreTextElement.GetComponent<TextMeshProUGUI>();
-                    if (textElement != null)
-                    {
-                        textElement.fontSize = DEFAULT_SCORE_FONT_SIZE * __m_userScoreScale;
-                    }
-                }
+                //Player player = Player.m_localPlayer;
+                //if (player != null)
+                //{
+                //    TextMeshProUGUI textElement = __m_scoreTextElement.GetComponent<TextMeshProUGUI>();
+                //    if (textElement != null)
+                //    {
+                //        textElement.fontSize = DEFAULT_SCORE_FONT_SIZE * __m_userScoreScale;
+                //    }
+                //}
             });
 
             ConsoleCommand trophyScaleCommand = new ConsoleCommand("trophyscale", "Scale the trophy sizes (1.0 is default)", delegate (ConsoleEventArgs args)
@@ -523,7 +526,7 @@ namespace TrophyHuntMod
                 {
                     float userScale = float.Parse(args[1]);
                     if (userScale == 0) userScale = 1;
-                    __m_userTrophyScale = userScale;
+                    __m_userIconScale = userScale;
 
                     // second argument is base trophy scale (for debugging)
                     if (args.Length > 2)
@@ -536,7 +539,7 @@ namespace TrophyHuntMod
                 else
                 {
                     // no arguments means reset
-                    __m_userTrophyScale = 1.0f;
+                    __m_userIconScale = 1.0f;
                     __m_baseTrophyScale = 1.0f;
                 }
 
@@ -560,7 +563,7 @@ namespace TrophyHuntMod
 
                                 if (imageRect != null)
                                 {
-                                    imageRect.localScale = new Vector3(__m_baseTrophyScale, __m_baseTrophyScale, __m_baseTrophyScale) * __m_userTrophyScale;
+                                    imageRect.localScale = new Vector3(__m_baseTrophyScale, __m_baseTrophyScale, __m_baseTrophyScale) * __m_userIconScale;
                                 }
                             }
                         }
@@ -1054,6 +1057,7 @@ namespace TrophyHuntMod
                 RectTransform rectTransform = logElement.AddComponent<RectTransform>();
                 rectTransform.sizeDelta = new Vector2(40, 40);
                 rectTransform.anchoredPosition = new Vector2(-70, -105);
+                rectTransform.localScale = new Vector3(__m_userIconScale, __m_userIconScale, __m_userIconScale);
 
                 UnityEngine.UI.Image image = logElement.AddComponent<UnityEngine.UI.Image>();
                 image.sprite = logSprite;
@@ -1067,6 +1071,7 @@ namespace TrophyHuntMod
                 rectTransform = relogsElement.AddComponent<RectTransform>();
                 rectTransform.sizeDelta = new Vector2(60, 20); // Set size
                 rectTransform.anchoredPosition = new Vector2(-70, -105); // Set position
+                rectTransform.localScale = new Vector3(__m_userTextScale, __m_userTextScale, __m_userTextScale);
 
                 TMPro.TextMeshProUGUI tmText = relogsElement.AddComponent<TMPro.TextMeshProUGUI>();
 
@@ -1077,7 +1082,7 @@ namespace TrophyHuntMod
                 tmText.raycastTarget = false;
                 tmText.fontMaterial.EnableKeyword("OUTLINE_ON");
                 tmText.outlineColor = Color.black;
-                tmText.outlineWidth = 0.06f; // Adjust the thickness
+                tmText.outlineWidth = 0.125f; // Adjust the thickness
 
                 if (__m_ignoreLogouts)
                 {
@@ -1097,6 +1102,7 @@ namespace TrophyHuntMod
                 RectTransform rectTransform = luckElement.AddComponent<RectTransform>();
                 rectTransform.sizeDelta = new Vector2(40, 40);
                 rectTransform.anchoredPosition = new Vector2(-70, -20);
+                rectTransform.localScale = new Vector3(__m_userIconScale, __m_userIconScale, __m_userIconScale);
 
                 UnityEngine.UI.Image image = luckElement.AddComponent<UnityEngine.UI.Image>();
                 image.sprite = luckSprite;
@@ -1121,6 +1127,7 @@ namespace TrophyHuntMod
                 RectTransform rectTransform = skullElement.AddComponent<RectTransform>();
                 rectTransform.sizeDelta = new Vector2(50, 50);
                 rectTransform.anchoredPosition = new Vector2(-70, -65); // Set position
+                rectTransform.localScale = new Vector3(__m_userIconScale, __m_userIconScale, __m_userIconScale);
 
                 // Add an Image component
                 UnityEngine.UI.Image image = skullElement.AddComponent<UnityEngine.UI.Image>();
@@ -1134,13 +1141,17 @@ namespace TrophyHuntMod
                 RectTransform deathsTextTransform = deathsTextElement.AddComponent<RectTransform>();
                 deathsTextTransform.sizeDelta = new Vector2(40, 40);
                 deathsTextTransform.anchoredPosition = rectTransform.anchoredPosition;
+                deathsTextTransform.localScale = new Vector3(__m_userTextScale, __m_userTextScale, __m_userTextScale);
 
                 TMPro.TextMeshProUGUI tmText = deathsTextElement.AddComponent<TMPro.TextMeshProUGUI>();
                 tmText.text = $"{__m_deaths}";
-                tmText.fontSize = 22;
+                tmText.fontSize = 24;
                 tmText.color = Color.yellow;
                 tmText.alignment = TextAlignmentOptions.Center;
                 tmText.raycastTarget = false;
+                tmText.fontMaterial.EnableKeyword("OUTLINE_ON");
+                tmText.outlineColor = Color.black;
+                tmText.outlineWidth = 0.125f; // Adjust the thickness
 
                 return deathsTextElement;
             }
@@ -1172,6 +1183,7 @@ namespace TrophyHuntMod
                 RectTransform rectTransform = scoreTextElement.AddComponent<RectTransform>();
                 rectTransform.sizeDelta = scoreSize;
                 rectTransform.anchoredPosition = scorePos;
+                rectTransform.localScale = new Vector3(__m_userTextScale, __m_userTextScale, __m_userTextScale);
 
                 int scoreValue = 9999;
 
@@ -1185,7 +1197,7 @@ namespace TrophyHuntMod
                 tmText.raycastTarget = true;
                 tmText.fontMaterial.EnableKeyword("OUTLINE_ON");
                 tmText.outlineColor = Color.black;
-                tmText.outlineWidth = 0.07f; // Adjust the thickness
+                tmText.outlineWidth = 0.125f; // Adjust the thickness
                                              //                tmText.enableAutoSizing = true;
 
                 AddTooltipTriggersToScoreObject(scoreTextElement);
@@ -1221,7 +1233,7 @@ namespace TrophyHuntMod
                 RectTransform iconRectTransform = iconElement.AddComponent<RectTransform>();
                 iconRectTransform.sizeDelta = new Vector2(iconSize, iconSize); // Set size
                 iconRectTransform.anchoredPosition = new Vector2(xOffset + index * (iconSize + iconBorderSize + __m_userTrophySpacing), yOffset); // Set position
-                iconRectTransform.localScale = new Vector3(__m_baseTrophyScale, __m_baseTrophyScale, __m_baseTrophyScale) * __m_userTrophyScale;
+                iconRectTransform.localScale = new Vector3(__m_baseTrophyScale, __m_baseTrophyScale, __m_baseTrophyScale) * __m_userIconScale;
 
                 // Add an Image component for Sprite
                 UnityEngine.UI.Image iconImage = iconElement.AddComponent<UnityEngine.UI.Image>();
@@ -1551,7 +1563,7 @@ namespace TrophyHuntMod
                         }
 
                         float flashScale = 1 + (1.5f * interpValue);
-                        imageRect.localScale = new Vector3(__m_baseTrophyScale, __m_baseTrophyScale, __m_baseTrophyScale) * flashScale * __m_userTrophyScale;
+                        imageRect.localScale = new Vector3(__m_baseTrophyScale, __m_baseTrophyScale, __m_baseTrophyScale) * flashScale * __m_userIconScale;
                         imageRect.anchoredPosition = originalAnchoredPosition + (new Vector2(0, 150.0f) * (float)Math.Sin((float)interpValue / 2f));
 
                         yield return null;
@@ -1597,7 +1609,7 @@ namespace TrophyHuntMod
 
                         float flashScale = 1 + (timeElapsed / flashDuration);
 
-                        imageRect.localScale = new Vector3(__m_baseTrophyScale, __m_baseTrophyScale, __m_baseTrophyScale) * flashScale * __m_userTrophyScale;
+                        imageRect.localScale = new Vector3(__m_baseTrophyScale, __m_baseTrophyScale, __m_baseTrophyScale) * flashScale * __m_userIconScale;
                         imageRect.anchoredPosition = originalAnchoredPosition + (new Vector2(0, 200.0f) * curPosition);
 
                         yield return null;
@@ -3678,27 +3690,38 @@ namespace TrophyHuntMod
                 }
             }
 
-            //[HarmonyPatch(typeof(LoadingIndicator), nameof(LoadingIndicator.Awake))]
-            //public static class LoadingIndicator_Awake_Patch
-            //{
-            //    static void Postfix(LoadingIndicator __instance)
-            //    {
-            //        if (__instance != null)
-            //        {
-            //            Debug.LogWarning($"LoadingIndicator.Awake() {__instance.m_spinner.name}");
+            [HarmonyPatch(typeof(LoadingIndicator), nameof(LoadingIndicator.Awake))]
+            public static class LoadingIndicator_Awake_Patch
+            {
+                static void Postfix(LoadingIndicator __instance)
+                {
+                    if (__instance != null)
+                    {
+                        Debug.LogWarning($"LoadingIndicator.Awake() {__instance.m_spinner.name} {__instance.m_spinner.sprite.name}");
 
-            //            Transform trophyImageTransform = InventoryGui.instance.transform.Find("root/Info/Trophies/Image");
-            //            if (trophyImageTransform != null)
-            //            {
-            //                Debug.LogError("Found trophies image");
-            //                UnityEngine.UI.Image trophyImage = trophyImageTransform.GetComponent<UnityEngine.UI.Image>();
+                        IEnumerable<AssetBundle> loadedBundles = AssetBundle.GetAllLoadedAssetBundles();
 
-            //                __instance.m_progressIndicator = trophyImage;
-            //            }
+                        foreach (var bundle in loadedBundles)
+                        {
+                            string assetName = "Assets/UI/textures/small/trophies.png";
+                            if (bundle.Contains(assetName))
+                            {
+                                var asset = bundle.LoadAsset(assetName);
+                                if (asset is Texture2D texture)
+                                {
+                                    Sprite trophySprite = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), new Vector2(0.5f, 0.5f));
 
-            //        }
-            //    }
-            //}
+                                    __instance.m_spinner.sprite = trophySprite;
+                                    __instance.m_spinner.color = new Color(255f / 255f, 215f / 255f, 0, 1);
+                                    __instance.m_spinnerOriginalColor = __instance.m_spinner.color;
+                                }
+
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
 
 
             // Eitr Refinery
