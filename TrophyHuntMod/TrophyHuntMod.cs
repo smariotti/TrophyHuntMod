@@ -3697,8 +3697,7 @@ namespace TrophyHuntMod
                 {
                     if (__instance != null)
                     {
-                        Debug.LogWarning($"LoadingIndicator.Awake() {__instance.m_spinner.name} {__instance.m_spinner.sprite.name}");
-
+//                        Debug.LogWarning($"LoadingIndicator.Awake() {__instance.m_spinner.name} {__instance.m_spinner.sprite.name}");
                         IEnumerable<AssetBundle> loadedBundles = AssetBundle.GetAllLoadedAssetBundles();
 
                         foreach (var bundle in loadedBundles)
@@ -3714,12 +3713,40 @@ namespace TrophyHuntMod
                                     __instance.m_spinner.sprite = trophySprite;
                                     __instance.m_spinner.color = new Color(255f / 255f, 215f / 255f, 0, 1);
                                     __instance.m_spinnerOriginalColor = __instance.m_spinner.color;
+
+                                    //Texture2D newTexture = CreateReadableTextureCopy(texture);
+                                    //byte[] pngData = newTexture.EncodeToPNG();
+                                    //File.WriteAllBytes("ValheimTrophyIcon", pngData);
+
                                 }
 
                                 break;
                             }
                         }
                     }
+
+                    Texture2D CreateReadableTextureCopy(Texture2D texture)
+                    {
+                        // Create a new Texture2D with the same width, height, and format as the original
+                        Texture2D readableTexture = new Texture2D(texture.width, texture.height, texture.format, texture.mipmapCount > 1);
+
+                        // Copy the pixel data from the original to the new texture
+                        RenderTexture tempRenderTexture = RenderTexture.GetTemporary(texture.width, texture.height);
+                        Graphics.Blit(texture, tempRenderTexture);
+                        RenderTexture previous = RenderTexture.active;
+                        RenderTexture.active = tempRenderTexture;
+
+                        // Read the pixels from the RenderTexture into the new Texture2D
+                        readableTexture.ReadPixels(new Rect(0, 0, texture.width, texture.height), 0, 0);
+                        readableTexture.Apply();
+
+                        // Restore the previous RenderTexture and release the temporary one
+                        RenderTexture.active = previous;
+                        RenderTexture.ReleaseTemporary(tempRenderTexture);
+
+                        return readableTexture;
+                    }
+
                 }
             }
 

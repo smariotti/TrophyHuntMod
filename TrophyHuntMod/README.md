@@ -20,7 +20,7 @@ Two Options:
 
 v0.6.1
 - Added loading time indicator to see that TrophyHuntMod is running
-
+- Found a solution for icon and text scaling that should be resolution independent, making the score text, deaths and logs icons and text look correct on various resolutions. Should fix the "tiny on 4k screens" issue as well as the "bloated on small laptops" issue
 
 ## Previous Changes
 

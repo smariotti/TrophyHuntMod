@@ -18,6 +18,12 @@ Two Options:
 
 ## What's New?
 
+v0.6.1
+- Added loading time indicator to see that TrophyHuntMod is running
+- Found a solution for icon and text scaling that should be resolution independent, making the score text, deaths and logs icons and text look correct on various resolutions. Should fix the "tiny on 4k screens" issue as well as the "bloated on small laptops" issue
+
+## Previous Changes
+
 v0.6.0
 - Trophy Saga
   - Combat Difficulty is now set to **Normal** (was Hard)
@@ -41,10 +47,7 @@ v0.6.0
   - Greyling drop rates adjusted again, Greylings have a chance to drop Megingjord
 - Fixed a glitch with Geirrhafa's trophy where it would stick to the player in game modes where Biome Bonuses were enabled
 - Updated Trophy Saga description text
-
-
-## Previous Changes
-
+ 
 v0.5.16
 - Trophy Saga
   - Bah! Forgot to update the main menu description text for Saga. Again. Nothing else changed, just the description text.
