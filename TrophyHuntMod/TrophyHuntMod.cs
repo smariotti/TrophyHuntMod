@@ -25,6 +25,7 @@ using UnityEngine.SocialPlatforms.Impl;
 using System.CodeDom;
 using UnityEngine.UIElements;
 using static UnityEngine.UI.GridLayoutGroup;
+using static Room;
 
 namespace TrophyHuntMod
 {
@@ -33,7 +34,7 @@ namespace TrophyHuntMod
     {
         public const string PluginGUID = "com.oathorse.TrophyHuntMod";
         public const string PluginName = "TrophyHuntMod";
-        public const string PluginVersion = "0.6.0";
+        public const string PluginVersion = "0.6.3";
         private readonly Harmony harmony = new Harmony(PluginGUID);
 
         // Configuration variables
@@ -92,6 +93,8 @@ namespace TrophyHuntMod
         const float LOGOUT_PENALTY_GRACE_DISTANCE = 50.0f;  // total distance you're allowed to walk/run from initial spawn and get a free logout to clear wet debuff
 
         const float DEFAULT_SCORE_FONT_SIZE = 25;
+
+        const long NUM_SECONDS_IN_FOUR_HOURS = 4 * 60 * 60;
 
         //
         // Trophy Scores updated from Discord chat 08/18/24
@@ -162,6 +165,8 @@ namespace TrophyHuntMod
             new TrophyHuntData("TrophyVolture",                 "Volture",          Biome.Ashlands,     50,     50,     new List<string> { "$enemy_volture" }),
             new TrophyHuntData("TrophyWolf",                    "Wolf",             Biome.Mountains,    30,     10,     new List<string> { "$enemy_wolf" }),
             new TrophyHuntData("TrophyWraith",                  "Wraith",           Biome.Swamp,        20,     5,      new List<string> { "$enemy_wraith" })
+
+//            new TrophyHuntData("TrophyKvastur",                 "Kvastur",          Biome.Swamp,        50,     10,     new List<string> { "$enemy_kastur" })
         };
 
         static public Color[] __m_biomeColors = new Color[]
@@ -175,6 +180,7 @@ namespace TrophyHuntMod
             new Color(0.2f, 0.0f, 0.0f, 0.3f),  // Biome.Ashlands 
             new Color(0.1f, 0.1f, 0.2f, 0.3f),  // Biome.Ocean    
             new Color(0.2f, 0.1f, 0.0f, 0.3f),  // Biome.Hildir
+            new Color(0.2f, 0.1f, 0.0f, 0.3f),  // Biome.BogWitch
         };
 
         public struct BiomeBonus
@@ -208,7 +214,16 @@ namespace TrophyHuntMod
         static GameObject __m_scoreTextElement = null;
         static GameObject __m_deathsTextElement = null;
         static GameObject __m_relogsTextElement = null;
+        static GameObject __m_gameTimerTextElement = null;
+
         static List<GameObject> __m_iconList = null;
+
+        // In game timer
+        static long __m_gameTimerElapsedSeconds = 0;
+//        static DateTime __m_gameTimerStartTime;
+        static bool __m_gameTimerActive = false;
+        static bool __m_gameTimerVisible = true;
+        static bool __m_gameTimerCountdown = true;
 
         static float __m_baseTrophyScale = 1.4f;
         static float __m_userIconScale = 1.0f;
@@ -642,6 +657,40 @@ namespace TrophyHuntMod
                     }
                 }
             });
+
+            ConsoleCommand timerCommand = new ConsoleCommand("timer", "Control the Trophy Hunt Timer display (start/stop/reset/show/hide)", delegate (ConsoleEventArgs args)
+            {
+                if (!Game.instance)
+                {
+                    PrintToConsole("'timer' console command can only be used in-game.");
+                }
+
+                if (__m_gameTimerTextElement == null)
+                {
+                    return;
+                }
+
+                // First argument is user trophy scale
+                if (args.Length > 1)
+                {
+                    string timerCommand = args[1].Trim();
+                    switch (timerCommand)
+                    {
+                        case "start":   Player_OnSpawned_Patch.TimerStart();            break;
+                        case "stop":    Player_OnSpawned_Patch.TimerStop();             break;
+                        case "reset":   Player_OnSpawned_Patch.TimerReset();            break;
+                        case "show":    Player_OnSpawned_Patch.TimerSetVisible(true);   break;
+                        case "hide":    Player_OnSpawned_Patch.TimerSetVisible(false);  break;
+                        case "set":     Player_OnSpawned_Patch.TimerSet(args[2]);       break;
+                        case "toggle":  Player_OnSpawned_Patch.TimerToggle();           break;
+                    }
+                }
+                else
+                {
+                    // no arguments means show/hide
+                }
+            });
+
         }
         #endregion
 
@@ -737,8 +786,8 @@ namespace TrophyHuntMod
                     hasBiomeBonuses = true;
                     break;
                 case TrophyGameMode.TrophyFiesta:
-                    text += "\n<align=\"left\"><size=18>Game Mode: <color=yellow>Trophy</color> <color=green>F</color><color=purple>i</color><color=red>e</color><color=yellow>s</color><color=orange>t</color><color=blue>a</color></size>\n";
-                    text += "\n<align=\"left\"><size=14><color=yellow>    Nothing to see here.</color></size>\n";
+                    text += "\n<align=\"left\"><size=18>Game Mode: <color=yellow>Trophy</color> <color=green>F</color><color=purple>i</color><color=red>e</color><color=yellow>s</color><color=orange>t</color><color=#8080FF>a</color></size>\n";
+                    text += "\n<align=\"left\"><size=14><color=yellow>            Nothing to see here.</color></size>\n";
                     break;
             }
 
@@ -896,7 +945,19 @@ namespace TrophyHuntMod
                 __m_storedGameMode = __m_trophyGameMode;
                 __m_storedWorldSeed = WorldGenerator.instance.m_world.m_seedName;
 
-                //                FiestaTrophies.Initialize();
+                if (GetGameMode() == TrophyGameMode.TrophyFiesta)
+                {
+                    TrophyFiesta.Initialize();
+                }
+
+                 if (GetGameMode() != TrophyGameMode.TrophySaga)
+                {
+                    TimerSetVisible(false);
+                }
+                else
+                {
+                    TimerSetVisible(true);
+                }
             }
 
             public static void InitializeTrackedDataForNewPlayer()
@@ -906,6 +967,10 @@ namespace TrophyHuntMod
                 {
                     InitializeSagaDrops();
                 }
+
+                // In-Game Timer 
+                __m_gameTimerElapsedSeconds = 0;
+                TimerStart();
 
                 // Reset logout count
                 __m_logoutCount = 0;
@@ -1031,6 +1096,11 @@ namespace TrophyHuntMod
                         __m_relogsTextElement = CreateRelogsElements(healthPanelTransform);
                     }
 
+                    if (__m_gameTimerTextElement == null)
+                    {
+                        __m_gameTimerTextElement = CreateTimerElements(healthPanelTransform);
+                    }
+
                     __m_iconList = new List<GameObject>();
                     CreateTrophyIconElements(healthPanelTransform, __m_trophyHuntData, __m_iconList);
 
@@ -1045,6 +1115,132 @@ namespace TrophyHuntMod
 
                     CreateScoreTooltip();
                 }
+            }
+
+            static IEnumerator TimerUpdate()
+            {
+                while (__m_gameTimerActive)
+                {
+                    // Don't update seconds at main menu
+                    if (Game.instance)
+                    {
+                        if (__m_gameTimerTextElement != null)
+                        {
+
+                            TMPro.TextMeshProUGUI tmText = __m_gameTimerTextElement.GetComponent<TMPro.TextMeshProUGUI>();
+
+                            long timerValue = __m_gameTimerElapsedSeconds;
+                            if (__m_gameTimerCountdown)
+                            {
+                                timerValue = NUM_SECONDS_IN_FOUR_HOURS - timerValue;
+
+                            }
+                            TimeSpan elapsed = TimeSpan.FromSeconds(timerValue);
+                            tmText.text = $"<mspace=0.5em>{elapsed.ToString()}</mspace>";
+
+                            float dim = 0.4f;
+                            float bright = 0.7f;
+
+                            if (!__m_gameTimerCountdown)
+                            {
+                                tmText.color = Color.yellow;
+                                tmText.outlineColor = Color.black;
+                            }
+                            else
+                            {
+                                tmText.color = new Color(dim, 0.0f, 0.0f);
+                                tmText.outlineColor = new Color(bright, 0.2f, 0.2f);
+                            }
+                        }
+
+                        __m_gameTimerElapsedSeconds++;
+                    }
+                    yield return new WaitForSeconds(1f);
+                }
+            }
+            static public void TimerStart()
+            {
+                if (!__m_gameTimerActive)
+                {
+                    __m_gameTimerActive = true;
+
+                    __m_trophyHuntMod.StartCoroutine(TimerUpdate());
+                }
+            }
+            static public void TimerStop()
+            {
+                __m_gameTimerActive = false;
+            }
+            static public void TimerReset()
+            {
+                __m_gameTimerElapsedSeconds = 0;
+            }
+            static public void TimerSetVisible(bool visible)
+            {
+                if (__m_gameTimerVisible == visible)
+                {
+                    return;
+                }
+
+                if (__m_gameTimerVisible && !visible)
+                {
+                    __m_gameTimerTextElement.transform.Translate(new Vector3(-1000, 0, 0));
+                }
+                if (!__m_gameTimerVisible && visible)
+                {
+                    __m_gameTimerTextElement.transform.Translate(new Vector3(1000, 0, 0));
+                }
+
+                __m_gameTimerVisible = visible;
+            }
+            static public void TimerSet(string timeStr)
+            {
+                TimeSpan requestedTime = TimeSpan.Parse(timeStr);
+                
+                __m_gameTimerElapsedSeconds = (long)requestedTime.TotalSeconds;
+            }
+
+            static public void TimerToggle()
+            {
+                __m_gameTimerCountdown = !__m_gameTimerCountdown;
+            }
+
+            static GameObject CreateTimerElements(Transform parentTransform)
+            {
+                GameObject timerElement = new GameObject("Timer");
+                timerElement.transform.SetParent(parentTransform);
+
+                RectTransform timerRectTransform = timerElement.AddComponent<RectTransform>();
+                timerRectTransform.sizeDelta = new Vector2(120, 25);
+                timerRectTransform.anchoredPosition = new Vector2(-45, 85);
+                timerRectTransform.localScale = new Vector3(__m_userTextScale, __m_userTextScale, __m_userTextScale);
+
+                TMPro.TextMeshProUGUI tmText = timerElement.AddComponent<TMPro.TextMeshProUGUI>();
+
+                tmText.text = $"<mspace=0.5em>00:00:00</mspace>";// {__m_gameTimer}";
+                tmText.fontSize = 24;
+                tmText.color = Color.yellow;
+                tmText.alignment = TextAlignmentOptions.Center;
+                tmText.raycastTarget = false;
+                tmText.fontMaterial.EnableKeyword("OUTLINE_ON");
+                tmText.outlineColor = Color.black;
+                tmText.fontStyle = FontStyles.Bold;
+                tmText.outlineWidth = 0.125f; // Adjust the thickness
+
+                // HACK TEMP
+                // Text Element
+                //GameObject timerBGElement = new GameObject("Timer BG Element");
+                //timerBGElement.transform.SetParent(timerElement.transform);
+
+                //RectTransform bgRectTransform = timerBGElement.AddComponent<RectTransform>();
+                //bgRectTransform.sizeDelta = timerRectTransform.sizeDelta;
+                //bgRectTransform.anchoredPosition = new Vector2(0, 0);
+                //bgRectTransform.localScale = timerRectTransform.localScale;
+
+                //UnityEngine.UI.Image image = timerBGElement.AddComponent<UnityEngine.UI.Image>();
+                //image.color = new Color(0, 0, 0, 0.75f);
+
+                return timerElement;
             }
 
             static GameObject CreateRelogsElements(Transform parentTransform)
@@ -1082,7 +1278,7 @@ namespace TrophyHuntMod
                 tmText.raycastTarget = false;
                 tmText.fontMaterial.EnableKeyword("OUTLINE_ON");
                 tmText.outlineColor = Color.black;
-                tmText.outlineWidth = 0.125f; // Adjust the thickness
+                tmText.outlineWidth = 0.1f; // Adjust the thickness
 
                 if (__m_ignoreLogouts)
                 {
@@ -1151,7 +1347,7 @@ namespace TrophyHuntMod
                 tmText.raycastTarget = false;
                 tmText.fontMaterial.EnableKeyword("OUTLINE_ON");
                 tmText.outlineColor = Color.black;
-                tmText.outlineWidth = 0.125f; // Adjust the thickness
+                tmText.outlineWidth = 0.1f; // Adjust the thickness
 
                 return deathsTextElement;
             }
@@ -1366,6 +1562,7 @@ namespace TrophyHuntMod
             {
                 BiomeBonus biomeBonus = Array.Find(__m_biomeBonuses, element => element.m_biome == biome);
 
+                // Throws an exception accessing biomeBonus if not initialized (not found)
                 try
                 {
                     numCollected = 0;
