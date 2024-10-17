@@ -34,7 +34,7 @@ namespace TrophyHuntMod
     {
         public const string PluginGUID = "com.oathorse.TrophyHuntMod";
         public const string PluginName = "TrophyHuntMod";
-        public const string PluginVersion = "0.6.3";
+        public const string PluginVersion = "0.6.4";
         private readonly Harmony harmony = new Harmony(PluginGUID);
 
         // Configuration variables
@@ -3106,7 +3106,11 @@ namespace TrophyHuntMod
 
                                 if (GetGameMode() == TrophyGameMode.TrophyRush)
                                 {
-                                    dropPercentage = 100f;
+                                    string trophyName = EnemyNameToTrophyName(characterName);
+                                    if (!__m_trophyCache.Contains(trophyName) || trophyName == "TrophyDeer")
+                                    {
+                                        dropPercentage = 100f;
+                                    }
                                 }
                                 else if (GetGameMode() == TrophyGameMode.TrophySaga)
                                 {

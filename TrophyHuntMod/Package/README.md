@@ -121,6 +121,11 @@ This Trophy Hunt variant implements a good number of modifications to standard V
 - All planted seeds and saplings grow to maturity within 10 seconds (as in previous version)
 
 ## What's New?
+v0.6.4
+- Trophy Rush
+  - Trophies stop dropping 100% and drop at normal rate after you've picked one up. Avoids flooding player inventory with extra trophies. The exception is Deer, which still always drops.
+
+## Previous Changes
 v0.6.3
 - Ack, documentation (README.MD) didn't update correctly
 
@@ -143,7 +148,6 @@ v0.6.2
   - Support for auto-updating the timer based on @jv's event timer at http://valheim.help when tournaments are active!
 - A few UI tweaks. Resolution scaling seems to be working, made some text read better.
 
-## Previous Changes
 v0.6.1
 - Added loading time indicator to see that TrophyHuntMod is running
 - Found a solution for icon and text scaling that should be resolution independent, making the score text, deaths and logs icons and text look correct on various resolutions. Should fix the "tiny on 4k screens" issue as well as the "bloated on small laptops" issue

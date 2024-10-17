@@ -1,6 +1,14 @@
 # TrophyHuntMod
 
-This is a BepInEx mod for Valheim for streamers doing the Valheim Trophy Hunt that displays discovered/undiscovered trophies at the bottom edge of the screen along with a computed score for the Trophy Hunt based on current scoring rules.
+This is a BepInEx mod for Valheim for the Valheim Trophy Hunt that displays discovered/undiscovered trophies at the bottom edge of the screen along with a computed score for the Trophy Hunt based on current scoring rules. 
+
+It offers three modes, details are provided below.
+- **Trophy Hunt**
+  - This is the normal Trophy Hunt. Valheim is not modified in any way. You play on default settings. No aspects of Valheim are modified in any way.
+- **Trophy Rush**
+  - This is an advanced version of the Trophy Hunt. Combat Difficulty is set to Very Hard, Resources drop at 2x rate and all Trophy-bearing enemies drop them 100% of the time.
+- **Trophy Saga**
+  - This is a highly modified Trophy Hunt where many game mechanics are altered to speed up progression such as production building speeds, enemy drops, and crop growth times
 
 Available here:
 
@@ -14,15 +22,135 @@ https://thunderstore.io/c/valheim/p/denikson/BepInExPack_Valheim/
 
 Two Options:
 - Use r2modman to automatically install it from Thunderstore and launch Valheim. R2modman is the mod manager available for download at https://thunderstore.io
-- Manual: Simply copy the contents of the archive into the BepinEx/Plugins directory. This is usually found somewhere like 'C:\Program Files (x86)\Steam\steamapps\common\Valheim\BepInEx\plugins' if you've installed BepInEx according to the instructions. (https://www.nitroserv.com/en/guides/installing-mods-on-valheim-with-bepinex)
+- Manual: Download and install BepinEx_Valheim, then simply copy the contents of the archive into the BepinEx/Plugins directory. This is usually found somewhere like 'C:\Program Files (x86)\Steam\steamapps\common\Valheim\BepInEx\plugins' if you've installed BepInEx according to the instructions. (https://www.nitroserv.com/en/guides/installing-mods-on-valheim-with-bepinex)
+
+# Trophy Hunt Game Modes
+
+- You have 4 hours to score as many points as you can.
+- Points are scored by picking up trophies, with point values assigned by biome. You only get points for the first Trophy of that type, and it must enter your inventory to count. You can drop it immediately if you like.
+- Points are subtracted for dying or re-logging to the main menu (to clear aggro, etc)
+- Some game modes offer additional score bonuses
+
+## Point Values
+
+Scores are awareded from the following points table:
+```
+**Enemies**
+Meadows Trophies - 10 points each
+Black Forest & Swamp Trophies - 20 points each
+Mountain/Plains Trophies - 30 points each
+Mistland Trophies -  40 points each
+Ashland Trophies - 50 points each
+Serpent Trophy - 25 points
+
+**Mini-Bosses**
+Brenna Trophy - 25 points
+Geirrhafa Trophy - 45 points
+Zil & Thungr Trophies - 65 points
+
+**Bosses**
+Eikthyr Trophy - 40 points
+Elder Trophy - 60 points
+Bonemass Trophy - 80 points
+Moder Trophy - 100 points
+Yagluth Trophy - 120 points
+Queen/Fader Trophy - 1000 points
+
+(Queen/Fader points will get nerfed when/if someone completes)
+```
+
+## Trophy Hunt
+
+This is the standard Trophy Hunt game mode, played at completely stock/vanilla Valheim settings for "Normal" game mode.
+
+- Trophies drop at standard Valheim rates (documented on the wiki and displayed in the Trophy tooltips in-game, pause the game to see the tooltips on the HUD Trophies)
+- Death penalty is -20 points
+- Relog penalty is -10 points
+
+## Trophy Rush
+
+This Trophy Hunt variant has the following changes from Trophy Hunt
+
+- Trophies drop at 100% drop rate for any enemy that can drop one
+- Combat is set to Very Hard (Normal in Trophy Hunt)
+- Resource Rate is set to 2x (you get double all resources picked up, dropped by enemies, or found in chests)
+- Death penalty is -10 points (half as much as Trophy Hunt)
+- Relog penalty is -5 points (half as much as Trophy Hunt)
+- /die penalty is an additional -10 points (total -20 points for using /die Console command)
+
+In addition, this mode offers "Biome Bonuses" for completing the full set of non-boss Trophies for a given Biome:
+```
+**Biome Bonuses**
++20 Meadows
++40 Black Forest
++40  Swamp
++60  Mountains
++60  Plains
++80  Mistlands
++100 Ashlands
+```
+
+## Trophy Saga
+
+This Trophy Hunt variant implements a good number of modifications to standard Valheim play to speed progression. Bosses no longer gate upgrade progression since boss dropped items can now drop from powerful minions in that boss' biome.
+
+- Trophies drop at higher than standard rates
+- Combat is set to Normal difficulty
+- Resource Rate is set to 2x (you get double all resources picked up, dropped by enemies, or found in chests)
+- Death penalty is -30 points
+- Relog penalty is -15 points
+- Biome Bonuses apply (see Trophy Rush discussion above for Biome Bonus values)
+- Metal Ores "insta-smelt" when you pick them up. If you pick up ore from the ground or out of a chest, it becomes the equivalent metal bar instantly.
+- Portals allow **all** items through (metals, eggs, etc.)
+- Greylings drop various useful Meadows and Black Forest items, and have a chance to drop Megingjord
+- Biome Boss Minions now have a chance to drop Boss Items
+  - Black Forest: Greydwarf Brute has a chance to drop Crypt Key
+  - Swamp: Oozers have a chance to drop Wishbone
+  - Mountains: Drakes have a chance to drop Moder's Tears
+  - Plains: Fuling Shaman have a chance to drop Torn Spirit
+  - Mistlands: Seeker Soldiers have a chance to drop Majestic Carapace
+  - Hildir Mini-bosses always drop their Biome's Boss Item
+- Rancid Remains always drops his mace (Iron Mace, non-poisonous)
+- Production buildings that take time to process **all** take only seconds
+  - Fermenter
+  - Charcoal Kiln
+  - Spinning Wheel
+  - Windmill
+  - Eitr Refiner (this also **no longer requires Soft Tissue**, just Sap)
+  - NOTE: Cooking buildings are unchanged from vanilla (Cooking Station, Iron Cooking Station, Cauldron, Stone Oven)
+- All planted seeds and saplings grow to maturity within 10 seconds (as in previous version)
 
 ## What's New?
+v0.6.4
+- Trophy Rush
+  - Trophies stop dropping 100% and drop at normal rate after you've picked one up. Avoids flooding player inventory with extra trophies. The exception is Deer, which still always drops.
+
+## Previous Changes
+v0.6.3
+- Ack, documentation (README.MD) didn't update correctly
+
+v0.6.2
+- Tested against Bog Witch update on Public Test and verified it works (had to make a small change) and prepared for some changes in that update when they go live (new trophy!)
+- Updated documentation (this document) to make it more complete and informative
+- Added Game Timer
+  - On by default in Saga (counting down) as this will eventually be used for gameplay
+  - Off by default in Trophy Hunt and Trophy Rush game modes
+  - Starts when character initially spawns in the world
+  - Always running, but can be shown and hidden in other modes with `/timer show` or `/timer hide`
+	- `/timer start` - start the timer if stopped
+	- `/timer stop` - stop/pause the timer
+	- `/timer reset` - reset the timer to zero seconds elapsed
+	- `/timer show` - show the on-screen HUD timer
+	- `/timer hide` - hide the on-screen HUD timer
+	- `/timer set` - allows you to specify how much time has elapsed to manually set the timer. One hour fifteen minutes and five seconds would be entered as `/timer set 01:15:05`
+	- `/timer toggle` - switches between countdown mode (default) and count up mode (red when counting down, yellow when counting up)
+  - Automatically pauses at ESC pause menu while playing
+  - Support for auto-updating the timer based on @jv's event timer at http://valheim.help when tournaments are active!
+- A few UI tweaks. Resolution scaling seems to be working, made some text read better.
 
 v0.6.1
 - Added loading time indicator to see that TrophyHuntMod is running
 - Found a solution for icon and text scaling that should be resolution independent, making the score text, deaths and logs icons and text look correct on various resolutions. Should fix the "tiny on 4k screens" issue as well as the "bloated on small laptops" issue
-
-## Previous Changes
 
 v0.6.0
 - Trophy Saga
@@ -263,7 +391,7 @@ Displays a tray at the bottom of the game screen with the computed Trophy Hunt s
 
 A death counter appears to the left of the health and food bar, as deaths count against point totals in Trophy Hunt.
 
-### Console Commands
+## Console Commands
 
 `/trophyhunt`
 
@@ -283,6 +411,17 @@ A death counter appears to the left of the health and food bar, as deaths count 
 	  Logouts: 0 Score: 0
 	Total Score: 50
 	```
+`/timer`
+
+	Allows control of an in game timer display for four hour Trophy runs. Works in all game modes.
+
+	- `/timer start` - start the timer if stopped
+	- `/timer stop` - stop/pause the timer
+	- `/timer reset` - reset the timer to zero seconds elapsed
+	- `/timer show` - show the on-screen HUD timer
+	- `/timer hide` - hide the on-screen HUD timer
+	- `/timer set` - allows you to specify how much time has elapsed to manually set the timer. One hour fifteen minutes and five seconds would be entered as `/timer set 01:15:05`
+	- `/timer toggle` - switches between countdown mode (default) and count up mode (red when counting down, yellow when counting up)
 
 `/showpath`
 
