@@ -26,6 +26,7 @@ using System.CodeDom;
 using UnityEngine.UIElements;
 using static UnityEngine.UI.GridLayoutGroup;
 using static Room;
+using static Skills;
 
 namespace TrophyHuntMod
 {
@@ -87,6 +88,7 @@ namespace TrophyHuntMod
         const int TROPHY_SAGA_LOGOUT_PENALTY = -15;
         const float TROPHY_SAGA_SAILING_SPEED_MULTIPLIER = 2.0f;
         const float TROPHY_SAGA_DROP_MULTIPLIER = 1.35f;
+        const float TROPHY_SAGA_BASE_SKILL_LEVEL = 10.0f;
 
         const string LEADERBOARD_URL = "https://valheim.help/api/trackhunt";
 
@@ -880,7 +882,7 @@ namespace TrophyHuntMod
                     return;
                 }
 
-                Debug.LogWarning("Local Player is Spawned!");
+//                Debug.LogWarning("Local Player is Spawned!");
 
                 // Sort the trophies by biome, score and name
                 Array.Sort<TrophyHuntData>(__m_trophyHuntData, (x, y) => x.m_biome.CompareTo(y.m_biome) * 100000 + x.m_value.CompareTo(y.m_value) * 10000 + x.m_name.CompareTo(y.m_name));
@@ -924,7 +926,7 @@ namespace TrophyHuntMod
                     InitializeTrackedDataForNewPlayer();
                 }
 
-                Debug.LogWarning($"Total Logouts: {__m_logoutCount}");
+//                Debug.LogWarning($"Total Logouts: {__m_logoutCount}");
 
                 string workingDirectory = Directory.GetCurrentDirectory();
                 Debug.Log($"Working Directory for Trophy Hunt Mod: {workingDirectory}");
@@ -960,12 +962,58 @@ namespace TrophyHuntMod
                 }
             }
 
+            public static void RaiseAllPlayerSkills(float skillLevel)
+            {
+                // Access the player's skills
+                if (!Player.m_localPlayer)
+                {
+                    return;
+                }
+
+                Skills skills = Player.m_localPlayer.GetSkills();
+
+                // Loop through all the skills and set them to 10
+                foreach (var skill in skills.m_skillData)
+                {
+                    if (skill.Value.m_level < skillLevel)
+                    {
+                        Debug.Log($"Setting skill {skill.Key} from level {skill.Value.m_level} to level {skillLevel}");
+
+                        skill.Value.m_level = skillLevel;
+                    }
+                }
+            }
+
+            // Patch the Learn method in the Skills class to detect when a skill is added
+            [HarmonyPatch(typeof(Skills), nameof(Skills.GetSkill))]
+            public class Skills_Learn_Patch
+            {
+                static void Postfix(Skills.Skill __instance, SkillType skillType, ref Skill __result)
+                {
+                    if (GetGameMode() != TrophyGameMode.TrophySaga)
+                    {
+                        return;
+                    }
+
+                    // Get the specific skill that was just learned or updated^
+                    if (__result.m_level < TROPHY_SAGA_BASE_SKILL_LEVEL)
+                    {
+                        __result.m_level = TROPHY_SAGA_BASE_SKILL_LEVEL;
+                        __result.m_accumulator = 0f;
+
+                        Debug.Log($"Setting skill {__result.m_info.m_skill.ToString()} to {TROPHY_SAGA_BASE_SKILL_LEVEL}");
+                    }
+                }
+            }
+
             public static void InitializeTrackedDataForNewPlayer()
             {
                 // Saga mode tracking, drop only one megingjord per session-player
                 if (GetGameMode() == TrophyGameMode.TrophySaga)
                 {
                     InitializeSagaDrops();
+
+                    RaiseAllPlayerSkills(TROPHY_SAGA_BASE_SKILL_LEVEL);
                 }
 
                 // In-Game Timer 
@@ -1104,9 +1152,6 @@ namespace TrophyHuntMod
                     __m_iconList = new List<GameObject>();
                     CreateTrophyIconElements(healthPanelTransform, __m_trophyHuntData, __m_iconList);
 
-                    //                    __m_biomeIconList = new List<GameObject>();
-                    //                    CreateBiomeElements(healthPanelTransform, __m_biomeIconList);
-
                     // Create the hover text object
                     CreateTrophyTooltip();
                     CreateLuckTooltip();
@@ -1138,9 +1183,6 @@ namespace TrophyHuntMod
                             TimeSpan elapsed = TimeSpan.FromSeconds(timerValue);
                             tmText.text = $"<mspace=0.5em>{elapsed.ToString()}</mspace>";
 
-                            float dim = 0.4f;
-                            float bright = 0.7f;
-
                             if (!__m_gameTimerCountdown)
                             {
                                 tmText.color = Color.yellow;
@@ -1148,8 +1190,8 @@ namespace TrophyHuntMod
                             }
                             else
                             {
-                                tmText.color = new Color(dim, 0.0f, 0.0f);
-                                tmText.outlineColor = new Color(bright, 0.2f, 0.2f);
+                                tmText.color = new Color(1f, 0.4f, 0.3f);
+                                tmText.outlineColor = Color.black;
                             }
                         }
 
@@ -1697,7 +1739,7 @@ namespace TrophyHuntMod
                     {
                         __m_deaths = (int)stats[PlayerStatType.Deaths];
 
-                        Debug.LogWarning($"Subtracting score for {__m_deaths} deaths.");
+//                        Debug.LogWarning($"Subtracting score for {__m_deaths} deaths.");
 
                         score += CalculateDeathPenalty();
 
@@ -1986,7 +2028,7 @@ namespace TrophyHuntMod
             {
                 if (!__m_collectingPlayerPath)
                 {
-                    Debug.Log("Starting Player Path collection");
+//                    Debug.Log("Starting Player Path collection");
 
                     //                   AddPlayerPathUI();
 
@@ -2000,7 +2042,7 @@ namespace TrophyHuntMod
 
             public static void StopCollectingPlayerPath()
             {
-                Debug.Log("Stopping Player Path collection");
+//                Debug.Log("Stopping Player Path collection");
 
                 if (__m_collectingPlayerPath)
                 {
@@ -2022,7 +2064,7 @@ namespace TrophyHuntMod
                             __m_playerPathData.Add(curPlayerPos);
                             __m_previousPlayerPos = curPlayerPos;
 
-                            Debug.Log($"Collected player position at {curPlayerPos.ToString()}");
+//                            Debug.Log($"Collected player position at {curPlayerPos.ToString()}");
                         }
 
                         yield return new WaitForSeconds(__m_playerPathCollectionInterval);
@@ -2155,7 +2197,7 @@ namespace TrophyHuntMod
                 public static void Postfix(Game __instance, bool save, bool changeToStartScene)
                 {
                     float onFootDistance = GetTotalOnFootDistance(__instance);
-                    Debug.LogError($"Total on-foot distance moved: {onFootDistance}");
+//                    Debug.LogError($"Total on-foot distance moved: {onFootDistance}");
 
                     // If you've never logged out, and your total run/walk distance is less than the max grace distance, no penalty
                     if (__m_logoutCount < 1 && onFootDistance < LOGOUT_PENALTY_GRACE_DISTANCE)
@@ -2649,7 +2691,7 @@ namespace TrophyHuntMod
 
             public static void CreateTrophyTooltip()
             {
-                Debug.LogWarning("Creating Tooltip object");
+//                Debug.LogWarning("Creating Tooltip object");
 
                 Vector2 tooltipWindowSize = __m_trophyTooltipWindowSize;
                 if (__m_showAllTrophyStats)
@@ -2886,7 +2928,7 @@ namespace TrophyHuntMod
 
                 if (killedByPlayer)
                 {
-                    Debug.Log($"{characterName} killed by Player");
+//                    Debug.Log($"{characterName} killed by Player");
 
                     DropInfo drop = __m_playerTrophyDropInfo[trophyName];
                     drop.m_numKilled++;
@@ -2896,7 +2938,7 @@ namespace TrophyHuntMod
                 }
                 else
                 {
-                    Debug.Log($"{characterName} killed not by Player");
+//                    Debug.Log($"{characterName} killed not by Player");
 
                     DropInfo drop = __m_allTrophyDropInfo[trophyName];
                     drop.m_numKilled++;
@@ -3067,7 +3109,7 @@ namespace TrophyHuntMod
                         if (CharacterCanDropTrophies(characterName))
                         {
 
-                            Debug.Log($"Trophy-capable character {characterName} has dropped items:");
+//                            Debug.Log($"Trophy-capable character {characterName} has dropped items:");
 
                             RecordTrophyCapableKill(characterName, false);
 
@@ -3082,11 +3124,11 @@ namespace TrophyHuntMod
                                     string itemName = droppedItem.Key.name;
 
                                     // Log or process the dropped item
-                                    Debug.Log($"Dropped item: {itemName} count: {droppedItem.Value}");
+//                                    Debug.Log($"Dropped item: {itemName} count: {droppedItem.Value}");
 
                                     if (itemName.Contains("Trophy"))
                                     {
-                                        Debug.Log($"Trophy {itemName} Dropped by {characterName}");
+//                                        Debug.Log($"Trophy {itemName} Dropped by {characterName}");
 
                                         RecordDroppedTrophy(characterName, itemName);
 
@@ -3157,7 +3199,7 @@ namespace TrophyHuntMod
                         // ex: Saga only Greyling drops
                         if (GetGameMode() == TrophyGameMode.TrophySaga)
                         {
-                            Debug.LogWarning($"Saga drops for {characterName}?");
+//                            Debug.LogWarning($"Saga drops for {characterName}?");
 
                             if (__m_specialSagaDrops.ContainsKey(characterName))
                             {
@@ -3174,7 +3216,7 @@ namespace TrophyHuntMod
                                     // If it's only meant to drop once, just ignore additional drops
                                     if (sagaDrop.m_dropOnlyOne && sagaDrop.m_numDropped > 0)
                                     {
-                                        Debug.LogWarning($"{characterName} already dropped {sagaDrop.m_itemName}");
+//                                        Debug.LogWarning($"{characterName} already dropped {sagaDrop.m_itemName}");
 
                                         continue;
                                     }
@@ -3194,7 +3236,7 @@ namespace TrophyHuntMod
                                             {
                                                 __result.Add(newDropItem);
 
-                                                Debug.LogWarning($"{characterName} dropping {itemCount} {sagaDrop.m_itemName}");
+//                                                Debug.LogWarning($"{characterName} dropping {itemCount} {sagaDrop.m_itemName}");
 
                                                 sagaDrop.m_numDropped += itemCount;
 
@@ -3227,12 +3269,12 @@ namespace TrophyHuntMod
                     if (playerHit)
                     {
                         // The local player killed this enemy
-                        Debug.Log($"Player killed {__instance.name}");
+//                        Debug.Log($"Player killed {__instance.name}");
 
                         string characterName = __instance.m_name;
                         if (CharacterCanDropTrophies(characterName))
                         {
-                            Debug.Log($"Trophy-capable character {characterName} was killed by Player.");
+//                            Debug.Log($"Trophy-capable character {characterName} was killed by Player.");
 
                             RecordTrophyCapableKill(characterName, true);
                         }
@@ -3498,7 +3540,7 @@ namespace TrophyHuntMod
             {
                 static void Postfix()
                 {
-                    Debug.LogError("Main Menu Start method called");
+//                    Debug.LogError("Main Menu Start method called");
 
                     GameObject mainMenu = GameObject.Find("Menu");
                     if (mainMenu != null)
@@ -3571,7 +3613,7 @@ namespace TrophyHuntMod
             { 
                 static void Postfix(FejdStartup __instance, bool forceLocal)
                 {
-                    Debug.LogError("FejdStartup.OnNewWorldDone:");
+//                    Debug.LogError("FejdStartup.OnNewWorldDone:");
 
                     if (FejdStartup.m_instance.m_world != null)
                     {
