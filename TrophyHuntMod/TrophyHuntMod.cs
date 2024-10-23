@@ -35,7 +35,7 @@ namespace TrophyHuntMod
     {
         public const string PluginGUID = "com.oathorse.TrophyHuntMod";
         public const string PluginName = "TrophyHuntMod";
-        public const string PluginVersion = "0.6.4";
+        public const string PluginVersion = "0.6.7";
         private readonly Harmony harmony = new Harmony(PluginGUID);
 
         // Configuration variables
@@ -97,6 +97,7 @@ namespace TrophyHuntMod
         const float DEFAULT_SCORE_FONT_SIZE = 25;
 
         const long NUM_SECONDS_IN_FOUR_HOURS = 4 * 60 * 60;
+
 
         //
         // Trophy Scores updated from Discord chat 08/18/24
@@ -222,7 +223,6 @@ namespace TrophyHuntMod
 
         // In game timer
         static long __m_gameTimerElapsedSeconds = 0;
-//        static DateTime __m_gameTimerStartTime;
         static bool __m_gameTimerActive = false;
         static bool __m_gameTimerVisible = true;
         static bool __m_gameTimerCountdown = true;
@@ -681,8 +681,8 @@ namespace TrophyHuntMod
                         case "start":   Player_OnSpawned_Patch.TimerStart();            break;
                         case "stop":    Player_OnSpawned_Patch.TimerStop();             break;
                         case "reset":   Player_OnSpawned_Patch.TimerReset();            break;
-                        case "show":    Player_OnSpawned_Patch.TimerSetVisible(true);   break;
-                        case "hide":    Player_OnSpawned_Patch.TimerSetVisible(false);  break;
+                        case "show":    __m_gameTimerVisible = true;                    break;
+                        case "hide":    __m_gameTimerVisible = false;                   break;
                         case "set":     Player_OnSpawned_Patch.TimerSet(args[2]);       break;
                         case "toggle":  Player_OnSpawned_Patch.TimerToggle();           break;
                     }
@@ -954,11 +954,11 @@ namespace TrophyHuntMod
 
                  if (GetGameMode() != TrophyGameMode.TrophySaga)
                 {
-                    TimerSetVisible(false);
+                    __m_gameTimerVisible = false;
                 }
                 else
                 {
-                    TimerSetVisible(true);
+                    __m_gameTimerVisible = true;
                 }
             }
 
@@ -1018,6 +1018,7 @@ namespace TrophyHuntMod
 
                 // In-Game Timer 
                 __m_gameTimerElapsedSeconds = 0;
+//                __m_gameTimerVisible = false;
                 TimerStart();
 
                 // Reset logout count
@@ -1181,17 +1182,25 @@ namespace TrophyHuntMod
 
                             }
                             TimeSpan elapsed = TimeSpan.FromSeconds(timerValue);
-                            tmText.text = $"<mspace=0.5em>{elapsed.ToString()}</mspace>";
 
-                            if (!__m_gameTimerCountdown)
+                            if (__m_gameTimerVisible)
                             {
-                                tmText.color = Color.yellow;
-                                tmText.outlineColor = Color.black;
+                                tmText.text = $"<mspace=0.5em>{elapsed.ToString()}</mspace>";
+
+                                if (!__m_gameTimerCountdown)
+                                {
+                                    tmText.color = Color.yellow;
+                                    tmText.outlineColor = Color.black;
+                                }
+                                else
+                                {
+                                    tmText.color = new Color(1f, 0.4f, 0.3f);
+                                    tmText.outlineColor = Color.black;
+                                }
                             }
                             else
                             {
-                                tmText.color = new Color(1f, 0.4f, 0.3f);
-                                tmText.outlineColor = Color.black;
+                                tmText.text = "";
                             }
                         }
 
@@ -1217,24 +1226,6 @@ namespace TrophyHuntMod
             {
                 __m_gameTimerElapsedSeconds = 0;
             }
-            static public void TimerSetVisible(bool visible)
-            {
-                if (__m_gameTimerVisible == visible)
-                {
-                    return;
-                }
-
-                if (__m_gameTimerVisible && !visible)
-                {
-                    __m_gameTimerTextElement.transform.Translate(new Vector3(-1000, 0, 0));
-                }
-                if (!__m_gameTimerVisible && visible)
-                {
-                    __m_gameTimerTextElement.transform.Translate(new Vector3(1000, 0, 0));
-                }
-
-                __m_gameTimerVisible = visible;
-            }
             static public void TimerSet(string timeStr)
             {
                 TimeSpan requestedTime = TimeSpan.Parse(timeStr);
@@ -1255,6 +1246,7 @@ namespace TrophyHuntMod
                 RectTransform timerRectTransform = timerElement.AddComponent<RectTransform>();
                 timerRectTransform.sizeDelta = new Vector2(120, 25);
                 timerRectTransform.anchoredPosition = new Vector2(-45, 85);
+
                 timerRectTransform.localScale = new Vector3(__m_userTextScale, __m_userTextScale, __m_userTextScale);
 
                 TMPro.TextMeshProUGUI tmText = timerElement.AddComponent<TMPro.TextMeshProUGUI>();
@@ -2999,7 +2991,7 @@ namespace TrophyHuntMod
                 { 
                     "$enemy_greydwarfbrute",    new List<SpecialSagaDrop>
                                                 {
-                                                    new SpecialSagaDrop("CryptKey",        10,  1, 1, true),
+                                                    new SpecialSagaDrop("CryptKey",        33,  1, 1, true),
                                                 }
                 },
                 {
@@ -3019,7 +3011,7 @@ namespace TrophyHuntMod
                 {
                     "$enemy_blobelite",             new List<SpecialSagaDrop>
                                                 {
-                                                    new SpecialSagaDrop("Wishbone",        20,  1, 1, true),
+                                                    new SpecialSagaDrop("Wishbone",        50,  1, 1, true),
                                                 }
                 },
 
@@ -3028,14 +3020,14 @@ namespace TrophyHuntMod
                     // Drake
                     "$enemy_drake",           new List<SpecialSagaDrop>
                                                 {
-                                                    new SpecialSagaDrop("DragonTear",      20,  1, 1, false),
+                                                    new SpecialSagaDrop("DragonTear",      25,  1, 1, false),
                                                 }
                 },
                 {
                     // Geirrhafa
                     "$enemy_fenringcultist_hildir", new List<SpecialSagaDrop>
                                                 {
-                                                    new SpecialSagaDrop("DragonTear",      100,  1, 1, true),
+                                                    new SpecialSagaDrop("DragonTear",      100,  2, 3, true),
                                                 }
                 },
 
@@ -3043,13 +3035,13 @@ namespace TrophyHuntMod
                 {
                     "$enemy_goblinshaman",      new List<SpecialSagaDrop>
                                                 {
-                                                    new SpecialSagaDrop("YagluthDrop",     20,  1, 1, false),
+                                                    new SpecialSagaDrop("YagluthDrop",     33,  1, 1, false),
                                                 }
                 },
                 {
                     "$enemy_goblinbrute",       new List<SpecialSagaDrop>
                                                 {
-                                                    new SpecialSagaDrop("YagluthDrop",     33,  1, 1, true),
+                                                    new SpecialSagaDrop("YagluthDrop",     50,  1, 1, true),
                                                 }
                 },
                 {
@@ -3069,7 +3061,7 @@ namespace TrophyHuntMod
                 {
                     "$enemy_seekerbrute",    new List<SpecialSagaDrop>
                                                 {
-                                                    new SpecialSagaDrop("QueenDrop",       50,  1, 1, false),
+                                                    new SpecialSagaDrop("QueenDrop",       40,  1, 1, false),
                                                 }
                 },
             };
@@ -3893,15 +3885,19 @@ namespace TrophyHuntMod
                 {
                     if (__instance != null && GetGameMode() == TrophyGameMode.TrophySaga)
                     {
-//                        Debug.LogWarning($"Smelter.Awake() {__instance.m_name}");
-                        //foreach (Smelter.ItemConversion item in __instance.m_conversion)
-                        //{
-                        //    Debug.LogWarning($" {item.m_from.name} to {item.m_to.name}");
-                        //}
-                        
+                        Debug.LogWarning($"Smelter.Awake() {__instance.m_name}");
+                        foreach (Smelter.ItemConversion item in __instance.m_conversion)
+                        {
+                            Debug.LogWarning($" {item.m_from.name} to {item.m_to.name}");
+                        }
+
                         if (__instance.m_name.Contains("eitr"))
                         {
                             __instance.m_secPerProduct = 1f;
+                        }
+                        else if (__instance.m_name.Contains("bathtub"))
+                        {
+                            // Do nothing to the hot tub
                         }
                         else
                         {

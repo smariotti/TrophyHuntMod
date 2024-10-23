@@ -119,13 +119,33 @@ This Trophy Hunt variant implements a good number of modifications to standard V
   - Eitr Refiner (this also **no longer requires Soft Tissue**, just Sap)
   - NOTE: Cooking buildings are unchanged from vanilla (Cooking Station, Iron Cooking Station, Cauldron, Stone Oven)
 - All planted seeds and saplings grow to maturity within 10 seconds (as in previous version)
+- All Player Skills are learned at level 10 and then increase normally.
 
 ## What's New?
+v0.6.7
+- Trophy Saga
+  - Hot Tub no longer chews through your wood, preventing you from getting a good hot soak (caused by fast-processing change for other buildings)
+
+## Previous Changes
+v0.6.6
+- Trophy Saga
+  - Adjusted drop rates for Boss Minions
+	- Greydwarf Brute drops Crypt Key more frequently
+	- Oozer drops Wishbone more frequently
+	- Drake drops Moder's Tears slightly more frequently and Geirrhafa drops more tears when killed
+	- Fuling Shaman AND Fuling Berserker both have a chance to drop Torn Spirit, and chance increased
+	- Seeker Soldier drops Majestic Carapace slightly less frequently
+
+v0.6.5
+- Fixed a bug with game timer where it would show up when it wasn't supposed to, and refuse to go away.
+- Trophy Saga
+  - All Player Skills are learned at level 10 and then increase normally.
+- A little overdue code cleanup
+
 v0.6.4
 - Trophy Rush
   - Trophies stop dropping 100% and drop at normal rate after you've picked one up. Avoids flooding player inventory with extra trophies. The exception is Deer, which still always drops.
 
-## Previous Changes
 v0.6.3
 - Ack, documentation (README.MD) didn't update correctly
 
