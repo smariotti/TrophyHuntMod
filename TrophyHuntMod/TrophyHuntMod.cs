@@ -35,7 +35,7 @@ namespace TrophyHuntMod
     {
         public const string PluginGUID = "com.oathorse.TrophyHuntMod";
         public const string PluginName = "TrophyHuntMod";
-        public const string PluginVersion = "0.6.7";
+        public const string PluginVersion = "0.6.10";
         private readonly Harmony harmony = new Harmony(PluginGUID);
 
         // Configuration variables
@@ -86,8 +86,8 @@ namespace TrophyHuntMod
 
         const int TROPHY_SAGA_DEATH_PENALTY = -30;
         const int TROPHY_SAGA_LOGOUT_PENALTY = -15;
-        const float TROPHY_SAGA_SAILING_SPEED_MULTIPLIER = 2.0f;
-        const float TROPHY_SAGA_DROP_MULTIPLIER = 1.35f;
+        const float TROPHY_SAGA_SAILING_SPEED_MULTIPLIER = 2.25f;
+        const float TROPHY_SAGA_TROPHY_DROP_MULTIPLIER = 2f;
         const float TROPHY_SAGA_BASE_SKILL_LEVEL = 10.0f;
 
         const string LEADERBOARD_URL = "https://valheim.help/api/trackhunt";
@@ -124,7 +124,7 @@ namespace TrophyHuntMod
             new TrophyHuntData("TrophyCharredMage",             "Charred Warlock",  Biome.Ashlands,     50,     5,      new List<string> { "$enemy_charred_mage" }),
             new TrophyHuntData("TrophyCharredMelee",            "Charred Warrior",  Biome.Ashlands,     50,     5,      new List<string> { "$enemy_charred_melee" }),
             new TrophyHuntData("TrophyCultist",                 "Cultist",          Biome.Mountains,    30,     10,     new List<string> { "$enemy_fenringcultist" }),
-            new TrophyHuntData("TrophyCultist_Hildir",          "Geirrhafa",        Biome.Hildir,    45,     100,    new List<string> { "$enemy_fenringcultist_hildir" }),
+            new TrophyHuntData("TrophyCultist_Hildir",          "Geirrhafa",        Biome.Hildir,       45,     100,    new List<string> { "$enemy_fenringcultist_hildir" }),
             new TrophyHuntData("TrophyDeathsquito",             "Deathsquito",      Biome.Plains,       30,     5,      new List<string> { "$enemy_deathsquito" }),
             new TrophyHuntData("TrophyDeer",                    "Deer",             Biome.Meadows,      10,     50,     new List<string> { "$enemy_deer" }),
             new TrophyHuntData("TrophyDragonQueen",             "Moder",            Biome.Mountains,    100,    100,    new List<string> { "$enemy_dragon" }),
@@ -396,7 +396,7 @@ namespace TrophyHuntMod
                 PrintToConsole($"  Logouts: {__m_logoutCount} Score: {logoutScore}");
 
                 int biomeBonus = 0;
-                if (GetGameMode() == TrophyGameMode.TrophyRush || GetGameMode() == TrophyGameMode.TrophySaga)
+                if (GetGameMode() == TrophyGameMode.TrophyRush)// || GetGameMode() == TrophyGameMode.TrophySaga)
                 {
                     Player_OnSpawned_Patch.CalculateBiomeBonusScore(Player.m_localPlayer);
                     PrintToConsole($"Biome Bonus Total: {biomeBonus}");
@@ -784,8 +784,8 @@ namespace TrophyHuntMod
                     text += "<align=\"center\"><size=14><color=red>EXPERIMENTAL!</color>\n</size>";
                     resourceMultiplier = 2.0f;
                     combatDifficulty = "Normal";
-                    dropRate = "Increased";
-                    hasBiomeBonuses = true;
+                    dropRate = "2x (Max 50%)";
+                    hasBiomeBonuses = false;
                     break;
                 case TrophyGameMode.TrophyFiesta:
                     text += "\n<align=\"left\"><size=18>Game Mode: <color=yellow>Trophy</color> <color=green>F</color><color=purple>i</color><color=red>e</color><color=yellow>s</color><color=orange>t</color><color=#8080FF>a</color></size>\n";
@@ -1751,7 +1751,7 @@ namespace TrophyHuntMod
                     score += CalculateLogoutPenalty();
                 }
 
-                if (GetGameMode() == TrophyGameMode.TrophyRush || GetGameMode() == TrophyGameMode.TrophySaga)
+                if (GetGameMode() == TrophyGameMode.TrophyRush)// || GetGameMode() == TrophyGameMode.TrophySaga)
                 {
                     score += CalculateBiomeBonusScore(player);
                 }
@@ -1999,7 +1999,7 @@ namespace TrophyHuntMod
                             // Update Trophy cache
                             __m_trophyCache = player.GetTrophies();
 
-                            if (GetGameMode() == TrophyGameMode.TrophyRush || GetGameMode() == TrophyGameMode.TrophySaga)
+                            if (GetGameMode() == TrophyGameMode.TrophyRush)// || GetGameMode() == TrophyGameMode.TrophySaga)
                             {
                                 // Did we complete a biome bonus with this trophy?
                                 if (UpdateBiomeBonusTrophies(name))
@@ -2215,7 +2215,7 @@ namespace TrophyHuntMod
             static TextMeshProUGUI __m_scoreTooltipText;
             static Vector2 __m_trophyHuntScoreTooltipWindowSize = new Vector2(240, 215);
             static Vector2 __m_trophyRushScoreTooltipWindowSize = new Vector2(290, 380);
-            static Vector2 __m_trophySagaScoreTooltipWindowSize = new Vector2(290, 345);
+            static Vector2 __m_trophySagaScoreTooltipWindowSize = new Vector2(290, 215);
             static Vector2 __m_scoreTooltipTextOffset = new Vector2(5, 2);
 
             public static void CreateScoreTooltip()
@@ -2327,7 +2327,7 @@ namespace TrophyHuntMod
                     penaltyPoints += __m_slashDieCount * TROPHY_RUSH_SLASHDIE_PENALTY;
                 }
 
-                if (GetGameMode() == TrophyGameMode.TrophyRush || GetGameMode() == TrophyGameMode.TrophySaga)
+                if (GetGameMode() == TrophyGameMode.TrophyRush)// || GetGameMode() == TrophyGameMode.TrophySaga)
                 {
                     text += $"  Biome Bonuses:\n";
                     foreach (BiomeBonus biomeBonus in __m_biomeBonuses)
@@ -2964,34 +2964,34 @@ namespace TrophyHuntMod
                 { 
                     "$enemy_greyling",          new List<SpecialSagaDrop> 
                                                 { 
-                                                    new SpecialSagaDrop("Finewood",         5,  1, 5, false), 
+                                                    new SpecialSagaDrop("Finewood",         10, 2, 7, false), 
                                                     new SpecialSagaDrop("Coal",             4,  1, 2, false), 
-                                                    new SpecialSagaDrop("TrophyDeer",       5,  1, 1, false),
-                                                    new SpecialSagaDrop("RoundLog",         7,  1, 5, false),
+                                                    new SpecialSagaDrop("TrophyDeer",       6,  1, 1, false),
+                                                    new SpecialSagaDrop("RoundLog",         10, 2, 7, false),
                                                     new SpecialSagaDrop("ArrowFlint",       5,  2, 4, false),
-                                                    new SpecialSagaDrop("BoneFragments",    7,  1, 3, false),
+                                                    new SpecialSagaDrop("BoneFragments",    8,  1, 3, false),
                                                     new SpecialSagaDrop("Flint",            7,  1, 3, false),
                                                     new SpecialSagaDrop("LeatherScraps",    5,  1, 3, false),
                                                     new SpecialSagaDrop("DeerHide",         5,  1, 3, false),
                                                     new SpecialSagaDrop("CookedMeat",       5,  1, 2, false),
                                                     new SpecialSagaDrop("Feathers",         7,  1, 2, false),
-                                                    new SpecialSagaDrop("CookedDeerMeat",   7,  1, 2, false),
-                                                    new SpecialSagaDrop("Acorn",            3,  1, 1, false),
-                                                    new SpecialSagaDrop("CarrotSeeds",      5,  1, 1, false),
-                                                    new SpecialSagaDrop("QueenBee",         3,  1, 1, false),
+                                                    new SpecialSagaDrop("CookedDeerMeat",   8,  1, 2, false),
+                                                    new SpecialSagaDrop("Acorn",            4,  1, 2, false),
+                                                    new SpecialSagaDrop("CarrotSeeds",      5,  1, 3, false),
+                                                    new SpecialSagaDrop("QueenBee",         5,  1, 1, false),
                                                     new SpecialSagaDrop("Honey",            5,  1, 2, false),
                                                     new SpecialSagaDrop("Raspberry",        7,  1, 1, false),
                                                     new SpecialSagaDrop("Mushroom",         7,  1, 1, false),
-                                                    new SpecialSagaDrop("Blueberries",      5,  1, 1, false),
+                                                    new SpecialSagaDrop("Blueberries",      8,  2, 4, false),
 
-                                                    new SpecialSagaDrop("BeltStrength",     7,  1, 1, true)
+                                                    new SpecialSagaDrop("BeltStrength",     9,  1, 1, true)
                                                 }
                 },
                 // The Elder Boss Item Drop
                 { 
                     "$enemy_greydwarfbrute",    new List<SpecialSagaDrop>
                                                 {
-                                                    new SpecialSagaDrop("CryptKey",        33,  1, 1, true),
+                                                    new SpecialSagaDrop("CryptKey",        40,  1, 1, true),
                                                 }
                 },
                 {
@@ -3020,7 +3020,7 @@ namespace TrophyHuntMod
                     // Drake
                     "$enemy_drake",           new List<SpecialSagaDrop>
                                                 {
-                                                    new SpecialSagaDrop("DragonTear",      25,  1, 1, false),
+                                                    new SpecialSagaDrop("DragonTear",      50,  1, 2, false),
                                                 }
                 },
                 {
@@ -3035,7 +3035,7 @@ namespace TrophyHuntMod
                 {
                     "$enemy_goblinshaman",      new List<SpecialSagaDrop>
                                                 {
-                                                    new SpecialSagaDrop("YagluthDrop",     33,  1, 1, false),
+                                                    new SpecialSagaDrop("YagluthDrop",     50,  1, 1, false),
                                                 }
                 },
                 {
@@ -3061,7 +3061,20 @@ namespace TrophyHuntMod
                 {
                     "$enemy_seekerbrute",    new List<SpecialSagaDrop>
                                                 {
-                                                    new SpecialSagaDrop("QueenDrop",       40,  1, 1, false),
+                                                    new SpecialSagaDrop("QueenDrop",       50,  1, 1, false),
+                                                }
+                },
+
+                {
+                    "$enemy_dvergr",    new List<SpecialSagaDrop>
+                                                {
+                                                    new SpecialSagaDrop("YggdrasilWood",   100,  10, 20, false),
+                                                }
+                },
+                {
+                    "$enemy_dvergr_mage",    new List<SpecialSagaDrop>
+                                                {
+                                                    new SpecialSagaDrop("YggdrasilWood",   100,  10, 20, false),
                                                 }
                 },
             };
@@ -3101,7 +3114,7 @@ namespace TrophyHuntMod
                         if (CharacterCanDropTrophies(characterName))
                         {
 
-//                            Debug.Log($"Trophy-capable character {characterName} has dropped items:");
+//                              Debug.Log($"Trophy-capable character {characterName} has dropped items:");
 
                             RecordTrophyCapableKill(characterName, false);
 
@@ -3154,7 +3167,7 @@ namespace TrophyHuntMod
                                         float wikiDropPercent = __m_trophyHuntData[index].m_dropPercent;
 
                                         // Cap at 50% drop rate
-                                        dropPercentage = Math.Min(wikiDropPercent * TROPHY_SAGA_DROP_MULTIPLIER, 50f);
+                                        dropPercentage = Math.Min(wikiDropPercent * TROPHY_SAGA_TROPHY_DROP_MULTIPLIER, 50f);
                                     }
                                 }
 
@@ -3885,11 +3898,11 @@ namespace TrophyHuntMod
                 {
                     if (__instance != null && GetGameMode() == TrophyGameMode.TrophySaga)
                     {
-                        Debug.LogWarning($"Smelter.Awake() {__instance.m_name}");
-                        foreach (Smelter.ItemConversion item in __instance.m_conversion)
-                        {
-                            Debug.LogWarning($" {item.m_from.name} to {item.m_to.name}");
-                        }
+                        //Debug.LogWarning($"Smelter.Awake() {__instance.m_name}");
+                        //foreach (Smelter.ItemConversion item in __instance.m_conversion)
+                        //{
+                        //    Debug.LogWarning($" {item.m_from.name} to {item.m_to.name}");
+                        //}
 
                         if (__instance.m_name.Contains("eitr"))
                         {
@@ -3925,6 +3938,21 @@ namespace TrophyHuntMod
                                 __instance.m_nview.InvokeRPC("RPC_AddOre", "Softtissue");
                             }
                         }
+                    }
+                }
+            }
+
+
+            [HarmonyPatch(typeof(SapCollector), nameof(SapCollector.Awake))]
+            public static class SapCollector_Awake_Patch
+            {
+                static void Postfix(SapCollector __instance)
+                {
+                    if (__instance != null && GetGameMode() == TrophyGameMode.TrophySaga)
+                    {
+//                        Debug.LogWarning($"SapCollector.Awake() {__instance.m_name}");
+
+                        __instance.m_secPerUnit = 0.1f;
                     }
                 }
             }

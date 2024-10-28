@@ -94,39 +94,69 @@ In addition, this mode offers "Biome Bonuses" for completing the full set of non
 
 This Trophy Hunt variant implements a good number of modifications to standard Valheim play to speed progression. Bosses no longer gate upgrade progression since boss dropped items can now drop from powerful minions in that boss' biome.
 
-- Trophies drop at higher than standard rates
+- Trophies drop at 2x normal rate (capped at 50% chance)
 - Combat is set to Normal difficulty
 - Resource Rate is set to 2x (you get double all resources picked up, dropped by enemies, or found in chests)
 - Death penalty is -30 points
 - Relog penalty is -15 points
-- Biome Bonuses apply (see Trophy Rush discussion above for Biome Bonus values)
 - Metal Ores "insta-smelt" when you pick them up. If you pick up ore from the ground or out of a chest, it becomes the equivalent metal bar instantly.
 - Portals allow **all** items through (metals, eggs, etc.)
-- Greylings drop various useful Meadows and Black Forest items, and have a chance to drop Megingjord
-- Biome Boss Minions now have a chance to drop Boss Items
-  - Black Forest: Greydwarf Brute has a chance to drop Crypt Key
-  - Swamp: Oozers have a chance to drop Wishbone
-  - Mountains: Drakes have a chance to drop Moder's Tears
-  - Plains: Fuling Shaman have a chance to drop Torn Spirit
-  - Mistlands: Seeker Soldiers have a chance to drop Majestic Carapace
-  - Hildir Mini-bosses always drop their Biome's Boss Item
-- Rancid Remains always drops his mace (Iron Mace, non-poisonous)
+- Modified Enemy Loot
+	- Greylings drop various useful Meadows and Black Forest items, and have a chance to drop Megingjord
+	- Biome Boss Minions now have a chance to drop Boss Items
+	  - Black Forest: Greydwarf Brute has a chance to drop Crypt Key
+	  - Swamp: Oozers have a chance to drop Wishbone
+	  - Mountains: Drakes have a chance to drop Moder's Tears
+	  - Plains: Fuling Shaman and Berserker have a chance to drop Torn Spirit
+	  - Mistlands: Seeker Soldiers have a chance to drop Majestic Carapace
+	  - Hildir Mini-bosses always drop their Biome's Boss Item
+	- Dverger drop a dozen or so pieces of Yggrasil wood when they die
+	- Rancid Remains always drops his mace (Iron Mace, non-poisonous)
 - Production buildings that take time to process **all** take only seconds
   - Fermenter
   - Charcoal Kiln
   - Spinning Wheel
   - Windmill
+  - Sap Extractor
   - Eitr Refiner (this also **no longer requires Soft Tissue**, just Sap)
-  - NOTE: Cooking buildings are unchanged from vanilla (Cooking Station, Iron Cooking Station, Cauldron, Stone Oven)
+  - NOTE: Cooking buildings are unchanged from vanilla (Cooking Station, Mead Ketill, Iron Cooking Station, Cauldron, Stone Oven)
 - All planted seeds and saplings grow to maturity within 10 seconds (as in previous version)
 - All Player Skills are learned at level 10 and then increase normally.
 
 ## What's New?
+v0.6.10
+- Trophy Saga
+  - **Removed Biome Bonuses!**
+	- This feature was deemed inappropriate for Trophy Saga mode. Trophy Rush still has Biome Bonuses.
+  - Trophies now drop at 2x the normal rate (capped at 50%)
+
+## Previous Changes
+v0.6.9
+- Trophy Saga
+  - Adjusted Greyling and Boss Minion drop rates
+	- Greyling
+	  - drops more Finewood and Corewood and drops them more frequently
+	  - increased chance to drop Megingjord
+	  - other small adjustments
+	- Drake
+	  - increased chance to drop Moder's Tears and can drop up to two at once
+	- Fuling Shaman and Berserker
+	  - increased chance to drop Torn Spirit
+	- Seeker Soldier
+	  - increased chance to drop Majestic Carapace
+  - Slightly increased sailing speed
+  - Slightly increased Trophy drop rates
+
+v0.6.8
+- Trophy Saga
+  - Sap Collector extracts 100 times faster, 20 sap per tap. Thanks @RustyCali
+  - Increased drop rates of Boss Key Items from Boss Minions
+  - Dverger and Dverger mages all drop a dozen or so Yggdrasil wood
+
 v0.6.7
 - Trophy Saga
   - Hot Tub no longer chews through your wood, preventing you from getting a good hot soak (caused by fast-processing change for other buildings)
 
-## Previous Changes
 v0.6.6
 - Trophy Saga
   - Adjusted drop rates for Boss Minions
