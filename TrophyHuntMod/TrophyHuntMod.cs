@@ -35,7 +35,7 @@ namespace TrophyHuntMod
     {
         public const string PluginGUID = "com.oathorse.TrophyHuntMod";
         public const string PluginName = "TrophyHuntMod";
-        public const string PluginVersion = "0.6.10";
+        public const string PluginVersion = "0.6.14";
         private readonly Harmony harmony = new Harmony(PluginGUID);
 
         // Configuration variables
@@ -54,7 +54,8 @@ namespace TrophyHuntMod
             Mistlands = 5,
             Ashlands = 6,
             Ocean = 7,
-            Hildir = 8
+            Hildir = 8,
+            Bogwitch = 9,
         };
 
         public struct TrophyHuntData
@@ -85,11 +86,33 @@ namespace TrophyHuntMod
         const int TROPHY_RUSH_LOGOUT_PENALTY = -5;
 
         const int TROPHY_SAGA_DEATH_PENALTY = -30;
-        const int TROPHY_SAGA_LOGOUT_PENALTY = -15;
+        const int TROPHY_SAGA_LOGOUT_PENALTY = -10;
         const float TROPHY_SAGA_SAILING_SPEED_MULTIPLIER = 2.25f;
         const float TROPHY_SAGA_TROPHY_DROP_MULTIPLIER = 2f;
         const float TROPHY_SAGA_BASE_SKILL_LEVEL = 10.0f;
+        const int TROPHY_SAGA_MINING_MULTIPLIER = 2;
 
+        const string TROPHY_SAGA_INTRO_TEXT = "You were once a great warrior, though your memory of deeds past has long grown dim, shrouded by the mists of eons slumbering in the land beyond death…\n\n\n" +
+            "Ragnarok looms and the tenth world remains only for a few scant hours. From Odin you are reborn with one purpose: collect the heads of his enemies before the cycle shatters Valheim forever…\n\n\n" +
+            "Odin will cast these heads into the well of Mimir where his lost eye still resides. Only then can he know how to truly banish them for all time…\n\n\n" +
+            "Your Saga will be retold for countless generations. Bring Odin what he desires or be forced to stay for eternity…\n\n\n" +
+            "…in VALHEIM!";
+
+/*
+Long ago, the Allfather Odin united the worlds. He threw down his foes and cast them into the tenth world, then split the boughs which held their prison to the World-Tree, and left it to drift unanchored, a place of exile
+
+
+
+For centuries, this world slumbered uneasily. But it did not die... As glacial ages passed, kingdoms rose and fell out of sight of the Gods.
+
+
+
+When Odin heard his enemies were growing once again in strength, he looked to Midgard and sent his Valkyries to scour the battlefields for the greatest of their warriors. Dead to the world, they would be born again…
+
+
+
+…in VALHEIM!
+*/
         const string LEADERBOARD_URL = "https://valheim.help/api/trackhunt";
 
         const float LOGOUT_PENALTY_GRACE_DISTANCE = 50.0f;  // total distance you're allowed to walk/run from initial spawn and get a free logout to clear wet debuff
@@ -167,9 +190,9 @@ namespace TrophyHuntMod
             new TrophyHuntData("TrophyUlv",                     "Ulv",              Biome.Mountains,    30,     5,      new List<string> { "$enemy_ulv" }),
             new TrophyHuntData("TrophyVolture",                 "Volture",          Biome.Ashlands,     50,     50,     new List<string> { "$enemy_volture" }),
             new TrophyHuntData("TrophyWolf",                    "Wolf",             Biome.Mountains,    30,     10,     new List<string> { "$enemy_wolf" }),
-            new TrophyHuntData("TrophyWraith",                  "Wraith",           Biome.Swamp,        20,     5,      new List<string> { "$enemy_wraith" })
+            new TrophyHuntData("TrophyWraith",                  "Wraith",           Biome.Swamp,        20,     5,      new List<string> { "$enemy_wraith" }),
 
-//            new TrophyHuntData("TrophyKvastur",                 "Kvastur",          Biome.Swamp,        50,     10,     new List<string> { "$enemy_kastur" })
+            new TrophyHuntData("TrophyKvastur",                 "Kvastur",          Biome.Bogwitch,     35,     100,    new List<string> { "$enemy_kvastur" })
         };
 
         static public Color[] __m_biomeColors = new Color[]
@@ -435,7 +458,7 @@ namespace TrophyHuntMod
             });
             */
 
-            ConsoleCommand ignoreLogoutsCommand = new ConsoleCommand("ignorelogouts", "Don't subtract points for logouts", delegate (ConsoleEventArgs args)
+        ConsoleCommand ignoreLogoutsCommand = new ConsoleCommand("ignorelogouts", "Don't subtract points for logouts", delegate (ConsoleEventArgs args)
             {
                 if (!Game.instance)
                 {
@@ -2964,10 +2987,10 @@ namespace TrophyHuntMod
                 { 
                     "$enemy_greyling",          new List<SpecialSagaDrop> 
                                                 { 
-                                                    new SpecialSagaDrop("Finewood",         10, 2, 7, false), 
+                                                    new SpecialSagaDrop("FineWood",       100,  1, 5, false), 
                                                     new SpecialSagaDrop("Coal",             4,  1, 2, false), 
                                                     new SpecialSagaDrop("TrophyDeer",       6,  1, 1, false),
-                                                    new SpecialSagaDrop("RoundLog",         10, 2, 7, false),
+                                                    new SpecialSagaDrop("RoundLog",        10,  2, 7, false),
                                                     new SpecialSagaDrop("ArrowFlint",       5,  2, 4, false),
                                                     new SpecialSagaDrop("BoneFragments",    8,  1, 3, false),
                                                     new SpecialSagaDrop("Flint",            7,  1, 3, false),
@@ -2984,7 +3007,7 @@ namespace TrophyHuntMod
                                                     new SpecialSagaDrop("Mushroom",         7,  1, 1, false),
                                                     new SpecialSagaDrop("Blueberries",      8,  2, 4, false),
 
-                                                    new SpecialSagaDrop("BeltStrength",     9,  1, 1, true)
+//                                                    new SpecialSagaDrop("BeltStrength",     10,  1, 1, true)
                                                 }
                 },
                 // The Elder Boss Item Drop
@@ -2995,7 +3018,14 @@ namespace TrophyHuntMod
                                                 }
                 },
                 {
-                    "$enemy_skeletonfire",    new List<SpecialSagaDrop>
+                    "$enemy_troll",             new List<SpecialSagaDrop>
+                                                {
+                                                    new SpecialSagaDrop("BeltStrength",    66,  1, 1, true),
+                                                    new SpecialSagaDrop("TrollHide",       100,  5, 5, false)
+                                                }
+                },
+                {
+                    "$enemy_skeletonfire",      new List<SpecialSagaDrop>
                                                 {
                                                     new SpecialSagaDrop("CryptKey",        100, 1, 1, true),
                                                 }
@@ -3009,9 +3039,17 @@ namespace TrophyHuntMod
 
                 // Bonemass Boss Item Drop
                 {
-                    "$enemy_blobelite",             new List<SpecialSagaDrop>
+                    "$enemy_blobelite",         new List<SpecialSagaDrop>
                                                 {
                                                     new SpecialSagaDrop("Wishbone",        50,  1, 1, true),
+                                                    new SpecialSagaDrop("Ooze",           100,  2, 5, false),
+
+                                                }
+                },
+                {
+                    "$enemy_blob",         new List<SpecialSagaDrop>
+                                                {
+                                                    new SpecialSagaDrop("Ooze",           100,  2, 5, false),
                                                 }
                 },
 
@@ -3230,6 +3268,7 @@ namespace TrophyHuntMod
 
                                     if (randValue < sagaDrop.m_dropPercent)
                                     {
+//                                        Debug.LogWarning($"{characterName} passed check to drop {sagaDrop.m_itemName}");
                                         GameObject prefab = ObjectDB.instance.GetItemPrefab(sagaDrop.m_itemName);
                                         if (prefab != null)
                                         {
@@ -3241,7 +3280,7 @@ namespace TrophyHuntMod
                                             {
                                                 __result.Add(newDropItem);
 
-//                                                Debug.LogWarning($"{characterName} dropping {itemCount} {sagaDrop.m_itemName}");
+                                                Debug.LogWarning($"{characterName} dropping {itemCount} {sagaDrop.m_itemName}");
 
                                                 sagaDrop.m_numDropped += itemCount;
 
@@ -3957,6 +3996,59 @@ namespace TrophyHuntMod
                 }
             }
 
+            [HarmonyPatch(typeof(Beehive), nameof(Beehive.Awake))]
+            public static class Beehive_Awake_Patch
+            {
+                static void Postfix(Beehive __instance)
+                {
+                    if (__instance != null && GetGameMode() == TrophyGameMode.TrophySaga)
+                    {
+                        __instance.m_secPerUnit = 5f;
+                        __instance.m_maxHoney = 4;
+                    }
+                }
+            }
+            
+            [HarmonyPatch(typeof(Game), nameof(Game.ShowIntro))]
+            public static class Game_ShowIntro_Patch
+            {
+                static string m_originalText;
+
+                static void Prefix(Game __instance)
+                {
+                    if (__instance != null)
+                    {
+                        m_originalText = __instance.m_introText;
+
+                        __instance.m_introText = TROPHY_SAGA_INTRO_TEXT;
+                    }
+                }
+                static void Postfix(Game __instance)
+                {
+//                    Debug.LogError($"Intro Text: {__instance.m_introText}");
+
+                    if (__instance != null)
+                    {
+                        __instance.m_introText = m_originalText;
+                    }
+                }
+            }
+
+            // Mining all veins are more productive
+            //
+            [HarmonyPatch(typeof(MineRock5), nameof(MineRock5.Awake))]
+            public static class MineRock5_Awake_Patch
+            {
+                static void Postfix(MineRock5 __instance)
+                {
+                    if (__instance != null && GetGameMode() == TrophyGameMode.TrophySaga)
+                    {
+                        __instance.m_dropItems.m_dropMin *= TROPHY_SAGA_MINING_MULTIPLIER;
+                        __instance.m_dropItems.m_dropMax *= (TROPHY_SAGA_MINING_MULTIPLIER + 1);
+                    }
+                }
+            }
+
             [HarmonyPatch(typeof(LoadingIndicator), nameof(LoadingIndicator.Awake))]
             public static class LoadingIndicator_Awake_Patch
             {
@@ -4099,5 +4191,16 @@ Maybe also:
 
 */
 
+/*
+ * 
+ * Up the ooze drop rate
+ * Make ores 3x when mining
+ * trolls drop meginjord
+ * greylings drop lots of finewood
+ * Queen is 180? 200?
+ * Sealbreaker x2 doesn't work
+ * 
+ */
 
 
+ 
