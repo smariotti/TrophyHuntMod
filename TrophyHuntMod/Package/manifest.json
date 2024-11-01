@@ -1,7 +1,7 @@
 ﻿{
     "name": "TrophyHuntMod",
     "description": "Simple BepInEx mod that implements Trophy display and scoring for doing the Valheim Trophy Hunt",
-    "version_number": "0.6.14",
+    "version_number": "0.6.15",
     "website_url": "https://github.com/smariotti/TrophyHuntMod",
     "dependencies": [
         "denikson-BepInExPack_Valheim-5.4.2202"
