@@ -35,7 +35,7 @@ namespace TrophyHuntMod
     {
         public const string PluginGUID = "com.oathorse.TrophyHuntMod";
         public const string PluginName = "TrophyHuntMod";
-        public const string PluginVersion = "0.6.15";
+        public const string PluginVersion = "0.6.16";
         private readonly Harmony harmony = new Harmony(PluginGUID);
 
         // Configuration variables
@@ -141,7 +141,7 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
             new TrophyHuntData("TrophyAsksvin",                 "Asksvin",          Biome.Ashlands,     50,     50,     new List<string> { "$enemy_asksvin" }),
             new TrophyHuntData("TrophyBlob",                    "Blob",             Biome.Swamp,        20,     10,     new List<string> { "$enemy_blob",       "$enemy_blobelite" }),
             new TrophyHuntData("TrophyBoar",                    "Boar",             Biome.Meadows,      10,     15,     new List<string> { "$enemy_boar" }),
-            new TrophyHuntData("TrophyBonemass",                "Bonemass",         Biome.Swamp,        80,     100,    new List<string> { "$enemy_bonemass" }),
+            new TrophyHuntData("TrophyBonemass",                "Bonemass",         Biome.Swamp,        100,    100,    new List<string> { "$enemy_bonemass" }),
             new TrophyHuntData("TrophyBonemawSerpent",          "Bonemaw",          Biome.Ashlands,     50,     33,     new List<string> { "$enemy_bonemawserpent" }),
             new TrophyHuntData("TrophyCharredArcher",           "Charred Archer",   Biome.Ashlands,     50,     5,      new List<string> { "$enemy_charred_archer" }),
             new TrophyHuntData("TrophyCharredMage",             "Charred Warlock",  Biome.Ashlands,     50,     5,      new List<string> { "$enemy_charred_mage" }),
@@ -164,7 +164,7 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
             new TrophyHuntData("TrophyGoblinBrute",             "Fuling Berserker", Biome.Plains,       30,     5,      new List<string> { "$enemy_goblinbrute" }),
             new TrophyHuntData("TrophyGoblinBruteBrosBrute",    "Thungr",           Biome.Hildir,       65,     100,    new List<string> { "$enemy_goblinbrute_hildircombined" }),
             new TrophyHuntData("TrophyGoblinBruteBrosShaman",   "Zil",              Biome.Hildir,       65,     100,    new List<string> { "$enemy_goblin_hildir" }),
-            new TrophyHuntData("TrophyGoblinKing",              "Yagluth",          Biome.Plains,       120,    100,    new List<string> { "$enemy_goblinking" }),
+            new TrophyHuntData("TrophyGoblinKing",              "Yagluth",          Biome.Plains,       160,    100,    new List<string> { "$enemy_goblinking" }),
             new TrophyHuntData("TrophyGoblinShaman",            "Fuling Shaman",    Biome.Plains,       30,     10,     new List<string> { "$enemy_goblinshaman" }),
             new TrophyHuntData("TrophyGreydwarf",               "Greydwarf",        Biome.Forest,       20,     5,      new List<string> { "$enemy_greydwarf" }),
             new TrophyHuntData("TrophyGreydwarfBrute",          "Greydwarf Brute",  Biome.Forest,       20,     10,     new List<string> { "$enemy_greydwarfbrute" }),
@@ -179,7 +179,7 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
             new TrophyHuntData("TrophySeeker",                  "Seeker",           Biome.Mistlands,    40,     10,     new List<string> { "$enemy_seeker" }),
             new TrophyHuntData("TrophySeekerBrute",             "Seeker Soldier",   Biome.Mistlands,    40,     5,      new List<string> { "$enemy_seekerbrute" }),
             new TrophyHuntData("TrophySeekerQueen",             "The Queen",        Biome.Mistlands,    1000,   100,    new List<string> { "$enemy_seekerqueen" }),
-            new TrophyHuntData("TrophySerpent",                 "Serpent",          Biome.Ocean,        25,     33,     new List<string> { "$enemy_serpent" }),
+            new TrophyHuntData("TrophySerpent",                 "Serpent",          Biome.Ocean,        45,     33,     new List<string> { "$enemy_serpent" }),
             new TrophyHuntData("TrophySGolem",                  "Stone Golem",      Biome.Mountains,    30,     5,      new List<string> { "$enemy_stonegolem" }),
             new TrophyHuntData("TrophySkeleton",                "Skeleton",         Biome.Forest,       20,     10,     new List<string> { "$enemy_skeleton" }),
             new TrophyHuntData("TrophySkeletonHildir",          "Brenna",           Biome.Hildir,       25,     100,    new List<string> { "$enemy_skeletonfire" }),
@@ -192,7 +192,7 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
             new TrophyHuntData("TrophyWolf",                    "Wolf",             Biome.Mountains,    30,     10,     new List<string> { "$enemy_wolf" }),
             new TrophyHuntData("TrophyWraith",                  "Wraith",           Biome.Swamp,        20,     5,      new List<string> { "$enemy_wraith" }),
 
-            new TrophyHuntData("TrophyKvastur",                 "Kvastur",          Biome.Bogwitch,     35,     100,    new List<string> { "$enemy_kvastur" })
+            new TrophyHuntData("TrophyKvastur",                 "Kvastur",          Biome.Bogwitch,     25,     100,    new List<string> { "$enemy_kvastur" })
         };
 
         static public Color[] __m_biomeColors = new Color[]
@@ -733,7 +733,7 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
         {
             __m_trophyGameMode += 1;
 //            if (__m_trophyGameMode >= TrophyGameMode.Max)
-            if (__m_trophyGameMode >= TrophyGameMode.TrophyFiesta) // Temporarily disable selecting Fiesta
+            if (__m_trophyGameMode > TrophyGameMode.TrophyFiesta)
             {
                 __m_trophyGameMode = TrophyGameMode.TrophyHunt;
             }
@@ -2560,7 +2560,7 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
                 float unluckiestRatio = 0f;
 
                 // Compute Luck
-                foreach (KeyValuePair<string, DropInfo> entry in __m_playerTrophyDropInfo)
+                foreach (KeyValuePair<string, DropInfo> entry in __m_allTrophyDropInfo)
                 {
                     DropInfo di = entry.Value;
                     if (di.m_numKilled == 0)
@@ -2700,9 +2700,9 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
             static GameObject __m_trophyTooltipObject = null;
             static GameObject __m_trophyTooltipBackground = null;
             static TextMeshProUGUI __m_trophyTooltip;
-            static Vector2 __m_trophyTooltipWindowSize = new Vector2(240, 110);
+            static Vector2 __m_trophyTooltipWindowSize = new Vector2(240, 125);
             static Vector2 __m_trophyTooltipTextOffset = new Vector2(5, 2);
-            static Vector2 __m_trophyTooltipAllTrophyStatsWindowSize = new Vector2(240, 180);
+            static Vector2 __m_trophyTooltipAllTrophyStatsWindowSize = new Vector2(240, 195);
 
             public static void CreateTrophyTooltip()
             {
@@ -2843,6 +2843,7 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
 
                 string text =
                     $"<size=16><b><color=#FFB75B>{trophyHuntData.m_prettyName}</color><b></size>\n" +
+                    $"<color=white>Point Value: </color><color=green>{trophyHuntData.m_value}</color>\n" +
                     $"<color=white>Player Kills: </color><color=orange>{playerDropInfo.m_numKilled}</color>\n" +
                     $"<color=white>Trophies Picked Up: </color><color=orange>{playerDropInfo.m_trophies}</color>\n" +
                     $"<color=white>Kill/Pickup Rate: </color><color=orange>{playerDropPercentStr}%</color>\n" +

@@ -595,7 +595,8 @@ Black Forest & Swamp Trophies - 20 points each
 Mountain/Plains Trophies - 30 points each
 Mistland Trophies -  40 points each
 Ashland Trophies - 50 points each
-Serpent Trophy - 25 points
+Serpent Trophy - 45 points
+Kvastur Trophy - 25 points
 
 **Mini-Bosses**
 Brenna Trophy - 25 points
@@ -605,9 +606,9 @@ Zil & Thungr Trophies - 65 points
 **Bosses**
 Eikthyr Trophy - 40 points
 Elder Trophy - 60 points
-Bonemass Trophy - 80 points
+Bonemass Trophy - 100 points
 Moder Trophy - 100 points
-Yagluth Trophy - 120 points
+Yagluth Trophy - 160 points
 Queen/Fader Trophy - 1000 points
 
 (Queen/Fader points will get nerfed when/if someone completes)
@@ -682,12 +683,18 @@ This Trophy Hunt variant implements a good number of modifications to standard V
 - All Player Skills are learned at level 10 and then increase normally.
 
 ## What's New?
+v0.6.16
+- Adjusted Point Value of Kvastur trophy to 25 (from 35)
+- Adjusted Point Value of Serpent trophy to 45 (from 25)
+- Changed Luck-o-Meter to use ACTUAL kill/drop values instead of player ones so it's now a very accurate assessment of how lucky your run was
+- Added Point value for Trophies to tooltips
+
+## Previous Changes
 v0.6.15
 - New intro text for all game modes
 - Trophy Saga
   - Logouts are cheaper, -10 points instead of -15
 
-## Previous Changes
 v0.6.14
 - Trophy Saga
   - Reduced amount of Finewood Greylings can drop by half
