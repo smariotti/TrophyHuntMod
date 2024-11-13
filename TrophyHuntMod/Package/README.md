@@ -128,12 +128,28 @@ This Trophy Hunt variant implements a good number of modifications to standard V
 - All Player Skills are learned at level 10 and then increase normally.
 
 ## What's New?
+v0.6.18
+- Added mod whitelist support and whitelisted "Wearable Trophies" mod by Jere Kuusela (https://thunderstore.io/c/valheim/p/JereKuusela/Wearable_Trophies/)
+- Edits to flavor text
+- Trophy Saga
+  - Adjusted Greyling drop rates to reduce inventory clutter and provide better early game experience
+
+## Previous Changes
+v0.6.17
+- Increased Point value of Bonemass to 100 (from 80)
+- Increased Point value of Yagluth to 160 (from 120)
+
+v0.6.16
+- Adjusted Point Value of Kvastur trophy to 25 (from 35)
+- Adjusted Point Value of Serpent trophy to 45 (from 25)
+- Changed Luck-o-Meter to use ACTUAL kill/drop values instead of player ones so it's now a very accurate assessment of how lucky your run was
+- Added Point value for Trophies to tooltips
+
 v0.6.15
 - New intro text for all game modes
 - Trophy Saga
   - Logouts are cheaper, -10 points instead of -15
 
-## Previous Changes
 v0.6.14
 - Trophy Saga
   - Reduced amount of Finewood Greylings can drop by half
@@ -683,13 +699,17 @@ This Trophy Hunt variant implements a good number of modifications to standard V
 - All Player Skills are learned at level 10 and then increase normally.
 
 ## What's New?
+v0.6.17
+- Increased Point value of Bonemass to 100 (from 80)
+- Increased Point value of Yagluth to 160 (from 120)
+
+## Previous Changes
 v0.6.16
 - Adjusted Point Value of Kvastur trophy to 25 (from 35)
 - Adjusted Point Value of Serpent trophy to 45 (from 25)
 - Changed Luck-o-Meter to use ACTUAL kill/drop values instead of player ones so it's now a very accurate assessment of how lucky your run was
 - Added Point value for Trophies to tooltips
 
-## Previous Changes
 v0.6.15
 - New intro text for all game modes
 - Trophy Saga

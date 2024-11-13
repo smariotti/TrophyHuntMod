@@ -27,6 +27,7 @@ using UnityEngine.UIElements;
 using static UnityEngine.UI.GridLayoutGroup;
 using static Room;
 using static Skills;
+using System.Linq;
 
 namespace TrophyHuntMod
 {
@@ -35,7 +36,7 @@ namespace TrophyHuntMod
     {
         public const string PluginGUID = "com.oathorse.TrophyHuntMod";
         public const string PluginName = "TrophyHuntMod";
-        public const string PluginVersion = "0.6.16";
+        public const string PluginVersion = "0.6.18";
         private readonly Harmony harmony = new Harmony(PluginGUID);
 
         // Configuration variables
@@ -92,10 +93,10 @@ namespace TrophyHuntMod
         const float TROPHY_SAGA_BASE_SKILL_LEVEL = 10.0f;
         const int TROPHY_SAGA_MINING_MULTIPLIER = 2;
 
-        const string TROPHY_SAGA_INTRO_TEXT = "You were once a great warrior, though your memory of deeds past has long grown dim, shrouded by the mists of eons slumbering in the land beyond death…\n\n\n" +
-            "Ragnarok looms and the tenth world remains only for a few scant hours. From Odin you are reborn with one purpose: collect the heads of his enemies before the cycle shatters Valheim forever…\n\n\n" +
-            "Odin will cast these heads into the well of Mimir where his lost eye still resides. Only then can he know how to truly banish them for all time…\n\n\n" +
-            "Your Saga will be retold for countless generations. Bring Odin what he desires or be forced to stay for eternity…\n\n\n" +
+        const string TROPHY_SAGA_INTRO_TEXT = "You were once a great warrior, though your memory of deeds past has long grown dim, shrouded by eons slumbering in the land beyond death…\n\n\n\n" +
+            "Ragnarok looms and the tenth world remains only for a few scant hours. You are reborn with one purpose: collect the heads of Odin's enemies before the cycle shatters Valheim forever…\n\n\n\n" +
+            "Odin will cast these heads into the well of Mimir where his lost eye still resides. He will then know how to banish them for all of time…\n\n\n\n" +
+            "Bring Odin what he desires or be forced to stay for eternity…\n\n\n\n" +
             "…in VALHEIM!";
 
 /*
@@ -347,23 +348,6 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
 
         private void Awake()
         {
-            // Get the list of loaded plugins
-            var loadedPlugins = BepInEx.Bootstrap.Chainloader.PluginInfos;
-
-            // Check if the count of loaded plugins is 1 and if it's this mod
-            if (loadedPlugins.Count == 1 && loadedPlugins.ContainsKey(Info.Metadata.GUID))
-            {
-                Debug.LogWarning($"[TrophyHuntMod] v{PluginVersion} is loaded and is the ONLY mod running! Let's Hunt!");
-
-                __m_onlyModRunning = true;
-            }
-            else
-            {
-                Debug.LogWarning($"[TrophyHuntMod] v{PluginVersion} detected other mods running. For official events, it must be the ONLY mod running.");
-
-                __m_onlyModRunning = false;
-            }
-
             __m_trophyHuntMod = this;
 
             // Patch with Harmony
@@ -374,6 +358,43 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
             // Create the drop data for collecting info about trophy drops vs. kills
             //
             InitializeTrophyDropInfo();
+        }
+
+        private string[] __m_modWhiteList = new string[]
+        {
+            "org.bepinex.valheim.displayinfo",
+            "com.oathorse.TrophyHuntMod",
+            "wearable_trophies"
+        };
+
+        private void Start()
+        {
+            // Get the list of loaded plugins
+            var loadedPlugins = BepInEx.Bootstrap.Chainloader.PluginInfos;
+
+ //           Debug.LogError($"[TrophyHut Mod] Found Plugins: {loadedPlugins.Count}");
+
+            __m_onlyModRunning = true;
+
+            foreach (var plugin in loadedPlugins)
+            {
+ //               Debug.LogError($"{plugin.Key} : {plugin.Value.ToString()} : {plugin.Value.Metadata.Name}, {plugin.Value.Metadata.GUID}, {plugin.Value.Metadata.Version}, {plugin.Value.Metadata.TypeId}");
+                if (!__m_modWhiteList.Contains(plugin.Value.Metadata.GUID))
+                {
+                    __m_onlyModRunning = false;
+                    Debug.LogError($"[TrophyHuntMod] v{PluginVersion} detected unauthorized mod '{plugin.Value.Metadata.Name}'! Score will not be accepted with this mod enabled!");
+                }
+            }
+
+            // Check if the count of loaded plugins is 1 and if it's this mod
+            if (__m_onlyModRunning)
+            {
+                Debug.LogWarning($"[TrophyHuntMod] v{PluginVersion} is loaded and Valheim is running only authorized mods! Let's Hunt!");
+            }
+            else
+            {
+                Debug.LogError($"[TrophyHuntMod] v{PluginVersion} found unauthorized mods. Score will be cyan colored, indicating invalid entry.");
+            }
         }
 
         public static void InitializeTrophyDropInfo()
@@ -715,6 +736,16 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
                     // no arguments means show/hide
                 }
             });
+
+            //ConsoleCommand notACheater = new ConsoleCommand("iamnotacheater", "Reset PlayerStats to disable the cheated flag", delegate (ConsoleEventArgs args)
+            //{
+            //    if (!Game.instance)
+            //    {
+            //        PrintToConsole("'timer' console command can only be used in-game.");
+            //    }
+            //    Game.instance.m_playerProfile.m_usedCheats = false;
+            //    Game.instance.m_playerProfile.m_playerStats[PlayerStatType.Cheats] = 0;
+            //});
 
         }
         #endregion
@@ -2988,25 +3019,25 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
                 { 
                     "$enemy_greyling",          new List<SpecialSagaDrop> 
                                                 { 
-                                                    new SpecialSagaDrop("FineWood",       100,  1, 5, false), 
-                                                    new SpecialSagaDrop("Coal",             4,  1, 2, false), 
-                                                    new SpecialSagaDrop("TrophyDeer",       6,  1, 1, false),
+                                                    new SpecialSagaDrop("FineWood",        50,  3, 10, false), 
+                                                    new SpecialSagaDrop("Coal",             2,  1, 2, false), 
+                                                    new SpecialSagaDrop("TrophyDeer",       5,  1, 1, false),
                                                     new SpecialSagaDrop("RoundLog",        10,  2, 7, false),
                                                     new SpecialSagaDrop("ArrowFlint",       5,  2, 4, false),
                                                     new SpecialSagaDrop("BoneFragments",    8,  1, 3, false),
-                                                    new SpecialSagaDrop("Flint",            7,  1, 3, false),
-                                                    new SpecialSagaDrop("LeatherScraps",    5,  1, 3, false),
-                                                    new SpecialSagaDrop("DeerHide",         5,  1, 3, false),
-                                                    new SpecialSagaDrop("CookedMeat",       5,  1, 2, false),
-                                                    new SpecialSagaDrop("Feathers",         7,  1, 2, false),
+                                                    new SpecialSagaDrop("Flint",            8,  1, 3, false),
+                                                    new SpecialSagaDrop("LeatherScraps",    4,  1, 3, false),
+                                                    new SpecialSagaDrop("DeerHide",         4,  1, 3, false),
+                                                    new SpecialSagaDrop("CookedMeat",       4,  1, 2, false),
+                                                    new SpecialSagaDrop("Feathers",         6,  1, 2, false),
                                                     new SpecialSagaDrop("CookedDeerMeat",   8,  1, 2, false),
-                                                    new SpecialSagaDrop("Acorn",            4,  1, 2, false),
-                                                    new SpecialSagaDrop("CarrotSeeds",      5,  1, 3, false),
-                                                    new SpecialSagaDrop("QueenBee",         5,  1, 1, false),
-                                                    new SpecialSagaDrop("Honey",            5,  1, 2, false),
-                                                    new SpecialSagaDrop("Raspberry",        7,  1, 1, false),
-                                                    new SpecialSagaDrop("Mushroom",         7,  1, 1, false),
-                                                    new SpecialSagaDrop("Blueberries",      8,  2, 4, false),
+                                                    new SpecialSagaDrop("Acorn",            3,  1, 2, false),
+                                                    new SpecialSagaDrop("CarrotSeeds",      4,  1, 3, false),
+                                                    new SpecialSagaDrop("QueenBee",         4,  1, 1, false),
+                                                    new SpecialSagaDrop("Honey",            6,  1, 2, false),
+                                                    new SpecialSagaDrop("Raspberry",        6,  1, 1, false),
+                                                    new SpecialSagaDrop("Mushroom",         6,  1, 1, false),
+                                                    new SpecialSagaDrop("Blueberries",      7,  2, 4, false),
 
 //                                                    new SpecialSagaDrop("BeltStrength",     10,  1, 1, true)
                                                 }
@@ -3684,6 +3715,25 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
                             FejdStartup.m_instance.m_world.m_startingGlobalKeys.Add("eventrate 0");
                             FejdStartup.m_instance.m_world.m_startingGlobalKeys.Add("teleportall");
                             FejdStartup.m_instance.m_world.m_startingGlobalKeys.Add("preset combat_default:deathpenalty_default:resources_muchmore:raids_none:portals_casual");
+
+                            //FejdStartup.m_instance.m_world.m_startingGlobalKeys.Add("playerdamage 85");
+                            //FejdStartup.m_instance.m_world.m_startingGlobalKeys.Add("enemydamage 150");
+                            //FejdStartup.m_instance.m_world.m_startingGlobalKeys.Add("enemyspeedsize 110");
+                            //FejdStartup.m_instance.m_world.m_startingGlobalKeys.Add("enemyleveluprate 120");
+                            //FejdStartup.m_instance.m_world.m_startingGlobalKeys.Add("resourcerate 200");
+                            //FejdStartup.m_instance.m_world.m_startingGlobalKeys.Add("eventrate 0");
+                            //FejdStartup.m_instance.m_world.m_startingGlobalKeys.Add("preset combat_hard:deathpenalty_default: resources_muchmore: raids_none: portals_default");
+
+                            FejdStartup.m_instance.m_world.SaveWorldMetaData(DateTime.Now);
+                            __instance.UpdateWorldList(centerSelection: true);
+                        }
+                        else if (GetGameMode() == TrophyGameMode.TrophyFiesta)
+                        {
+                            FejdStartup.m_instance.m_world.m_startingGlobalKeys.Clear();
+
+                            // Trying new tack with World Modifiers: portal everything, normal combat, no raids, double resources
+                            FejdStartup.m_instance.m_world.m_startingGlobalKeys.Add("enemyspeedsize 200");
+                            FejdStartup.m_instance.m_world.m_startingGlobalKeys.Add("enemyleveluprate 300");
 
                             //FejdStartup.m_instance.m_world.m_startingGlobalKeys.Add("playerdamage 85");
                             //FejdStartup.m_instance.m_world.m_startingGlobalKeys.Add("enemydamage 150");
