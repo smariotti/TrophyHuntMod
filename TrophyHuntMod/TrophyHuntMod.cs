@@ -95,8 +95,8 @@ namespace TrophyHuntMod
 
         const string TROPHY_SAGA_INTRO_TEXT = "You were once a great warrior, though your memory of deeds past has long grown dim, shrouded by eons slumbering in the land beyond death…\n\n\n\n" +
             "Ragnarok looms and the tenth world remains only for a few scant hours. You are reborn with one purpose: collect the heads of Odin's enemies before the cycle shatters Valheim forever…\n\n\n\n" +
-            "Odin will cast these heads into the well of Mimir where his lost eye still resides. He will then know how to banish them for all of time…\n\n\n\n" +
-            "Bring Odin what he desires or be forced to stay for eternity…\n\n\n\n" +
+            "Odin will cast these heads into the well of Mimir where his lost eye still resides. He will then know how to banish them for all of time…\n\n\n" +
+            "Bring Odin what he desires or be forced to stay for eternity…\n\n\n" +
             "…in VALHEIM!";
 
 /*
@@ -3914,20 +3914,35 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
 
 
             // In trophy saga, fermentation time is greatly reduced
+            /*
+                        [HarmonyPatch(typeof(Fermenter), nameof(Fermenter.AddItem))]
+                        public static class Fermenter_AddItem_Patch
+                        {
+                            static void Postfix(Fermenter __instance, Humanoid user, ItemDrop.ItemData item, ref bool __result)
+                            {
+                                if (__instance != null && GetGameMode() == TrophyGameMode.TrophySaga)
+                                {
+            //                        Debug.LogWarning("Fermenter.AddItem()");
 
-            [HarmonyPatch(typeof(Fermenter), nameof(Fermenter.AddItem))]
+                                    if (__result)
+                                    {
+                                        __instance.m_fermentationDuration = 10;
+                                    }
+                                }
+                            }
+                        }
+            */
+
+            [HarmonyPatch(typeof(Fermenter), nameof(Fermenter.Awake))]
             public static class Fermenter_AddItem_Patch
             {
-                static void Postfix(Fermenter __instance, Humanoid user, ItemDrop.ItemData item, ref bool __result)
+                static void Postfix(Fermenter __instance)
                 {
                     if (__instance != null && GetGameMode() == TrophyGameMode.TrophySaga)
                     {
-//                        Debug.LogWarning("Fermenter.AddItem()");
+                        Debug.LogWarning("Fermenter.Awake()");
 
-                        if (__result)
-                        {
-                            __instance.m_fermentationDuration = 10;
-                        }
+                        __instance.m_fermentationDuration = 10;
                     }
                 }
             }
