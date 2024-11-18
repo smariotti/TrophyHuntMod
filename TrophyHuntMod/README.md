@@ -94,11 +94,11 @@ In addition, this mode offers "Biome Bonuses" for completing the full set of non
 
 This Trophy Hunt variant implements a good number of modifications to standard Valheim play to speed progression. Bosses no longer gate upgrade progression since boss dropped items can now drop from powerful minions in that boss' biome.
 
-- Trophies drop at 2x normal rate (capped at 50% chance)
+- Trophies drop 100% of the time until you have one, then drop at vanilla valheim rate (except Deer, which always drops.) This is the same as Trophy Rush
 - Combat is set to Normal difficulty
 - Resource Rate is set to 2x (you get double all resources picked up, dropped by enemies, or found in chests)
 - Death penalty is -30 points
-- Relog penalty is -15 points
+- Relog penalty is -10 points
 - Metal Ores "insta-smelt" when you pick them up. If you pick up ore from the ground or out of a chest, it becomes the equivalent metal bar instantly.
 - Mining is twice as productive
 - Portals allow **all** items through (metals, eggs, etc.)
@@ -128,13 +128,33 @@ This Trophy Hunt variant implements a good number of modifications to standard V
 - All Player Skills are learned at level 10 and then increase normally.
 
 ## What's New?
+v0.6.22
+- Trophy Saga
+  - Base skill for all skills raised from 10 to 20. All skills acquire at 20 and then are raised normally.
+
+## Previous Changes
+v0.6.21
+- Trophy Saga
+  - Trophies now ALWAYS drop from enemies until you have one and then drop at normal rate (except Deer which always drops.) This is the same as Trophy Rush.
+
+v0.6.20
+- Trophy Saga
+  - Biome Boss Minions all have a **very high** chance to drop the boss key items. Like almost entirely nearly always.
+  - Trolls now have a **very high** chance to drop the Megingjord
+  - Greylings have a low chance to drop the Megingjord again. They're little keptomaniacs with sticky fingers. Who knows what they find lying about.
+
+v0.6.19
+- Fixed intro text bug
+- Trophy Saga
+  - Patched Fermenter differently to fix bug where Fermenter would sometimes work at normal speed instead of bonkers-fast as intended.
+  - Upped Greydwarf Brute boss item drop rate slightly
+
 v0.6.18
 - Added mod whitelist support and whitelisted "Wearable Trophies" mod by Jere Kuusela (https://thunderstore.io/c/valheim/p/JereKuusela/Wearable_Trophies/)
 - Edits to flavor text
 - Trophy Saga
   - Adjusted Greyling drop rates to reduce inventory clutter and provide better early game experience
 
-## Previous Changes
 v0.6.17
 - Increased Point value of Bonemass to 100 (from 80)
 - Increased Point value of Yagluth to 160 (from 120)

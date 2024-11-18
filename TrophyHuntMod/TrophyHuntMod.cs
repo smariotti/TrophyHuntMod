@@ -36,7 +36,7 @@ namespace TrophyHuntMod
     {
         public const string PluginGUID = "com.oathorse.TrophyHuntMod";
         public const string PluginName = "TrophyHuntMod";
-        public const string PluginVersion = "0.6.18";
+        public const string PluginVersion = "0.6.22";
         private readonly Harmony harmony = new Harmony(PluginGUID);
 
         // Configuration variables
@@ -90,7 +90,7 @@ namespace TrophyHuntMod
         const int TROPHY_SAGA_LOGOUT_PENALTY = -10;
         const float TROPHY_SAGA_SAILING_SPEED_MULTIPLIER = 2.25f;
         const float TROPHY_SAGA_TROPHY_DROP_MULTIPLIER = 2f;
-        const float TROPHY_SAGA_BASE_SKILL_LEVEL = 10.0f;
+        const float TROPHY_SAGA_BASE_SKILL_LEVEL = 20.0f;
         const int TROPHY_SAGA_MINING_MULTIPLIER = 2;
 
         const string TROPHY_SAGA_INTRO_TEXT = "You were once a great warrior, though your memory of deeds past has long grown dim, shrouded by eons slumbering in the land beyond death…\n\n\n\n" +
@@ -838,7 +838,7 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
                     text += "<align=\"center\"><size=14><color=red>EXPERIMENTAL!</color>\n</size>";
                     resourceMultiplier = 2.0f;
                     combatDifficulty = "Normal";
-                    dropRate = "2x (Max 50%)";
+                    dropRate = "100%";
                     hasBiomeBonuses = false;
                     break;
                 case TrophyGameMode.TrophyFiesta:
@@ -3033,26 +3033,26 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
                                                     new SpecialSagaDrop("CookedDeerMeat",   8,  1, 2, false),
                                                     new SpecialSagaDrop("Acorn",            3,  1, 2, false),
                                                     new SpecialSagaDrop("CarrotSeeds",      4,  1, 3, false),
-                                                    new SpecialSagaDrop("QueenBee",         4,  1, 1, false),
+                                                    new SpecialSagaDrop("QueenBee",         6,  1, 1, false),
                                                     new SpecialSagaDrop("Honey",            6,  1, 2, false),
                                                     new SpecialSagaDrop("Raspberry",        6,  1, 1, false),
                                                     new SpecialSagaDrop("Mushroom",         6,  1, 1, false),
                                                     new SpecialSagaDrop("Blueberries",      7,  2, 4, false),
 
-//                                                    new SpecialSagaDrop("BeltStrength",     10,  1, 1, true)
+                                                    new SpecialSagaDrop("BeltStrength",     15,  1, 1, true)
                                                 }
                 },
                 // The Elder Boss Item Drop
                 { 
                     "$enemy_greydwarfbrute",    new List<SpecialSagaDrop>
                                                 {
-                                                    new SpecialSagaDrop("CryptKey",        40,  1, 1, true),
+                                                    new SpecialSagaDrop("CryptKey",        100,  1, 1, true),
                                                 }
                 },
                 {
                     "$enemy_troll",             new List<SpecialSagaDrop>
                                                 {
-                                                    new SpecialSagaDrop("BeltStrength",    66,  1, 1, true),
+                                                    new SpecialSagaDrop("BeltStrength",    100,  1, 1, true),
                                                     new SpecialSagaDrop("TrollHide",       100,  5, 5, false)
                                                 }
                 },
@@ -3073,7 +3073,7 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
                 {
                     "$enemy_blobelite",         new List<SpecialSagaDrop>
                                                 {
-                                                    new SpecialSagaDrop("Wishbone",        50,  1, 1, true),
+                                                    new SpecialSagaDrop("Wishbone",       100,  1, 1, true),
                                                     new SpecialSagaDrop("Ooze",           100,  2, 5, false),
 
                                                 }
@@ -3090,7 +3090,7 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
                     // Drake
                     "$enemy_drake",           new List<SpecialSagaDrop>
                                                 {
-                                                    new SpecialSagaDrop("DragonTear",      50,  1, 2, false),
+                                                    new SpecialSagaDrop("DragonTear",      100,  1, 2, false),
                                                 }
                 },
                 {
@@ -3105,13 +3105,13 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
                 {
                     "$enemy_goblinshaman",      new List<SpecialSagaDrop>
                                                 {
-                                                    new SpecialSagaDrop("YagluthDrop",     50,  1, 1, false),
+                                                    new SpecialSagaDrop("YagluthDrop",     100,  1, 1, true),
                                                 }
                 },
                 {
                     "$enemy_goblinbrute",       new List<SpecialSagaDrop>
                                                 {
-                                                    new SpecialSagaDrop("YagluthDrop",     50,  1, 1, true),
+                                                    new SpecialSagaDrop("YagluthDrop",     100,  1, 1, true),
                                                 }
                 },
                 {
@@ -3131,7 +3131,7 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
                 {
                     "$enemy_seekerbrute",    new List<SpecialSagaDrop>
                                                 {
-                                                    new SpecialSagaDrop("QueenDrop",       50,  1, 1, false),
+                                                    new SpecialSagaDrop("QueenDrop",       100,  1, 1, false),
                                                 }
                 },
 
@@ -3221,7 +3221,7 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
                             {
                                 float dropPercentage = 0f;
 
-                                if (GetGameMode() == TrophyGameMode.TrophyRush)
+                                if (GetGameMode() == TrophyGameMode.TrophyRush || GetGameMode() == TrophyGameMode.TrophySaga)
                                 {
                                     string trophyName = EnemyNameToTrophyName(characterName);
                                     if (!__m_trophyCache.Contains(trophyName) || trophyName == "TrophyDeer")
@@ -3229,17 +3229,17 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
                                         dropPercentage = 100f;
                                     }
                                 }
-                                else if (GetGameMode() == TrophyGameMode.TrophySaga)
-                                {
-                                    int index = Array.FindIndex(__m_trophyHuntData, element => element.m_enemies.Contains(characterName));
-                                    if (index >= 0)
-                                    {
-                                        float wikiDropPercent = __m_trophyHuntData[index].m_dropPercent;
+                                //else if (GetGameMode() == TrophyGameMode.TrophySaga)
+                                //{
+                                //    int index = Array.FindIndex(__m_trophyHuntData, element => element.m_enemies.Contains(characterName));
+                                //    if (index >= 0)
+                                //    {
+                                //        float wikiDropPercent = __m_trophyHuntData[index].m_dropPercent;
 
-                                        // Cap at 50% drop rate
-                                        dropPercentage = Math.Min(wikiDropPercent * TROPHY_SAGA_TROPHY_DROP_MULTIPLIER, 50f);
-                                    }
-                                }
+                                //        // Cap at 50% drop rate
+                                //        dropPercentage = Math.Min(wikiDropPercent * TROPHY_SAGA_TROPHY_DROP_MULTIPLIER, 50f);
+                                //    }
+                                //}
 
                                 // Roll the dice
                                 System.Random randomizer = new System.Random();
@@ -3286,10 +3286,32 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
                                 { 
                                     SpecialSagaDrop sagaDrop = enemySagaDrops[i];
 
-//                                    Debug.LogWarning($"{characterName} {sagaDrop.m_itemName} numDrops: {sagaDrop.m_numDropped}");
+                                    bool alreadyDropped = false;
+                                    //                                    Debug.LogWarning($"{characterName} {sagaDrop.m_itemName} numDrops: {sagaDrop.m_numDropped}");
+                                    if (sagaDrop.m_dropOnlyOne)
+                                    {
+                                        alreadyDropped = sagaDrop.m_numDropped > 0;
+                                        if (!alreadyDropped)
+                                        {
+                                            // Special handling for the strength belt, either greylings or trolls can drop it but not both
+                                            if (sagaDrop.m_itemName == "BeltStrength")
+                                            {
+                                                List<SpecialSagaDrop> greylingDrops = __m_specialSagaDrops["$enemy_greyling"];
+                                                List<SpecialSagaDrop> trollDrops = __m_specialSagaDrops["$enemy_troll"];
+
+                                                SpecialSagaDrop greylingBeltDrop = greylingDrops.Find(x => x.m_itemName == "BeltStrength");
+                                                SpecialSagaDrop trollBeltDrop = trollDrops.Find(x => x.m_itemName == "BeltStrength");
+                                                if (greylingBeltDrop.m_numDropped > 0 || trollBeltDrop.m_numDropped > 0)
+                                                {
+                                                    alreadyDropped = true;
+//                                                    Debug.LogWarning($"Greyling or Troll already dropped {sagaDrop.m_itemName}");
+                                                }
+                                            }
+                                        }
+                                    }
 
                                     // If it's only meant to drop once, just ignore additional drops
-                                    if (sagaDrop.m_dropOnlyOne && sagaDrop.m_numDropped > 0)
+                                    if (alreadyDropped)
                                     {
 //                                        Debug.LogWarning($"{characterName} already dropped {sagaDrop.m_itemName}");
 
