@@ -36,7 +36,7 @@ namespace TrophyHuntMod
     {
         public const string PluginGUID = "com.oathorse.TrophyHuntMod";
         public const string PluginName = "TrophyHuntMod";
-        public const string PluginVersion = "0.6.22";
+        public const string PluginVersion = "0.7.0";
         private readonly Harmony harmony = new Harmony(PluginGUID);
 
         // Configuration variables
@@ -835,7 +835,6 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
                 case TrophyGameMode.TrophySaga:
                     text += "\n<align=\"left\"><size=18>Game Mode: <color=yellow>Trophy Saga</color></size>";
                     text += "\n<align=\"center\"><size=12> <color=yellow>NOTE:</color> To use existing world, change World Modifiers manually!</size>\n";
-                    text += "<align=\"center\"><size=14><color=red>EXPERIMENTAL!</color>\n</size>";
                     resourceMultiplier = 2.0f;
                     combatDifficulty = "Normal";
                     dropRate = "100%";
@@ -856,11 +855,13 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
                 if (GetGameMode() == TrophyGameMode.TrophySaga)
                 {
                     text += $"<align=\"left\">      * Portals allow <color=orange>all items</color>\n";
-                    text += $"<align=\"left\">      * Boat Speed is <color=orange>doubled</color>\n";
-                    text += $"<align=\"left\">      * Ores <color=orange>Insta-smelt</color> on pickup\n";
                     text += $"<align=\"left\">      * Raids are <color=orange>disabled</color>\n";
+                    text += $"<align=\"left\">      * Boat Speed is <color=orange>increased</color>\n";
+                    text += $"<align=\"left\">      * Ores <color=orange>Insta-smelt</color> on pickup\n";
                     text += $"<align=\"left\">      * Speedy <color=orange>Production</color> and <color=orange>crops</color>\n";
                     text += $"<align=\"left\">      * Biome minions can <color=orange>drop Boss Items</color>\n";
+                    text += $"<align=\"left\">      * Greylings/Trolls/Dvergr <color=orange>drop gifts</color>\n";
+                    text += $"<align=\"left\">      * Mining is <color=orange>more productive</color>\n";
                 }
                 if (hasBiomeBonuses)
                 {
@@ -953,7 +954,7 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
                 // Cache already discovered trophies
                 __m_trophyCache = Player.m_localPlayer.GetTrophies();
 
-                if (__m_showAllTrophyStats || __m_ignoreLogouts || GetGameMode() == TrophyGameMode.TrophySaga || GetGameMode() == TrophyGameMode.TrophyFiesta)
+                if (__m_showAllTrophyStats || __m_ignoreLogouts || GetGameMode() == TrophyGameMode.TrophyFiesta)
                 {
                     __m_invalidForTournamentPlay = true;
                 }
@@ -2058,6 +2059,8 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
                                 // Did we complete a biome bonus with this trophy?
                                 if (UpdateBiomeBonusTrophies(name))
                                 {
+                                    MessageHud.instance.ShowBiomeFoundMsg("Biome Bonus", playStinger: true);
+
                                     FlashBiomeTrophies(name);
                                 }
                             }
@@ -3026,17 +3029,14 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
                                                     new SpecialSagaDrop("ArrowFlint",       5,  2, 4, false),
                                                     new SpecialSagaDrop("BoneFragments",    8,  1, 3, false),
                                                     new SpecialSagaDrop("Flint",            8,  1, 3, false),
-                                                    new SpecialSagaDrop("LeatherScraps",    4,  1, 3, false),
+                                                    new SpecialSagaDrop("LeatherScraps",    10, 2, 3, false),
                                                     new SpecialSagaDrop("DeerHide",         4,  1, 3, false),
-                                                    new SpecialSagaDrop("CookedMeat",       4,  1, 2, false),
                                                     new SpecialSagaDrop("Feathers",         6,  1, 2, false),
                                                     new SpecialSagaDrop("CookedDeerMeat",   8,  1, 2, false),
                                                     new SpecialSagaDrop("Acorn",            3,  1, 2, false),
                                                     new SpecialSagaDrop("CarrotSeeds",      4,  1, 3, false),
                                                     new SpecialSagaDrop("QueenBee",         6,  1, 1, false),
                                                     new SpecialSagaDrop("Honey",            6,  1, 2, false),
-                                                    new SpecialSagaDrop("Raspberry",        6,  1, 1, false),
-                                                    new SpecialSagaDrop("Mushroom",         6,  1, 1, false),
                                                     new SpecialSagaDrop("Blueberries",      7,  2, 4, false),
 
                                                     new SpecialSagaDrop("BeltStrength",     15,  1, 1, true)
@@ -3139,12 +3139,14 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
                     "$enemy_dvergr",    new List<SpecialSagaDrop>
                                                 {
                                                     new SpecialSagaDrop("YggdrasilWood",   100,  10, 20, false),
+//                                                    new SpecialSagaDrop("BlackCore",       100,  2, 3, false),
                                                 }
                 },
                 {
                     "$enemy_dvergr_mage",    new List<SpecialSagaDrop>
                                                 {
                                                     new SpecialSagaDrop("YggdrasilWood",   100,  10, 20, false),
+//                                                    new SpecialSagaDrop("BlackCore",       100,  2, 3, false),
                                                 }
                 },
             };
@@ -3530,6 +3532,55 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
                 }
             }
 
+            // Trick "CanAddItem" into thinking the ores are bars if you have bars in your inventory already, this fixes an auto-pickup bug
+            [HarmonyPatch(typeof(Inventory), nameof(Inventory.CanAddItem), new[] { typeof(ItemDrop.ItemData), typeof(int) })]
+            public static class Inventory_CanAddItem_Patch
+            {
+                static bool Prefix(Inventory __instance, ref ItemDrop.ItemData item, int stack, ref bool __result)
+                {
+                    if (__instance != null && Player.m_localPlayer != null
+                        && __instance == Player.m_localPlayer.GetInventory())
+                    {
+                        if (GetGameMode() == TrophyGameMode.TrophySaga)
+                        {
+                            // Item successfully added to inventory
+                            if (__m_instaSmelt)
+                            {
+                                Debug.LogWarning($"CanAddItem for {item.m_shared.m_name}");
+                                string cookedMetalName;
+                                if (item != null && item.m_dropPrefab != null && __m_metalConversions.TryGetValue(item.m_dropPrefab.name, out cookedMetalName))
+                                {
+                                    Debug.LogWarning($"CanAddItem found metal conversion for {item.m_dropPrefab.name} to {cookedMetalName}");
+
+                                    GameObject metalPrefab = ZNetScene.instance.GetPrefab(cookedMetalName);
+                                    GameObject tempMetalObject = UnityEngine.Object.Instantiate<GameObject>(metalPrefab);
+
+                                    if (tempMetalObject)
+                                    {
+                                        Debug.LogWarning($"ConvertMetal(): Created {tempMetalObject.name}");
+
+                                        ItemDrop tempItemDrop = tempMetalObject.GetComponent<ItemDrop>();
+
+                                        if (stack <= 0)
+                                        {
+                                            stack = item.m_stack;
+                                        }
+
+                                        __result = __instance.FindFreeStackSpace(tempItemDrop.m_itemData.m_shared.m_name, item.m_worldLevel) + (__instance.m_width * __instance.m_height - __instance.m_inventory.Count) * item.m_shared.m_maxStackSize >= stack;
+
+                                        Debug.LogWarning($"CanAddItem result {__result}");
+
+                                        return false;
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    return true;
+                }
+            }
+
             // Called when an item is added to the player's inventory
             [HarmonyPatch(typeof(Humanoid), nameof(Humanoid.Pickup))]
             public class Humanoid_Pickup_Patch
@@ -3559,6 +3610,10 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
                 // Check picked up item to see if Trophy
                 static void Postfix(Humanoid __instance, GameObject go, bool autoequip, bool autoPickupDelay, bool __result)
                 {
+                    if (__instance == null || go == null)
+                    {
+                        return;
+                    }
 
                     ItemDrop component = go.GetComponent<ItemDrop>();
                     ItemDrop.ItemData item = component.m_itemData;

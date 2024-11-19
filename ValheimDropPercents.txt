@@ -1,0 +1,55 @@
+Abomination			50%
+Asksvin				50%
+Blob				10%
+Boar				15%
+Bonemass			100%
+Bonemaw				33%
+Brenna				100%
+Charred Marksman	5%
+Charred Warlock		5%
+Charred Warrior		5%
+Cultist				10%
+Deathsquito			5%
+Deer				50%
+Drake				10%
+Draugr				10%
+Draugr elite		10%
+Dvergr mage			5%
+Dvergr rogue		5%
+Eikthyr				100%
+Fader				100%
+Fallen Valkyrie		5%
+Fenring				10%
+Fuling				10%
+Fuling Berserker	5%
+Fuling shaman		10%
+Geirrhafa			100%
+Gjall				30%
+Greydwarf			5%
+Greydwarf brute		10%
+Greydwarf shaman	10%
+Growth				10%
+Hare				5%
+Leech				10%
+Lox					10%
+Moder				100%
+Morgen				5%
+Neck				5%
+Rancid remains		10%
+Seeker				10%
+Seeker Soldier		5%
+Serpent				33%
+Skeleton			10%
+Stone Golem			5%
+Surtling			5%
+The Elder			100%
+The Queen			100%
+Thungr				100%
+Tick				5%
+Troll				50%
+Ulv					10%
+Volture				50%
+Wolf				10%
+Wraith				5%
+Yagluth				100%
+Zil 				100%

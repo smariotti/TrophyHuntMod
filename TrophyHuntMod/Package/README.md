@@ -128,11 +128,28 @@ This Trophy Hunt variant implements a good number of modifications to standard V
 - All Player Skills are learned at level 10 and then increase normally.
 
 ## What's New?
+v0.7.0
+- Trophy Saga
+  - Ready for Prime Time!
+  - Removed "EXPERIMENTAL" tag from Main Menu Text
+  - No longer color the score green to indicate "invalid for tournament play"
+- Trophy Rush
+  - Added "Biome Bonus" pop up text and stinger audio when you get a bonus
+
+## Previous Changes
+v0.6.24
+- Trophy Saga
+  - HOTFIX: Fixed a bug where you couldn't craft anything. LOL.
+
+v0.6.23
+- Trophy Saga
+  - Fixed a bug with Insta-Smelt where ores wouldn't auto-pickup in some cases
+  - Tweaks to Greyling drop rates a little, just a little more leather
+
 v0.6.22
 - Trophy Saga
   - Base skill for all skills raised from 10 to 20. All skills acquire at 20 and then are raised normally.
 
-## Previous Changes
 v0.6.21
 - Trophy Saga
   - Trophies now ALWAYS drop from enemies until you have one and then drop at normal rate (except Deer which always drops.) This is the same as Trophy Rush.
