@@ -28,6 +28,7 @@ using static UnityEngine.UI.GridLayoutGroup;
 using static Room;
 using static Skills;
 using System.Linq;
+using static TrophyHuntMod.TrophyHuntMod.Player_OnSpawned_Patch;
 
 namespace TrophyHuntMod
 {
@@ -345,6 +346,129 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
 
         // Biomes we've completed 
         static List<Biome> __m_completedBiomeBonuses = new List<Biome>();
+
+
+        public class THMSaveData
+        {
+            public void CopyIn() { }
+            public void CopyOut() { }
+
+            public Dictionary<string, DropInfo> m_allTrophyDropInfo = null;
+            public Dictionary<string, DropInfo> m_playerTrophyDropInfo = null;
+            public List<Vector3> m_playerPathData = null;
+
+            public long m_gameTimerElapsedSeconds;
+            public bool m_gameTimerActive;
+            public bool m_gameTimerVisible;
+            public bool m_gameTimerCountdown;
+
+            public int m_slashDieCount;
+            public int m_logoutCount;
+
+            // Build list of string/bools key value pairs for special saga drops
+            //Dictionary<string, List<SpecialSagaDrop>> m_specialSagaDrops;
+
+            public long m_storedPlayerID;
+            public TrophyGameMode m_storedGameMode;
+            public string m_storedWorldSeed;
+        }
+
+        static string BuildPersistentSaveFilename()
+        {
+            string saveFileName = $"{Player.m_localPlayer.GetPlayerID()}_{__m_trophyGameMode.ToString()}_{WorldGenerator.instance.m_world.m_seedName}.thmdata";
+
+            return saveFileName;
+        }
+
+        static void SavePersistentData()
+        {
+
+            // Spam the file into the Valheim directory
+            string workingDirectory = Directory.GetCurrentDirectory();
+
+            Debug.LogError($"SavePersistentData: {workingDirectory}, {BuildPersistentSaveFilename()}");
+
+            THMSaveData saveData = new THMSaveData();
+            saveData.CopyIn();
+
+            saveData.m_allTrophyDropInfo = __m_allTrophyDropInfo;
+            saveData.m_playerTrophyDropInfo = __m_playerTrophyDropInfo;
+            saveData.m_playerPathData = __m_playerPathData;
+
+            saveData.m_gameTimerElapsedSeconds = __m_gameTimerElapsedSeconds;
+            saveData.m_gameTimerActive = __m_gameTimerActive;
+            saveData.m_gameTimerVisible = __m_gameTimerVisible;
+            saveData.m_gameTimerCountdown = __m_gameTimerCountdown;
+
+            saveData.m_slashDieCount = __m_slashDieCount;
+            saveData.m_logoutCount = __m_logoutCount;
+
+            saveData.m_storedPlayerID = __m_storedPlayerID;
+            saveData.m_storedGameMode = __m_storedGameMode;
+            saveData.m_storedWorldSeed = __m_storedWorldSeed;
+
+            string filename = $"{workingDirectory}\\{BuildPersistentSaveFilename()}";
+            string saveDataString = JsonUtility.ToJson(saveData);
+
+            File.WriteAllText(filename, saveDataString);
+
+            THMSaveData loadedData = JsonUtility.FromJson<THMSaveData>(File.ReadAllText(filename));
+
+            string loadDataString = JsonUtility.ToJson(loadedData);
+
+            Debug.LogError($"{filename}\nSAVEDATA:\n{saveDataString}\nLOADATA:\n{loadDataString}");
+
+            // All trophy drop info dictionary
+            //            static Dictionary<string, DropInfo> __m_allTrophyDropInfo = new Dictionary<string, DropInfo>();
+
+            // Player trophy drop info dictionary
+            //            static Dictionary<string, DropInfo> __m_playerTrophyDropInfo = new Dictionary<string, DropInfo>();
+
+            // stored game mode?
+            //            static List<Vector3> __m_playerPathData = new List<Vector3>();   // list of player positions during the session
+
+            // game timer
+            //static long __m_gameTimerElapsedSeconds = 0;
+            //static bool __m_gameTimerActive = false;
+            //static bool __m_gameTimerVisible = true;
+            //static bool __m_gameTimerCountdown = true;
+
+            // logouts and slash-dies
+            //static int __m_slashDieCount = 0;
+            //static int __m_logoutCount = 0;
+
+            // SpecialSagaDrop counts, save/restore m_numDropped field only
+            //            static public Dictionary<string, List<SpecialSagaDrop>> __m_specialSagaDrops = new Dictionary<string, List<SpecialSagaDrop>>
+            //                 public int m_numDropped;
+
+            //__m_storedPlayerID = Player.m_localPlayer.GetPlayerID();
+            //__m_storedGameMode = __m_trophyGameMode;
+            //__m_storedWorldSeed = WorldGenerator.instance.m_world.m_seedName;
+
+            //            string workingDirectory = Directory.GetCurrentDirectory();
+
+        }
+
+        static void LoadPersistentData()
+        {
+            string workingDirectory = Directory.GetCurrentDirectory();
+
+            Debug.LogError($"LoadPersistentData: {workingDirectory}, {BuildPersistentSaveFilename()}");
+
+            SavePersistentData();
+        }
+
+        [HarmonyPatch(typeof(ZNet), nameof(ZNet.Save), new[] { typeof(bool), typeof(bool), typeof(bool) })]
+        public class ZNet_Save_Patch
+        {
+            static void Postfix(ZNet __instance, bool sync, bool saveOtherPlayerProfiles, bool waitForNextFrame)
+            {
+                Debug.LogError($"SAVE: {sync} {saveOtherPlayerProfiles} {waitForNextFrame} {BuildPersistentSaveFilename()}");
+
+                SavePersistentData();
+            }
+        }
+
 
         private void Awake()
         {
@@ -987,6 +1111,9 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
                 Debug.Log($"Working Directory for Trophy Hunt Mod: {workingDirectory}");
                 Debug.Log($"Steam username: {SteamFriends.GetPersonaName()}");
 
+                // Load persistent data
+                LoadPersistentData();
+
                 // Do initial update of all UI elements to the current state of the game
                 UpdateTrophyHuntUI(Player.m_localPlayer);
 
@@ -1032,7 +1159,7 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
                 {
                     if (skill.Value.m_level < skillLevel)
                     {
-                        Debug.Log($"Setting skill {skill.Key} from level {skill.Value.m_level} to level {skillLevel}");
+//                        Debug.Log($"Setting skill {skill.Key} from level {skill.Value.m_level} to level {skillLevel}");
 
                         skill.Value.m_level = skillLevel;
                     }
@@ -1056,7 +1183,7 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
                         __result.m_level = TROPHY_SAGA_BASE_SKILL_LEVEL;
                         __result.m_accumulator = 0f;
 
-                        Debug.Log($"Setting skill {__result.m_info.m_skill.ToString()} to {TROPHY_SAGA_BASE_SKILL_LEVEL}");
+//                        Debug.Log($"Setting skill {__result.m_info.m_skill.ToString()} to {TROPHY_SAGA_BASE_SKILL_LEVEL}");
                     }
                 }
             }
