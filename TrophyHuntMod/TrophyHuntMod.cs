@@ -36,7 +36,7 @@ namespace TrophyHuntMod
     {
         public const string PluginGUID = "com.oathorse.TrophyHuntMod";
         public const string PluginName = "TrophyHuntMod";
-        public const string PluginVersion = "0.7.0";
+        public const string PluginVersion = "0.7.1";
         private readonly Harmony harmony = new Harmony(PluginGUID);
 
         // Configuration variables
@@ -3546,18 +3546,18 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
                             // Item successfully added to inventory
                             if (__m_instaSmelt)
                             {
-                                Debug.LogWarning($"CanAddItem for {item.m_shared.m_name}");
+//                                Debug.LogWarning($"CanAddItem for {item.m_shared.m_name}");
                                 string cookedMetalName;
                                 if (item != null && item.m_dropPrefab != null && __m_metalConversions.TryGetValue(item.m_dropPrefab.name, out cookedMetalName))
                                 {
-                                    Debug.LogWarning($"CanAddItem found metal conversion for {item.m_dropPrefab.name} to {cookedMetalName}");
+//                                    Debug.LogWarning($"CanAddItem found metal conversion for {item.m_dropPrefab.name} to {cookedMetalName}");
 
                                     GameObject metalPrefab = ZNetScene.instance.GetPrefab(cookedMetalName);
                                     GameObject tempMetalObject = UnityEngine.Object.Instantiate<GameObject>(metalPrefab);
 
                                     if (tempMetalObject)
                                     {
-                                        Debug.LogWarning($"ConvertMetal(): Created {tempMetalObject.name}");
+//                                        Debug.LogWarning($"ConvertMetal(): Created {tempMetalObject.name}");
 
                                         ItemDrop tempItemDrop = tempMetalObject.GetComponent<ItemDrop>();
 
@@ -3568,7 +3568,7 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
 
                                         __result = __instance.FindFreeStackSpace(tempItemDrop.m_itemData.m_shared.m_name, item.m_worldLevel) + (__instance.m_width * __instance.m_height - __instance.m_inventory.Count) * item.m_shared.m_maxStackSize >= stack;
 
-                                        Debug.LogWarning($"CanAddItem result {__result}");
+//                                        Debug.LogWarning($"CanAddItem result {__result}");
 
                                         return false;
                                     }
@@ -4017,7 +4017,7 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
                 {
                     if (__instance != null && GetGameMode() == TrophyGameMode.TrophySaga)
                     {
-                        Debug.LogWarning("Fermenter.Awake()");
+//                        Debug.LogWarning("Fermenter.Awake()");
 
                         __instance.m_fermentationDuration = 10;
                     }

@@ -128,15 +128,18 @@ This Trophy Hunt variant implements a good number of modifications to standard V
 - All Player Skills are learned at level 10 and then increase normally.
 
 ## What's New?
+v0.7.1
+- HOTFIX: Debugging code left in was causing lag when many items were in autopickup range.
+
+## Previous Changes
 v0.7.0
 - Trophy Saga
-  - Ready for Prime Time.
+  - Ready for Prime Time!
   - Removed "EXPERIMENTAL" tag from Main Menu Text
   - No longer color the score green to indicate "invalid for tournament play"
 - Trophy Rush
   - Added "Biome Bonus" pop up text and stinger audio when you get a bonus
 
-## Previous Changes
 v0.6.24
 - Trophy Saga
   - HOTFIX: Fixed a bug where you couldn't craft anything. LOL.
