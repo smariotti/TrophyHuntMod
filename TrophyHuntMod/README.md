@@ -128,10 +128,14 @@ This Trophy Hunt variant implements a good number of modifications to standard V
 - All Player Skills are learned at level 10 and then increase normally.
 
 ## What's New?
+v0.7.2
+- Trophy Saga
+  - HOTFIX: Fixed potential object leak which could lead to crashes in some situations.
+
+## Previous Changes
 v0.7.1
 - HOTFIX: Debugging code left in was causing lag when many items were in autopickup range.
 
-## Previous Changes
 v0.7.0
 - Trophy Saga
   - Ready for Prime Time!

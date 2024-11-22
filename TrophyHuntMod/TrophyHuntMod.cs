@@ -37,7 +37,7 @@ namespace TrophyHuntMod
     {
         public const string PluginGUID = "com.oathorse.TrophyHuntMod";
         public const string PluginName = "TrophyHuntMod";
-        public const string PluginVersion = "0.7.1";
+        public const string PluginVersion = "0.7.2";
         private readonly Harmony harmony = new Harmony(PluginGUID);
 
         // Configuration variables
@@ -379,7 +379,7 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
 
             return saveFileName;
         }
-
+/*
         static void SavePersistentData()
         {
 
@@ -468,7 +468,7 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
                 SavePersistentData();
             }
         }
-
+*/
 
         private void Awake()
         {
@@ -1112,7 +1112,7 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
                 Debug.Log($"Steam username: {SteamFriends.GetPersonaName()}");
 
                 // Load persistent data
-                LoadPersistentData();
+//                LoadPersistentData();
 
                 // Do initial update of all UI elements to the current state of the game
                 UpdateTrophyHuntUI(Player.m_localPlayer);
@@ -3514,7 +3514,7 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
             // Trophy Saga Insta-Smelt
             //
 
-            public static Dictionary<string, string> __m_metalConversions = new Dictionary<string, string>()
+            public static Dictionary<string, string> __m_oreNameToBarPrefabName = new Dictionary<string, string>()
             {
                 { "CopperOre",          "Copper" },
                 { "TinOre",             "Tin" },
@@ -3528,6 +3528,21 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
 //                { "Sap",                "Eitr"}
             };
 
+            public static Dictionary<string, string> __m_oreNameToBarItemName = new Dictionary<string, string>()
+            {
+                { "CopperOre",          "$item_copper" },
+                { "TinOre",             "$item_tin" },
+                { "IronScrap",          "$item_iron" },
+                { "SilverOre",          "$item_silver" },
+                { "BlackMetalScrap",    "$item_blackmetal" },
+                { "FlametalOreNew",     "$item_flametal" },
+                { "BronzeScrap",        "$item_bronze" },
+                { "CopperScrap",        "$item_copper" },
+
+//                { "Sap",                "Eitr"}
+            };
+
+
             public static void ConvertMetal(ref ItemDrop.ItemData itemData)
             {
                 if (itemData == null)
@@ -3540,7 +3555,7 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
                 }
 
                 string cookedMetalName;
-                if (__m_metalConversions.TryGetValue(itemData.m_dropPrefab.name, out cookedMetalName))
+                if (__m_oreNameToBarPrefabName.TryGetValue(itemData.m_dropPrefab.name, out cookedMetalName))
                 {
                     GameObject metalPrefab = zNetScene.GetPrefab(cookedMetalName);
                     GameObject tempMetalObject = UnityEngine.Object.Instantiate<GameObject>(metalPrefab);
@@ -3584,7 +3599,7 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
                         return true;
 
                     string cookedMetalName;
-                    if (__m_metalConversions.TryGetValue(__instance.m_dropPrefab.name, out cookedMetalName))
+                    if (__m_oreNameToBarPrefabName.TryGetValue(__instance.m_dropPrefab.name, out cookedMetalName))
                     {
 //                        Debug.LogWarning($"GetWeight(): Found {__instance.m_dropPrefab.name} => {cookedMetalName}");
 
@@ -3619,7 +3634,7 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
                         return true;
 
                     string cookedMetalName;
-                    if (__m_metalConversions.TryGetValue(__instance.m_dropPrefab.name, out cookedMetalName))
+                    if (__m_oreNameToBarPrefabName.TryGetValue(__instance.m_dropPrefab.name, out cookedMetalName))
                     {
 //                        Debug.LogWarning($"GetNonStackedWeight(): Found {__instance.m_dropPrefab.name} => {cookedMetalName}");
 
@@ -3673,29 +3688,20 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
                             // Item successfully added to inventory
                             if (__m_instaSmelt)
                             {
-//                                Debug.LogWarning($"CanAddItem for {item.m_shared.m_name}");
-                                string cookedMetalName;
-                                if (item != null && item.m_dropPrefab != null && __m_metalConversions.TryGetValue(item.m_dropPrefab.name, out cookedMetalName))
+                                if (item != null && item.m_dropPrefab != null)
                                 {
-//                                    Debug.LogWarning($"CanAddItem found metal conversion for {item.m_dropPrefab.name} to {cookedMetalName}");
-
-                                    GameObject metalPrefab = ZNetScene.instance.GetPrefab(cookedMetalName);
-                                    GameObject tempMetalObject = UnityEngine.Object.Instantiate<GameObject>(metalPrefab);
-
-                                    if (tempMetalObject)
+                                    string prefabName = item.m_dropPrefab.name;
+                                    string itemName;
+                                    if (__m_oreNameToBarItemName.TryGetValue(prefabName, out itemName))
                                     {
-//                                        Debug.LogWarning($"ConvertMetal(): Created {tempMetalObject.name}");
-
-                                        ItemDrop tempItemDrop = tempMetalObject.GetComponent<ItemDrop>();
-
                                         if (stack <= 0)
                                         {
                                             stack = item.m_stack;
                                         }
 
-                                        __result = __instance.FindFreeStackSpace(tempItemDrop.m_itemData.m_shared.m_name, item.m_worldLevel) + (__instance.m_width * __instance.m_height - __instance.m_inventory.Count) * item.m_shared.m_maxStackSize >= stack;
+                                        __result = __instance.FindFreeStackSpace(itemName, 0) + (__instance.m_width * __instance.m_height - __instance.m_inventory.Count) * item.m_shared.m_maxStackSize >= stack;
 
-//                                        Debug.LogWarning($"CanAddItem result {__result}");
+//                                        Debug.LogWarning($"CanAddItem {prefabName} result {__result} : {itemName}");
 
                                         return false;
                                     }
