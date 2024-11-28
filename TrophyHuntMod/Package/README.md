@@ -128,11 +128,52 @@ This Trophy Hunt variant implements a good number of modifications to standard V
 - All Player Skills are learned at level 10 and then increase normally.
 
 ## What's New?
+v0.7.6
+- Saga Modes (Trophy and Culinary)
+  - Speed Chickens!
+	- I can't tell you how fun it was to type that into the release notes.
+	- Chickens are more promiscuous, fertile and grow up really fast.
+- Culinary Saga
+  - Rebalanced point values by biome for more early-game points (WIP)
+	- Points:
+	  - Meadows foods: 10 points
+	  - Black Forest foods: 20 points
+	  - Swamp foods: 30 points
+	  - Mountains foods: 30 points
+	  - Ocean foods: 40 points
+	  - Plains foods: 40 points
+	  - Mistlands foods: 50 points
+	  - Ashlands foods: 60 points
+- Trophy Fiesta
+  - Fixed a bug where festival lighting was left on when switching to Culinary Saga (thanks @Xmal)
+
+## Previous Changes
+v0.7.5
+- Culinary Saga! >.<
+  - New non-Trophy based game mode added! (EXPERIMENTAL!)
+  - Cook one of each food to score points. 
+	- Meadows foods: 10 Points
+	- Black Forest foods: 10 Points
+	- Swamp Foods: 20 Points
+	- Mountains Foods: 20 Points
+	- Plains Foods: 30 Points
+	- Mistlands Foods: 40 Points
+	- Ashlands Foods: 50 Points
+  - Standard "Saga" rules apply (same game modifiers as Trophy Saga)
+	- Fast Production Buildings and Fast Crops
+	- Insta-Smelt ores
+	- Fast Boats!
+	- Special drops from Boss Minions, Greylings, Trolls, Dvergr
+	- More Ooze from Blobs
+	- Mining is twice as productive
+	- Rancid Remains drops an Iron Mace
+	- Head-start on all Skills
+  - No Feasts yet (WIP)
+
 v0.7.2
 - Trophy Saga
   - HOTFIX: Fixed potential object leak which could lead to crashes in some situations.
 
-## Previous Changes
 v0.7.1
 - HOTFIX: Debugging code left in was causing lag when many items were in autopickup range.
 

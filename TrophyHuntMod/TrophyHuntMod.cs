@@ -37,7 +37,7 @@ namespace TrophyHuntMod
     {
         public const string PluginGUID = "com.oathorse.TrophyHuntMod";
         public const string PluginName = "TrophyHuntMod";
-        public const string PluginVersion = "0.7.2";
+        public const string PluginVersion = "0.7.6";
         private readonly Harmony harmony = new Harmony(PluginGUID);
 
         // Configuration variables
@@ -89,6 +89,10 @@ namespace TrophyHuntMod
 
         const int TROPHY_SAGA_DEATH_PENALTY = -30;
         const int TROPHY_SAGA_LOGOUT_PENALTY = -10;
+
+        const int CULINARY_SAGA_DEATH_PENALTY = -10;
+        const int CULINARY_SAGA_LOGOUT_PENALTY = -5;
+        
         const float TROPHY_SAGA_SAILING_SPEED_MULTIPLIER = 2.25f;
         const float TROPHY_SAGA_TROPHY_DROP_MULTIPLIER = 2f;
         const float TROPHY_SAGA_BASE_SKILL_LEVEL = 20.0f;
@@ -286,7 +290,7 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
             TrophyHunt,
             TrophyRush,
             TrophySaga,
-            CookingSaga,
+            CulinarySaga,
             TrophyFiesta,
             Max
         }
@@ -577,9 +581,51 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
                 return true;
             });
 
-            ConsoleCommand dumpFoodCommand = new ConsoleCommand("dumpfood", "Dump all consumable items", delegate (ConsoleEventArgs args)
+            //ConsoleCommand dumpFoodCommand = new ConsoleCommand("dumpfood", "Dump all consumable items", delegate (ConsoleEventArgs args)
+            //{
+            //        // Get the ObjectDB instance
+            //    ObjectDB objectDB = ObjectDB.instance;
+
+            //    if (objectDB == null)
+            //    {
+            //        Debug.LogError("ObjectDB is not initialized yet.");
+            //        return;
+            //    }
+
+            //    // Iterate through all items in the ObjectDB
+            //    foreach (GameObject prefab in objectDB.m_items)
+            //    {
+            //        if (prefab == null) continue;
+
+            //        // Check if the prefab has an ItemDrop component
+            //        ItemDrop itemDrop = prefab.GetComponent<ItemDrop>();
+            //        if (itemDrop == null) continue;
+
+            //        // Check if the item is of type Consumable
+            //        if (itemDrop.m_itemData.m_shared.m_itemType == ItemDrop.ItemData.ItemType.Consumable)
+            //        {
+            //            string prefabName = prefab.name;
+            //            string itemName = itemDrop.m_itemData.m_shared.m_name;
+            //            string displayName = Localization.instance.Localize(itemName);
+            //            float health = itemDrop.m_itemData.m_shared.m_food;
+            //            float stamina = itemDrop.m_itemData.m_shared.m_foodStamina;
+            //            float eitr = itemDrop.m_itemData.m_shared.m_foodEitr;
+            //            float regen = itemDrop.m_itemData.m_shared.m_foodRegen;
+
+
+            //            Debug.Log($"new ConsumableData({QWC(prefabName),-28}{QWC(itemName),-33}{QWC(displayName),-34}{QWC("Biome.Meadows"),-16}{0.ToString()+",",-5}{health.ToString() + ",",-5}{stamina.ToString() + ",",-5}{eitr.ToString() + ",",-5}{regen.ToString() + ",",-5})");
+            //        }
+            //    }
+
+            //    string QWC(string s)
+            //    {
+            //        return "\"" + s + "\",";
+            //    }
+            //});
+
+            ConsoleCommand dumpRecipes = new ConsoleCommand("dumprecipes", "Dump all recipes", delegate (ConsoleEventArgs args)
             {
-                    // Get the ObjectDB instance
+                // Get the ObjectDB instance
                 ObjectDB objectDB = ObjectDB.instance;
 
                 if (objectDB == null)
@@ -589,32 +635,26 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
                 }
 
                 // Iterate through all items in the ObjectDB
-                foreach (GameObject prefab in objectDB.m_items)
+                foreach (Recipe recipe in objectDB.m_recipes)
                 {
-                    if (prefab == null) continue;
+                    if (recipe == null) continue;
 
-                    // Check if the prefab has an ItemDrop component
-                    ItemDrop itemDrop = prefab.GetComponent<ItemDrop>();
-                    if (itemDrop == null) continue;
-
-                    // Check if the item is of type Consumable
-                    if (itemDrop.m_itemData.m_shared.m_itemType == ItemDrop.ItemData.ItemType.Consumable)
+                    if (recipe.m_item != null)
                     {
-                        string prefabName = prefab.name;
-                        string itemName = itemDrop.m_itemData.m_shared.m_name;
-                        string displayName = Localization.instance.Localize(itemName);
-                        float health = itemDrop.m_itemData.m_shared.m_food;
-                        float stamina = itemDrop.m_itemData.m_shared.m_foodStamina;
-                        float eitr = itemDrop.m_itemData.m_shared.m_foodEitr;
-                        float regen = itemDrop.m_itemData.m_shared.m_foodRegen;
+                        CraftingStation station = recipe.m_craftingStation;
+                        string stationName = "n/a";
+                        if (station)
+                        {
+                            stationName = station.name;
+                        }
+                        int level = recipe.m_minStationLevel;
 
-                        Debug.Log($"new ConsumableData({QWC(prefabName),-28}{QWC(itemName),-33}{QWC(displayName),-34}{QWC("Biome.Meadows"),-16}{0.ToString()+",",-5}{health.ToString() + ",",-5}{stamina.ToString() + ",",-5}{eitr.ToString() + ",",-5}{regen.ToString() + ",",-5})");
+                        Debug.LogWarning($"{recipe.name} {recipe.m_item.m_itemData.m_shared.m_itemType}: {stationName} {level}");
+                        foreach (Piece.Requirement req in recipe.m_resources)
+                        {
+                            Debug.LogWarning($"  req: {req.m_resItem.name} {req.m_amount}");
+                        }
                     }
-                }
-                
-                string QWC(string s)
-                {
-                    return "\"" + s + "\",";
                 }
             });
 
@@ -1008,8 +1048,13 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
                     text += "\n<align=\"left\"><size=18>Game Mode: <color=yellow>Trophy</color> <color=green>F</color><color=purple>i</color><color=red>e</color><color=yellow>s</color><color=orange>t</color><color=#8080FF>a</color></size>\n";
                     text += "\n<align=\"left\"><size=14><color=yellow>            Nothing to see here.</color></size>\n";
                     break;
-                case TrophyGameMode.CookingSaga:
-                    text += "\n<align=\"left\"><size=18>Game Mode: <color=yellow>Cooking Saga</color></size>\n";
+                case TrophyGameMode.CulinarySaga:
+                    text += $"\n<align=\"left\"><size=18>Game Mode: <color=#8080FF>Culinary Saga</color></size>\n";
+                    text += $"<align=\"left\"><size=14><color=red>                EXPERIMENTAL!</color></size>\n";
+                    text += $"<align=\"left\"><size=12><color=yellow> NOTE:</color> To use existing world, change World Modifiers manually!\n\n</size>";
+                    text += $"<align=\"left\"><size=14>      * You have four hours to cook food.\n</size>";
+                    text += $"<align=\"left\"><size=14>      * Cook <color=orange>one of each food</color> to score big!\n</size>";
+                    text += $"<align=\"left\"><size=14>      * Feasts are not (yet) included.\n\n</size>";
                     resourceMultiplier = 2.0f;
                     combatDifficulty = "Normal";
                     dropRate = "100%";
@@ -1034,6 +1079,7 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
                     text += $"<align=\"left\">      * Greylings/Trolls/Dvergr <color=orange>drop gifts</color>\n";
                     text += $"<align=\"left\">      * Mining is <color=orange>more productive</color>\n";
                 }
+
                 if (hasBiomeBonuses)
                 {
                     text += $"<align=\"left\">      * <color=orange>Biome Bonuses</color> for trophy sets!\n";
@@ -1127,7 +1173,7 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
                 // Cache already discovered trophies
                 __m_trophyCache = Player.m_localPlayer.GetTrophies();
 
-                if (__m_showAllTrophyStats || __m_ignoreLogouts || GetGameMode() == TrophyGameMode.TrophyFiesta)
+                if (__m_showAllTrophyStats || __m_ignoreLogouts || GetGameMode() == TrophyGameMode.TrophyFiesta || GetGameMode() == TrophyGameMode.CulinarySaga)
                 {
                     __m_invalidForTournamentPlay = true;
                 }
@@ -1183,7 +1229,7 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
                     TrophyFiesta.Initialize();
                 }
 
-                if (GetGameMode() != TrophyGameMode.TrophySaga && GetGameMode() != TrophyGameMode.CookingSaga)
+                if (GetGameMode() != TrophyGameMode.TrophySaga && GetGameMode() != TrophyGameMode.CulinarySaga)
                 {
                     __m_gameTimerVisible = false;
                 }
@@ -1221,7 +1267,7 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
             {
                 static void Postfix(Skills.Skill __instance, SkillType skillType, ref Skill __result)
                 {
-                    if (GetGameMode() != TrophyGameMode.TrophySaga && GetGameMode() != TrophyGameMode.CookingSaga)
+                    if (GetGameMode() != TrophyGameMode.TrophySaga && GetGameMode() != TrophyGameMode.CulinarySaga)
                     {
                         return;
                     }
@@ -1240,13 +1286,13 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
             public static void InitializeTrackedDataForNewPlayer()
             {
                 // Saga mode tracking, drop only one megingjord per session-player
-                if (GetGameMode() == TrophyGameMode.TrophySaga || GetGameMode() == TrophyGameMode.CookingSaga)
+                if (GetGameMode() == TrophyGameMode.TrophySaga || GetGameMode() == TrophyGameMode.CulinarySaga)
                 {
                     InitializeSagaDrops();
 
                     RaiseAllPlayerSkills(TROPHY_SAGA_BASE_SKILL_LEVEL);
 
-                    if (GetGameMode() == TrophyGameMode.CookingSaga)
+                    if (GetGameMode() == TrophyGameMode.CulinarySaga)
                     {
                         __m_cookedFoods.Clear();
                     }
@@ -1254,6 +1300,7 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
 
                 // In-Game Timer 
                 __m_gameTimerElapsedSeconds = 0;
+
                 //                __m_gameTimerVisible = false;
                 TimerStart();
 
@@ -1275,8 +1322,27 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
                 // Clear the map screen pin player location data
                 __m_playerPathData.Clear();
 
-                // Clear the dropped trophies tracking data
+                 // Clear the dropped trophies tracking data
                 InitializeTrophyDropInfo();
+            }
+
+            public static int CalculateCookingPoints(bool displayToLog = false)
+            {
+                int score = 0;
+                foreach (ConsumableData cd in __m_cookedFoodData)
+                {
+                    if (__m_cookedFoods.Contains(cd.m_prefabName))
+                    {
+                        if (displayToLog)
+                        {
+                            PrintToConsole($"  {cd.m_prefabName}: Score: {cd.m_points} Biome: {cd.m_biome.ToString()}");
+                        }
+
+                        score += cd.m_points;
+                    }
+                }
+
+                return score;
             }
 
             public static int CalculateTrophyPoints(bool displayToLog = false)
@@ -1305,8 +1371,8 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
                     deathCost = TROPHY_RUSH_DEATH_PENALTY;
                 else if (GetGameMode() == TrophyGameMode.TrophySaga)
                     deathCost = TROPHY_SAGA_DEATH_PENALTY;
-                else if (GetGameMode() == TrophyGameMode.CookingSaga)
-                    deathCost = TROPHY_SAGA_DEATH_PENALTY;
+                else if (GetGameMode() == TrophyGameMode.CulinarySaga)
+                    deathCost = CULINARY_SAGA_DEATH_PENALTY;
 
                 return deathCost;
             }
@@ -1338,8 +1404,8 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
                     logoutCost = TROPHY_RUSH_LOGOUT_PENALTY;
                 else if (GetGameMode() == TrophyGameMode.TrophySaga)
                     logoutCost = TROPHY_SAGA_LOGOUT_PENALTY;
-                else if (GetGameMode() == TrophyGameMode.CookingSaga)
-                    logoutCost = TROPHY_SAGA_LOGOUT_PENALTY;
+                else if (GetGameMode() == TrophyGameMode.CulinarySaga)
+                    logoutCost = CULINARY_SAGA_LOGOUT_PENALTY;
 
                 return logoutCost;
             }
@@ -1392,7 +1458,7 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
 
                     __m_iconList = new List<GameObject>();
 
-                    if (GetGameMode() == TrophyGameMode.CookingSaga)
+                    if (GetGameMode() == TrophyGameMode.CulinarySaga)
                     {
                         CreateCookingIconElements(healthPanelTransform, __m_cookedFoodData, __m_iconList);
 
@@ -1409,6 +1475,16 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
                         CreateLuckTooltip();
 
                         CreateLuckOMeterElements(healthPanelTransform);
+                    }
+                    
+                    if (GetGameMode() == TrophyGameMode.TrophyFiesta)
+                    {
+                        __m_fiestaFlashing = true;
+                        __m_trophyHuntMod.StartCoroutine(FlashTrophyFiesta());
+                    }
+                    else
+                    {
+                        __m_fiestaFlashing = false;
                     }
 
                     CreateScoreTooltip();
@@ -1765,12 +1841,6 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
 
                     iconList.Add(iconElement);
                 }
-
-                if (GetGameMode() == TrophyGameMode.TrophyFiesta)
-                {
-                    __m_fiestaFlashing = true;
-                    __m_trophyHuntMod.StartCoroutine(FlashTrophyFiesta());
-                }
             }
 
             static Sprite GetTrophySprite(string trophyPrefabName)
@@ -2044,7 +2114,7 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
                 }
 
                 int score = 0;
-                if (GetGameMode() == TrophyGameMode.CookingSaga)
+                if (GetGameMode() == TrophyGameMode.CulinarySaga)
                 {
                     EnableCookingIcons(player);
 
@@ -2443,7 +2513,7 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
                                     ? "TrophyHunt" : (GetGameMode() == TrophyGameMode.TrophyRush)
                                     ? "TrophyRush" : (GetGameMode() == TrophyGameMode.TrophySaga)
                                     ? "TrophySaga" : (GetGameMode() == TrophyGameMode.TrophyFiesta)
-                                    ? "TrophyFiesta" : "CookingSaga"
+                                    ? "TrophyFiesta" : "CulinarySaga"
                 };
 
                 // Start the coroutine to post the data
@@ -2649,20 +2719,36 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
                     case TrophyGameMode.TrophyFiesta:
                         gameModeText = "Trophy Fiesta";
                         break;
-                    case TrophyGameMode.CookingSaga:
-                        gameModeText = "Cooking Saga";
+                    case TrophyGameMode.CulinarySaga:
+                        gameModeText = "Culinary Saga";
                         break;
                 }
                 //                if (__m_trophyRushEnabled)
                 //                    gameModeText = "Trophy Rush";
 
                 int trophyCount = __m_trophyCache.Count;
-                int earnedPoints = CalculateTrophyPoints();
+                int earnedPoints = 0;
+                if (GetGameMode() == TrophyGameMode.CulinarySaga)
+                {
+                    earnedPoints = CalculateCookingPoints();
+                }
+                else
+                {
+                    earnedPoints = CalculateTrophyPoints();
+                }
                 int penaltyPoints = CalculateLogoutPenalty() + CalculateDeathPenalty();
 
                 text = $"<size=20><b><color=#FFB75B>{gameModeText}</color><b></size>\n";
                 text += $"<size=14><color=white>\n";
-                text += $"  Trophies:\n    Num: <color=orange>{trophyCount}</color> <color=yellow>({CalculateTrophyPoints().ToString()} Points)</color>\n";
+                if (GetGameMode() == TrophyGameMode.CulinarySaga)
+                {
+                    text += $"  Dishes Prepared:\n    Num: <color=orange>{__m_cookedFoods.Count}</color> <color=yellow>({earnedPoints} Points)</color>\n";
+                }
+                else
+                {
+                    text += $"  Trophies:\n    Num: <color=orange>{trophyCount}</color> <color=yellow>({CalculateTrophyPoints().ToString()} Points)</color>\n";
+                }
+                
                 text += $"  Logouts: (Penalty: <color=red>{GetLogoutPointCost()}</color>)\n    Num: <color=orange>{__m_logoutCount}</color> <color=yellow>({CalculateLogoutPenalty().ToString()} Points)</color>\n";
                 text += $"  Deaths: (Penalty: <color=red>{GetDeathPointCost()}</color>)\n    Num: <color=orange>{__m_deaths}</color> <color=yellow>({CalculateDeathPenalty().ToString()} Points)</color>\n";
                 if (GetGameMode() == TrophyGameMode.TrophyRush)
@@ -3149,7 +3235,8 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
                     $"<color=white>  Health: </color><color=orange>{cookedFoodData.m_health}</color>\n" +
                     $"<color=white>  Stamina: </color><color=orange>{cookedFoodData.m_stamina}</color>\n" +
                     $"<color=white>  Regen: </color><color=orange>{cookedFoodData.m_regen}</color>/sec\n" +
-                    $"<color=white>  Eitr: (<color=orange>{cookedFoodData.m_eitr})</color>\n";
+                    $"<color=white>  Eitr: <color=orange>{cookedFoodData.m_eitr}</color>\n" + 
+                    $"<color=white>  Biome: <color=orange>{cookedFoodData.m_biome.ToString()}</color>\n";
 
                 return text;
             }
@@ -3210,7 +3297,7 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
 
                 string text = "";
 
-                if (GetGameMode() == TrophyGameMode.CookingSaga)
+                if (GetGameMode() == TrophyGameMode.CulinarySaga)
                 {
                     text = BuildCookingTooltipText(uiObject);
                 }
@@ -3538,7 +3625,7 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
                             {
                                 float dropPercentage = 0f;
 
-                                if (GetGameMode() == TrophyGameMode.TrophyRush || GetGameMode() == TrophyGameMode.TrophySaga || GetGameMode() == TrophyGameMode.CookingSaga)
+                                if (GetGameMode() == TrophyGameMode.TrophyRush || GetGameMode() == TrophyGameMode.TrophySaga || GetGameMode() == TrophyGameMode.CulinarySaga)
                                 {
                                     string trophyName = EnemyNameToTrophyName(characterName);
                                     if (!__m_trophyCache.Contains(trophyName) || trophyName == "TrophyDeer")
@@ -3589,7 +3676,7 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
 
                         // Check to see if we need to add any special drops to this character
                         // ex: Saga only Greyling drops
-                        if (GetGameMode() == TrophyGameMode.TrophySaga || GetGameMode() == TrophyGameMode.CookingSaga)
+                        if (GetGameMode() == TrophyGameMode.TrophySaga || GetGameMode() == TrophyGameMode.CulinarySaga)
                         {
                             //                            Debug.LogWarning($"Saga drops for {characterName}?");
 
@@ -3671,7 +3758,7 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
             {
                 static void Postfix(Character __instance)
                 {
-                    if (GetGameMode() == TrophyGameMode.CookingSaga)
+                    if (GetGameMode() == TrophyGameMode.CulinarySaga)
                         return;
 
                     Character character = __instance;
@@ -3778,7 +3865,7 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
             {
                 static bool Prefix(ItemDrop.ItemData __instance, ref float __result)
                 {
-                    if (GetGameMode() != TrophyGameMode.TrophySaga && GetGameMode() != TrophyGameMode.CookingSaga)
+                    if (GetGameMode() != TrophyGameMode.TrophySaga && GetGameMode() != TrophyGameMode.CulinarySaga)
                     {
                         return true;
                     }
@@ -3813,7 +3900,7 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
             {
                 static bool Prefix(ItemDrop.ItemData __instance, ref float __result)
                 {
-                    if (GetGameMode() != TrophyGameMode.TrophySaga && GetGameMode() != TrophyGameMode.CookingSaga)
+                    if (GetGameMode() != TrophyGameMode.TrophySaga && GetGameMode() != TrophyGameMode.CulinarySaga)
                     {
                         return true;
                     }
@@ -3853,7 +3940,7 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
                     if (__instance != null && Player.m_localPlayer != null
                         && __instance == Player.m_localPlayer.GetInventory())
                     {
-                        if (GetGameMode() == TrophyGameMode.TrophySaga || GetGameMode() == TrophyGameMode.CookingSaga)
+                        if (GetGameMode() == TrophyGameMode.TrophySaga || GetGameMode() == TrophyGameMode.CulinarySaga)
                         {
                             // Item successfully added to inventory
                             if (__m_instaSmelt)
@@ -3861,7 +3948,7 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
                                 ConvertMetal(ref item);
                             }
 
-                            if (GetGameMode() == TrophyGameMode.CookingSaga)
+                            if (GetGameMode() == TrophyGameMode.CulinarySaga)
                             {
                                 bool isFood = false;
                                 foreach (ConsumableData cd in __m_cookedFoodData)
@@ -3898,7 +3985,7 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
                     if (__instance != null && Player.m_localPlayer != null
                         && __instance == Player.m_localPlayer.GetInventory())
                     {
-                        if (GetGameMode() == TrophyGameMode.TrophySaga || GetGameMode() == TrophyGameMode.CookingSaga)
+                        if (GetGameMode() == TrophyGameMode.TrophySaga || GetGameMode() == TrophyGameMode.CulinarySaga)
                         {
                             // Item successfully added to inventory
                             if (__m_instaSmelt)
@@ -3942,7 +4029,7 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
                         return;
                     }
 
-                    if (GetGameMode() == TrophyGameMode.TrophySaga || GetGameMode() == TrophyGameMode.CookingSaga)
+                    if (GetGameMode() == TrophyGameMode.TrophySaga || GetGameMode() == TrophyGameMode.CulinarySaga)
                     {
                         if (__m_instaSmelt)
                         {
@@ -3963,7 +4050,7 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
                         return;
                     }
 
-                    if (GetGameMode() == TrophyGameMode.CookingSaga)
+                    if (GetGameMode() == TrophyGameMode.CulinarySaga)
                     {
                         return;
                     }
@@ -4136,7 +4223,7 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
                             FejdStartup.m_instance.m_world.SaveWorldMetaData(DateTime.Now);
                             __instance.UpdateWorldList(centerSelection: true);
                         }
-                        else if (GetGameMode() == TrophyGameMode.TrophySaga || GetGameMode() == TrophyGameMode.CookingSaga)
+                        else if (GetGameMode() == TrophyGameMode.TrophySaga || GetGameMode() == TrophyGameMode.CulinarySaga)
                         {
                             FejdStartup.m_instance.m_world.m_startingGlobalKeys.Clear();
 
@@ -4292,7 +4379,7 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
             {
                 static void Postfix(ref Vector3 __result)
                 {
-                    if (GetGameMode() == TrophyGameMode.TrophySaga || GetGameMode() == TrophyGameMode.CookingSaga)
+                    if (GetGameMode() == TrophyGameMode.TrophySaga || GetGameMode() == TrophyGameMode.CulinarySaga)
                     {
                         __result *= TROPHY_SAGA_SAILING_SPEED_MULTIPLIER;
                     }
@@ -4368,7 +4455,7 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
             {
                 static void Postfix(Fermenter __instance)
                 {
-                    if (__instance != null && (GetGameMode() == TrophyGameMode.TrophySaga || GetGameMode() == TrophyGameMode.CookingSaga))
+                    if (__instance != null && (GetGameMode() == TrophyGameMode.TrophySaga || GetGameMode() == TrophyGameMode.CulinarySaga))
                     {
                         //                        Debug.LogWarning("Fermenter.Awake()");
 
@@ -4384,7 +4471,7 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
             {
                 static void Prefix(Fermenter __instance)
                 {
-                    if (__instance != null && (GetGameMode() == TrophyGameMode.TrophySaga || GetGameMode() == TrophyGameMode.CookingSaga))
+                    if (__instance != null && (GetGameMode() == TrophyGameMode.TrophySaga || GetGameMode() == TrophyGameMode.CulinarySaga))
                     {
 
                         Fermenter.ItemConversion itemConversion = __instance.GetItemConversion(__instance.m_delayedTapItem);
@@ -4403,7 +4490,7 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
             {
                 static void Postfix(Plant __instance, ref double __result)
                 {
-                    if (__instance != null && (GetGameMode() == TrophyGameMode.TrophySaga || GetGameMode() == TrophyGameMode.CookingSaga))
+                    if (__instance != null && (GetGameMode() == TrophyGameMode.TrophySaga || GetGameMode() == TrophyGameMode.CulinarySaga))
                     {
                         //                        Debug.LogWarning("Plant.TimeSincePlanted()");
 
@@ -4431,7 +4518,7 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
             {
                 static void Postfix(Smelter __instance)
                 {
-                    if (__instance != null && (GetGameMode() == TrophyGameMode.TrophySaga || GetGameMode() == TrophyGameMode.CookingSaga))
+                    if (__instance != null && (GetGameMode() == TrophyGameMode.TrophySaga || GetGameMode() == TrophyGameMode.CulinarySaga))
                     {
                         //Debug.LogWarning($"Smelter.Awake() {__instance.m_name}");
                         //foreach (Smelter.ItemConversion item in __instance.m_conversion)
@@ -4461,7 +4548,7 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
             {
                 static void Postfix(Smelter __instance, Switch sw, Humanoid user, ItemDrop.ItemData item, bool __result)
                 {
-                    if (__instance != null && (GetGameMode() == TrophyGameMode.TrophySaga || GetGameMode() == TrophyGameMode.CookingSaga))
+                    if (__instance != null && (GetGameMode() == TrophyGameMode.TrophySaga || GetGameMode() == TrophyGameMode.CulinarySaga))
                     {
                         //                        Debug.LogWarning($"Smelter.OnAddFuel() {__instance.m_name}");
 
@@ -4483,7 +4570,7 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
             {
                 static void Postfix(SapCollector __instance)
                 {
-                    if (__instance != null && (GetGameMode() == TrophyGameMode.TrophySaga || GetGameMode() == TrophyGameMode.CookingSaga))
+                    if (__instance != null && (GetGameMode() == TrophyGameMode.TrophySaga || GetGameMode() == TrophyGameMode.CulinarySaga))
                     {
                         //                        Debug.LogWarning($"SapCollector.Awake() {__instance.m_name}");
 
@@ -4497,7 +4584,7 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
             {
                 static void Postfix(Beehive __instance)
                 {
-                    if (__instance != null && (GetGameMode() == TrophyGameMode.TrophySaga || GetGameMode() == TrophyGameMode.CookingSaga))
+                    if (__instance != null && (GetGameMode() == TrophyGameMode.TrophySaga || GetGameMode() == TrophyGameMode.CulinarySaga))
                     {
                         __instance.m_secPerUnit = 5f;
                         __instance.m_maxHoney = 4;
@@ -4537,7 +4624,7 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
             {
                 static void Postfix(MineRock5 __instance)
                 {
-                    if (__instance != null && (GetGameMode() == TrophyGameMode.TrophySaga || GetGameMode() == TrophyGameMode.CookingSaga))
+                    if (__instance != null && (GetGameMode() == TrophyGameMode.TrophySaga || GetGameMode() == TrophyGameMode.CulinarySaga))
                     {
                         __instance.m_dropItems.m_dropMin *= TROPHY_SAGA_MINING_MULTIPLIER;
                         __instance.m_dropItems.m_dropMax *= (TROPHY_SAGA_MINING_MULTIPLIER + 1);
@@ -4659,6 +4746,50 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
             // m_smelter
             //
 
+            [HarmonyPatch(typeof(EggGrow), nameof(EggGrow.Start))]
+            public static class EggGrow_Start_Patch
+            {
+                static void Postfix(EggGrow __instance)
+                {
+                    if (__instance != null && (GetGameMode() == TrophyGameMode.TrophySaga || GetGameMode() == TrophyGameMode.CulinarySaga))
+                    {
+                        __instance.m_growTime = 2f;
+                    }
+                }
+            }
+
+            [HarmonyPatch(typeof(Growup), nameof(Growup.Start))]
+            public static class Growup_Start_Patch
+            {
+                static void Postfix(Growup __instance)
+                {
+                    if (__instance != null && (GetGameMode() == TrophyGameMode.TrophySaga || GetGameMode() == TrophyGameMode.CulinarySaga))
+                    {
+                        __instance.m_growTime = 1f;
+                    }
+                }
+            }
+
+            [HarmonyPatch(typeof(Procreation), nameof(Procreation.Awake))]
+            public static class Procreation_Awake_Patch
+            {
+                static void Postfix(Procreation __instance)
+                {
+                    if (__instance != null && (GetGameMode() == TrophyGameMode.TrophySaga || GetGameMode() == TrophyGameMode.CulinarySaga))
+                    {
+                        if (__instance.name.Contains("Hen"))
+                        {
+                            Debug.LogWarning($"Procreation.Start: {__instance.name} {__instance.m_character.name}");
+                            __instance.m_pregnancyDuration = 0.1f;
+                            __instance.m_pregnancyChance = 0;
+                            __instance.m_updateInterval = 1;
+                        }
+                    }
+                }
+            }
+
+
+
 
             // END Harmony Patch area
 
@@ -4757,57 +4888,59 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
                 new ConsumableData("CookedMeat",               "$item_boar_meat_cooked",        "Cooked Boar Meat",               Biome.Meadows,   10,   30,  10,  0,   2),
                 new ConsumableData("CookedDeerMeat",           "$item_deer_meat_cooked",        "Cooked Deer Meat",               Biome.Meadows,   10,   35,  12,  0,   2),
                 new ConsumableData("QueensJam",                "$item_queensjam",               "Queen's Jam",                    Biome.Meadows,   10,   14,  40,  0,   2),
-                new ConsumableData("BoarJerky",                "$item_boarjerky",               "Boar Jerky",                     Biome.Meadows,   10,   23,  23,  0,   2),
-                new ConsumableData("DeerStew",                 "$item_deerstew",                "Deer Stew",                      Biome.Meadows,   10,   45,  15,  0,   3),
-                new ConsumableData("CarrotSoup",               "$item_carrotsoup",              "Carrot Soup",                    Biome.Meadows,   10,   15,  45,  0,   2),
-                new ConsumableData("MinceMeatSauce",           "$item_mincemeatsauce",          "Minced Meat Sauce",              Biome.Meadows,   10,   40,  13,  0,   3),
 
-                new ConsumableData("FishCooked",               "$item_fish_cooked",             "Cooked Fish",                    Biome.Ocean,     20,   45,  15,  0,   2),
-                new ConsumableData("SerpentMeatCooked",        "$item_serpentmeatcooked",       "Cooked Serpent Meat",            Biome.Ocean,     20,   70,  23,  0,   3),
-                new ConsumableData("SerpentStew",              "$item_serpentstew",             "Serpent Stew",                   Biome.Ocean,     20,   80,  26,  0,   4),
-                new ConsumableData("Sausages",                 "$item_sausages",                "Sausages",                       Biome.Swamp,     20,   55,  18,  0,   3),
-                new ConsumableData("ShocklateSmoothie",        "$item_shocklatesmoothie",       "Muckshake",                      Biome.Swamp,     20,   16,  50,  0,   1),
-                new ConsumableData("TurnipStew",               "$item_turnipstew",              "Turnip Stew",                    Biome.Swamp,     20,   18,  55,  0,   2),
-                new ConsumableData("BlackSoup",                "$item_blacksoup",               "Black Soup",                     Biome.Swamp,     20,   50,  17,  0,   3),
+                new ConsumableData("BoarJerky",                "$item_boarjerky",               "Boar Jerky",                     Biome.Forest,    20,   23,  23,  0,   2),
+                new ConsumableData("DeerStew",                 "$item_deerstew",                "Deer Stew",                      Biome.Forest,    20,   45,  15,  0,   3),
+                new ConsumableData("CarrotSoup",               "$item_carrotsoup",              "Carrot Soup",                    Biome.Forest,    20,   15,  45,  0,   2),
+                new ConsumableData("MinceMeatSauce",           "$item_mincemeatsauce",          "Minced Meat Sauce",              Biome.Forest,    20,   40,  13,  0,   3),
 
-                new ConsumableData("OnionSoup",                "$item_onionsoup",               "Onion Soup",                     Biome.Mountains, 20,   20,  60,  0,   1),
-                new ConsumableData("CookedWolfMeat",           "$item_wolf_meat_cooked",        "Cooked Wolf Meat",               Biome.Mountains, 20,   45,  15,  0,   3),
-                new ConsumableData("WolfJerky",                "$item_wolfjerky",               "Wolf Jerky",                     Biome.Mountains, 20,   33,  33,  0,   3),
-                new ConsumableData("WolfMeatSkewer",           "$item_wolf_skewer",             "Wolf Skewer",                    Biome.Mountains, 20,   65,  21,  0,   3),
-                new ConsumableData("Eyescream",                "$item_eyescream",               "Eyescream",                      Biome.Mountains, 20,   21,  65,  0,   1),
+                new ConsumableData("Sausages",                 "$item_sausages",                "Sausages",                       Biome.Swamp,     30,   55,  18,  0,   3),
+                new ConsumableData("ShocklateSmoothie",        "$item_shocklatesmoothie",       "Muckshake",                      Biome.Swamp,     30,   16,  50,  0,   1),
+                new ConsumableData("TurnipStew",               "$item_turnipstew",              "Turnip Stew",                    Biome.Swamp,     30,   18,  55,  0,   2),
+                new ConsumableData("BlackSoup",                "$item_blacksoup",               "Black Soup",                     Biome.Swamp,     30,   50,  17,  0,   3),
 
-                new ConsumableData("CookedLoxMeat",            "$item_loxmeat_cooked",          "Cooked Lox Meat",                Biome.Plains,    30,   50,  16,  0,   4),
-                new ConsumableData("FishWraps",                "$item_fishwraps",               "Fish Wraps",                     Biome.Plains,    30,   70,  23,  0,   4),
-                new ConsumableData("LoxPie",                   "$item_loxpie",                  "Lox Meat Pie",                   Biome.Plains,    30,   75,  24,  0,   4),
-                new ConsumableData("BloodPudding",             "$item_bloodpudding",            "Blood Pudding",                  Biome.Plains,    30,   25,  75,  0,   2),
-                new ConsumableData("Bread",                    "$item_bread",                   "Bread",                          Biome.Plains,    30,   23,  70,  0,   2),
-                new ConsumableData("CookedEgg",                "$item_egg_cooked",              "Cooked Egg",                     Biome.Plains,    30,   35,  12,  0,   2),
-                new ConsumableData("CookedChickenMeat",        "$item_chicken_meat_cooked",     "Cooked Chicken Meat",            Biome.Plains,    30,   60,  20,  0,   5),
+                new ConsumableData("OnionSoup",                "$item_onionsoup",               "Onion Soup",                     Biome.Mountains, 30,   20,  60,  0,   1),
+                new ConsumableData("CookedWolfMeat",           "$item_wolf_meat_cooked",        "Cooked Wolf Meat",               Biome.Mountains, 30,   45,  15,  0,   3),
+                new ConsumableData("WolfJerky",                "$item_wolfjerky",               "Wolf Jerky",                     Biome.Mountains, 30,   33,  33,  0,   3),
+                new ConsumableData("WolfMeatSkewer",           "$item_wolf_skewer",             "Wolf Skewer",                    Biome.Mountains, 30,   65,  21,  0,   3),
+                new ConsumableData("Eyescream",                "$item_eyescream",               "Eyescream",                      Biome.Mountains, 30,   21,  65,  0,   1),
 
-                new ConsumableData("CookedHareMeat",           "$item_hare_meat_cooked",        "Cooked Hare Meat",               Biome.Mistlands, 40,   60,  20,  0,   5),
-                new ConsumableData("CookedBugMeat",            "$item_bug_meat_cooked",         "Cooked Seeker Meat",             Biome.Mistlands, 40,   60,  20,  0,   5),
-                new ConsumableData("MeatPlatter",              "$item_meatplatter",             "Meat Platter",                   Biome.Mistlands, 40,   80,  26,  0,   5),
-                new ConsumableData("HoneyGlazedChicken",       "$item_honeyglazedchicken",      "Honey Glazed Chicken",           Biome.Mistlands, 40,   80,  26,  0,   5),
-                new ConsumableData("MisthareSupreme",          "$item_mistharesupreme",         "Misthare Supreme",               Biome.Mistlands, 40,   85,  28,  0,   5),
-                new ConsumableData("Salad",                    "$item_salad",                   "Salad",                          Biome.Mistlands, 40,   26,  80,  0,   3),
-                new ConsumableData("MushroomOmelette",         "$item_mushroomomelette",        "Mushroom Omelette",              Biome.Mistlands, 40,   28,  85,  0,   3),
-                new ConsumableData("FishAndBread",             "$item_fishandbread",            "Fish 'n' Bread",                 Biome.Mistlands, 40,   30,  90,  0,   3),
-                new ConsumableData("MagicallyStuffedShroom",   "$item_magicallystuffedmushroom","Stuffed Mushroom",               Biome.Mistlands, 40,   25,  12,  75,  3),
-                new ConsumableData("YggdrasilPorridge",        "$item_yggdrasilporridge",       "Yggdrasil Porridge",             Biome.Mistlands, 40,   27,  13,  80,  3),
-                new ConsumableData("SeekerAspic",              "$item_seekeraspic",             "Seeker Aspic",                   Biome.Mistlands, 40,   28,  14,  85,  3),
+                new ConsumableData("FishCooked",               "$item_fish_cooked",             "Cooked Fish",                    Biome.Ocean,     40,   45,  15,  0,   2),
+                new ConsumableData("SerpentMeatCooked",        "$item_serpentmeatcooked",       "Cooked Serpent Meat",            Biome.Ocean,     40,   70,  23,  0,   3),
+                new ConsumableData("SerpentStew",              "$item_serpentstew",             "Serpent Stew",                   Biome.Ocean,     40,   80,  26,  0,   4),
 
-                new ConsumableData("CookedAsksvinMeat",        "$item_asksvin_meat_cooked",     "Cooked Asksvin Tail",            Biome.Ashlands,  50,   70,  24,  0,   6),
-                new ConsumableData("CookedVoltureMeat",        "$item_volture_meat_cooked",     "Cooked Volture Meat",            Biome.Ashlands,  50,   70,  24,  0,   6),
-                new ConsumableData("CookedBoneMawSerpentMeat", "$item_bonemawmeat_cooked",      "Cooked Bonemaw Meat",            Biome.Ashlands,  50,   90,  30,  0,   6),
-                new ConsumableData("FierySvinstew",            "$item_fierysvinstew",           "Fiery Svinstew",                 Biome.Ashlands,  50,   95,  32,  0,   6),
-                new ConsumableData("MashedMeat",               "$item_mashedmeat",              "Mashed Meat",                    Biome.Ashlands,  50,   100, 34,  0,   6),
-                new ConsumableData("PiquantPie",               "$item_piquantpie",              "Piquant Pie",                    Biome.Ashlands,  50,   105, 35,  0,   6),
-                new ConsumableData("SpicyMarmalade",           "$item_spicymarmalade",          "Spicy Marmalade",                Biome.Ashlands,  50,   30,  90,  0,   4),
-                new ConsumableData("ScorchingMedley",          "$item_scorchingmedley",         "Scorching Medley",               Biome.Ashlands,  50,   32,  95,  0,   4),
-                new ConsumableData("RoastedCrustPie",          "$item_roastedcrustpie",         "Roasted Crust Pie",              Biome.Ashlands,  50,   34,  100, 0,   4),
-                new ConsumableData("SizzlingBerryBroth",       "$item_sizzlingberrybroth",      "Sizzling Berry Broth",           Biome.Ashlands,  50,   28,  14,  85,  4),
-                new ConsumableData("SparklingShroomshake",     "$item_sparklingshroomshake",    "Sparkling Shroomshake",          Biome.Ashlands,  50,   30,  15,  90,  4),
-                new ConsumableData("MarinatedGreens",          "$item_marinatedgreens",         "Marinated Greens",               Biome.Ashlands,  50,   32,  16,  95,  4),
+                new ConsumableData("CookedLoxMeat",            "$item_loxmeat_cooked",          "Cooked Lox Meat",                Biome.Plains,    40,   50,  16,  0,   4),
+                new ConsumableData("FishWraps",                "$item_fishwraps",               "Fish Wraps",                     Biome.Plains,    40,   70,  23,  0,   4),
+                new ConsumableData("LoxPie",                   "$item_loxpie",                  "Lox Meat Pie",                   Biome.Plains,    40,   75,  24,  0,   4),
+                new ConsumableData("BloodPudding",             "$item_bloodpudding",            "Blood Pudding",                  Biome.Plains,    40,   25,  75,  0,   2),
+                new ConsumableData("Bread",                    "$item_bread",                   "Bread",                          Biome.Plains,    40,   23,  70,  0,   2),
+                new ConsumableData("CookedEgg",                "$item_egg_cooked",              "Cooked Egg",                     Biome.Plains,    40,   35,  12,  0,   2),
+                new ConsumableData("CookedChickenMeat",        "$item_chicken_meat_cooked",     "Cooked Chicken Meat",            Biome.Plains,    40,   60,  20,  0,   5),
+
+                new ConsumableData("CookedHareMeat",           "$item_hare_meat_cooked",        "Cooked Hare Meat",               Biome.Mistlands, 50,   60,  20,  0,   5),
+                new ConsumableData("CookedBugMeat",            "$item_bug_meat_cooked",         "Cooked Seeker Meat",             Biome.Mistlands, 50,   60,  20,  0,   5),
+                new ConsumableData("MeatPlatter",              "$item_meatplatter",             "Meat Platter",                   Biome.Mistlands, 50,   80,  26,  0,   5),
+                new ConsumableData("HoneyGlazedChicken",       "$item_honeyglazedchicken",      "Honey Glazed Chicken",           Biome.Mistlands, 50,   80,  26,  0,   5),
+                new ConsumableData("MisthareSupreme",          "$item_mistharesupreme",         "Misthare Supreme",               Biome.Mistlands, 50,   85,  28,  0,   5),
+                new ConsumableData("Salad",                    "$item_salad",                   "Salad",                          Biome.Mistlands, 50,   26,  80,  0,   3),
+                new ConsumableData("MushroomOmelette",         "$item_mushroomomelette",        "Mushroom Omelette",              Biome.Mistlands, 50,   28,  85,  0,   3),
+                new ConsumableData("FishAndBread",             "$item_fishandbread",            "Fish 'n' Bread",                 Biome.Mistlands, 50,   30,  90,  0,   3),
+                new ConsumableData("MagicallyStuffedShroom",   "$item_magicallystuffedmushroom","Stuffed Mushroom",               Biome.Mistlands, 50,   25,  12,  75,  3),
+                new ConsumableData("YggdrasilPorridge",        "$item_yggdrasilporridge",       "Yggdrasil Porridge",             Biome.Mistlands, 50,   27,  13,  80,  3),
+                new ConsumableData("SeekerAspic",              "$item_seekeraspic",             "Seeker Aspic",                   Biome.Mistlands, 50,   28,  14,  85,  3),
+
+                new ConsumableData("CookedAsksvinMeat",        "$item_asksvin_meat_cooked",     "Cooked Asksvin Tail",            Biome.Ashlands,  60,   70,  24,  0,   6),
+                new ConsumableData("CookedVoltureMeat",        "$item_volture_meat_cooked",     "Cooked Volture Meat",            Biome.Ashlands,  60,   70,  24,  0,   6),
+                new ConsumableData("CookedBoneMawSerpentMeat", "$item_bonemawmeat_cooked",      "Cooked Bonemaw Meat",            Biome.Ashlands,  60,   90,  30,  0,   6),
+                new ConsumableData("FierySvinstew",            "$item_fierysvinstew",           "Fiery Svinstew",                 Biome.Ashlands,  60,   95,  32,  0,   6),
+                new ConsumableData("MashedMeat",               "$item_mashedmeat",              "Mashed Meat",                    Biome.Ashlands,  60,   100, 34,  0,   6),
+                new ConsumableData("PiquantPie",               "$item_piquantpie",              "Piquant Pie",                    Biome.Ashlands,  60,   105, 35,  0,   6),
+                new ConsumableData("SpicyMarmalade",           "$item_spicymarmalade",          "Spicy Marmalade",                Biome.Ashlands,  60,   30,  90,  0,   4),
+                new ConsumableData("ScorchingMedley",          "$item_scorchingmedley",         "Scorching Medley",               Biome.Ashlands,  60,   32,  95,  0,   4),
+                new ConsumableData("RoastedCrustPie",          "$item_roastedcrustpie",         "Roasted Crust Pie",              Biome.Ashlands,  60,   34,  100, 0,   4),
+                new ConsumableData("SizzlingBerryBroth",       "$item_sizzlingberrybroth",      "Sizzling Berry Broth",           Biome.Ashlands,  60,   28,  14,  85,  4),
+                new ConsumableData("SparklingShroomshake",     "$item_sparklingshroomshake",    "Sparkling Shroomshake",          Biome.Ashlands,  60,   30,  15,  90,  4),
+                new ConsumableData("MarinatedGreens",          "$item_marinatedgreens",         "Marinated Greens",               Biome.Ashlands,  60,   32,  16,  95,  4),
 
                 //new ConsumableData("HealthUpgrade_Bonemass",   "Bonemass heart",                "Bonemass heart",                 Biome.Meadows,   0,   0,   0,   0,   0),
                 //new ConsumableData("HealthUpgrade_GDKing",     "Elder heart",                   "Elder heart",                    Biome.Meadows,   0,   0,   0,   0,   0),

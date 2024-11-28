@@ -1,7 +1,7 @@
 ﻿{
     "name": "TrophyHuntMod",
-    "description": "Simple BepInEx mod that implements Trophy display and scoring for doing the Valheim Trophy Hunt",
-    "version_number": "0.7.2",
+    "description": "Simple BepInEx mod that implements Trophy Hunt HUD display and scoring for doing the Valheim Trophy Hunt. Adds new game modes: Trophy Rush, Trophy Saga and Culinary Saga.",
+    "version_number": "0.7.6",
     "website_url": "https://github.com/smariotti/TrophyHuntMod",
     "dependencies": [
         "denikson-BepInExPack_Valheim-5.4.2202"
