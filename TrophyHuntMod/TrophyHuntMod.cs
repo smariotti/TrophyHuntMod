@@ -29,20 +29,29 @@ using static Room;
 using static Skills;
 using System.Linq;
 using static TrophyHuntMod.TrophyHuntMod.Player_OnSpawned_Patch;
+using static TrophyHuntMod.TrophyHuntMod.THMSaveData;
+using System.Xml.Serialization;
+using System.Reflection.Emit;
 
 namespace TrophyHuntMod
 {
     [BepInPlugin(PluginGUID, PluginName, PluginVersion)]
-    internal class TrophyHuntMod : BaseUnityPlugin
+    public class TrophyHuntMod : BaseUnityPlugin
     {
+#if SAGA_STANDALONE
+        public const string PluginGUID = "com.oathorse.Saga";
+        public const string PluginName = "Saga";
+        private const Boolean UPDATE_LEADERBOARD = false;
+#else
         public const string PluginGUID = "com.oathorse.TrophyHuntMod";
         public const string PluginName = "TrophyHuntMod";
+        private const Boolean UPDATE_LEADERBOARD = true;
+#endif
         public const string PluginVersion = "0.7.6";
         private readonly Harmony harmony = new Harmony(PluginGUID);
 
         // Configuration variables
         private const Boolean DUMP_TROPHY_DATA = false;
-        private const Boolean UPDATE_LEADERBOARD = true;
 
         static TrophyHuntMod __m_trophyHuntMod;
 
@@ -104,21 +113,25 @@ namespace TrophyHuntMod
             "Bring Odin what he desires or be forced to stay for eternity…\n\n\n" +
             "…in VALHEIM!";
 
-/*
-Long ago, the Allfather Odin united the worlds. He threw down his foes and cast them into the tenth world, then split the boughs which held their prison to the World-Tree, and left it to drift unanchored, a place of exile
+        const string CULINARY_SAGA_INTRO_TEXT = "You were once a great warrior, though your memory of deeds past has long grown dim, shrouded by eons slumbering in the land beyond death…\n\n\n\n" +
+            "Ragnarok looms and the tenth world remains only for a few scant hours. You are reborn with one purpose: cook a whole bunch of delicious meals to appease Odin's insatiable hunger?\n\n\n\n" +
+            "Yes. Somehow. Bring Odin what he desires or be forced to stay for eternity…\n\n\n\n" +
+            "…in VALHEIM!";
+        /*
+        Long ago, the Allfather Odin united the worlds. He threw down his foes and cast them into the tenth world, then split the boughs which held their prison to the World-Tree, and left it to drift unanchored, a place of exile
 
 
 
-For centuries, this world slumbered uneasily. But it did not die... As glacial ages passed, kingdoms rose and fell out of sight of the Gods.
+        For centuries, this world slumbered uneasily. But it did not die... As glacial ages passed, kingdoms rose and fell out of sight of the Gods.
 
 
 
-When Odin heard his enemies were growing once again in strength, he looked to Midgard and sent his Valkyries to scour the battlefields for the greatest of their warriors. Dead to the world, they would be born again…
+        When Odin heard his enemies were growing once again in strength, he looked to Midgard and sent his Valkyries to scour the battlefields for the greatest of their warriors. Dead to the world, they would be born again…
 
 
 
-…in VALHEIM!
-*/
+        …in VALHEIM!
+        */
         const string LEADERBOARD_URL = "https://valheim.help/api/trackhunt";
 
         const float LOGOUT_PENALTY_GRACE_DISTANCE = 50.0f;  // total distance you're allowed to walk/run from initial spawn and get a free logout to clear wet debuff
@@ -295,10 +308,14 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
             Max
         }
 
-//        static bool __m_trophyRushEnabled = false;
+        //        static bool __m_trophyRushEnabled = false;
 
         // TrophyHuntMod current Game Mode
+#if SAGA_STANDALONE
+        static TrophyGameMode __m_trophyGameMode = TrophyGameMode.TrophySaga;
+#else
         static TrophyGameMode __m_trophyGameMode = TrophyGameMode.TrophyHunt;
+#endif
         static public TrophyGameMode GetGameMode() { return __m_trophyGameMode; }
 
         static bool __m_fiestaFlashing = false;
@@ -351,14 +368,45 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
         // Biomes we've completed 
         static List<Biome> __m_completedBiomeBonuses = new List<Biome>();
 
+        //
+        // SAVE DATA SECTION
+        //
 
+        [HarmonyPatch(typeof(Game), nameof(Game.SavePlayerProfile))]
+        public class Game_SavePlayerProfile_Patch
+        {
+            static void Prefix(PlayerProfile __instance, bool setLogoutPoint)
+            {
+
+//              Debug.LogError($"Game.SavePlayerProfile() __m_logoutCount={__m_logoutCount}");
+
+                SavePersistentData();
+            }
+        }
+
+        static public string __m_saveDataVersionNumber = "1";
+
+        // WARNING!
+        //
+        // ALL CHANGES MADE TO THIS MUST UPDATE __m_saveDataVersionNumber, or deserialize will be broken
+        //
         public class THMSaveData
         {
-            public void CopyIn() { }
-            public void CopyOut() { }
+            public class THMSaveDataDropInfo
+            {
+                public string m_name;
+                public DropInfo m_dropInfo;
+            }
 
-            public Dictionary<string, DropInfo> m_allTrophyDropInfo = null;
-            public Dictionary<string, DropInfo> m_playerTrophyDropInfo = null;
+            public class THMSaveDataSpecialSagaDropCount
+            {
+                public string m_name;
+                public int m_dropCount;
+            }
+
+            public List<THMSaveDataDropInfo> m_playerTrophyDropInfos = null;
+            public List<THMSaveDataDropInfo> m_allTrophyDropInfos = null;
+
             public List<Vector3> m_playerPathData = null;
 
             public long m_gameTimerElapsedSeconds;
@@ -372,107 +420,178 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
             // Build list of string/bools key value pairs for special saga drops
             //Dictionary<string, List<SpecialSagaDrop>> m_specialSagaDrops;
 
+            public List<THMSaveDataSpecialSagaDropCount> m_specialSagaDropCounts;
+
             public long m_storedPlayerID;
             public TrophyGameMode m_storedGameMode;
             public string m_storedWorldSeed;
         }
 
-        static string BuildPersistentSaveFilename()
+        static string GetPersistentDataKey()
         {
-            string saveFileName = $"{Player.m_localPlayer.GetPlayerID()}_{__m_trophyGameMode.ToString()}_{WorldGenerator.instance.m_world.m_seedName}.thmdata";
-
-            return saveFileName;
+            return __m_saveDataVersionNumber + __m_storedGameMode.ToString() + __m_storedWorldSeed;
         }
-/*
+
         static void SavePersistentData()
         {
+            if (Player.m_localPlayer == null || Player.m_localPlayer.m_customData == null)
+            {
+                return;
+            }
 
-            // Spam the file into the Valheim directory
-            string workingDirectory = Directory.GetCurrentDirectory();
+            string dataKey = GetPersistentDataKey();
 
-            Debug.LogError($"SavePersistentData: {workingDirectory}, {BuildPersistentSaveFilename()}");
+            Debug.LogWarning($"SaveData {dataKey}");
 
             THMSaveData saveData = new THMSaveData();
-            saveData.CopyIn();
 
-            saveData.m_allTrophyDropInfo = __m_allTrophyDropInfo;
-            saveData.m_playerTrophyDropInfo = __m_playerTrophyDropInfo;
+            // Extract dictionary to serializable list for player trophy drop data
+            //
+            saveData.m_playerTrophyDropInfos = new List<THMSaveDataDropInfo>();
+            foreach (KeyValuePair<string, DropInfo> dictEntry in __m_playerTrophyDropInfo)
+            {
+                THMSaveDataDropInfo savedDropInfo = new THMSaveDataDropInfo();
+                savedDropInfo.m_name = dictEntry.Key;
+                savedDropInfo.m_dropInfo = dictEntry.Value;
+
+                saveData.m_playerTrophyDropInfos.Add(savedDropInfo);
+            }
+
+            // Extract dictionary to serializable list for ALL trophy drop data
+            //
+            saveData.m_allTrophyDropInfos = new List<THMSaveDataDropInfo>();
+            foreach (KeyValuePair<string, DropInfo> dictEntry in __m_allTrophyDropInfo)
+            {
+                THMSaveDataDropInfo savedDropInfo = new THMSaveDataDropInfo();
+                savedDropInfo.m_name = dictEntry.Key;
+                savedDropInfo.m_dropInfo = dictEntry.Value;
+
+                saveData.m_allTrophyDropInfos.Add(savedDropInfo);
+            }
+
+            // Extract drop counts for special saga drops
+            // public KeyValuePair<string, int> m_specialSagaDropCounts;
+
+            saveData.m_specialSagaDropCounts = new List<THMSaveDataSpecialSagaDropCount>();
+            foreach(KeyValuePair<string, List<SpecialSagaDrop>> sagaDrops in __m_specialSagaDrops)
+            {
+                foreach(SpecialSagaDrop sagaDrop in sagaDrops.Value)
+                {
+                    string sagaDropCountKey = sagaDrops.Key + "," + sagaDrop.m_itemName;
+                    THMSaveDataSpecialSagaDropCount savedCount = new THMSaveDataSpecialSagaDropCount();
+                    savedCount.m_name = sagaDropCountKey;
+                    savedCount.m_dropCount = sagaDrop.m_numDropped;
+
+                    saveData.m_specialSagaDropCounts.Add(savedCount);
+                }
+            }
+
+            // The /showpath path
             saveData.m_playerPathData = __m_playerPathData;
 
+            // Game timer settings
             saveData.m_gameTimerElapsedSeconds = __m_gameTimerElapsedSeconds;
             saveData.m_gameTimerActive = __m_gameTimerActive;
             saveData.m_gameTimerVisible = __m_gameTimerVisible;
             saveData.m_gameTimerCountdown = __m_gameTimerCountdown;
 
+            // Death and logout accounting
             saveData.m_slashDieCount = __m_slashDieCount;
             saveData.m_logoutCount = __m_logoutCount;
 
+            // world and seed info
             saveData.m_storedPlayerID = __m_storedPlayerID;
             saveData.m_storedGameMode = __m_storedGameMode;
             saveData.m_storedWorldSeed = __m_storedWorldSeed;
 
-            string filename = $"{workingDirectory}\\{BuildPersistentSaveFilename()}";
-            string saveDataString = JsonUtility.ToJson(saveData);
+            XmlSerializer xmlSerializer = new XmlSerializer(typeof(THMSaveData));
+            StringWriter stream = new StringWriter();
+            xmlSerializer.Serialize(stream, saveData);
 
-            File.WriteAllText(filename, saveDataString);
+            string saveDataString = stream.ToString();
 
-            THMSaveData loadedData = JsonUtility.FromJson<THMSaveData>(File.ReadAllText(filename));
+            Player.m_localPlayer.m_customData[dataKey] = saveDataString;
 
-            string loadDataString = JsonUtility.ToJson(loadedData);
-
-            Debug.LogError($"{filename}\nSAVEDATA:\n{saveDataString}\nLOADATA:\n{loadDataString}");
-
-            // All trophy drop info dictionary
-            //            static Dictionary<string, DropInfo> __m_allTrophyDropInfo = new Dictionary<string, DropInfo>();
-
-            // Player trophy drop info dictionary
-            //            static Dictionary<string, DropInfo> __m_playerTrophyDropInfo = new Dictionary<string, DropInfo>();
-
-            // stored game mode?
-            //            static List<Vector3> __m_playerPathData = new List<Vector3>();   // list of player positions during the session
-
-            // game timer
-            //static long __m_gameTimerElapsedSeconds = 0;
-            //static bool __m_gameTimerActive = false;
-            //static bool __m_gameTimerVisible = true;
-            //static bool __m_gameTimerCountdown = true;
-
-            // logouts and slash-dies
-            //static int __m_slashDieCount = 0;
-            //static int __m_logoutCount = 0;
-
-            // SpecialSagaDrop counts, save/restore m_numDropped field only
-            //            static public Dictionary<string, List<SpecialSagaDrop>> __m_specialSagaDrops = new Dictionary<string, List<SpecialSagaDrop>>
-            //                 public int m_numDropped;
-
-            //__m_storedPlayerID = Player.m_localPlayer.GetPlayerID();
-            //__m_storedGameMode = __m_trophyGameMode;
-            //__m_storedWorldSeed = WorldGenerator.instance.m_world.m_seedName;
-
-            //            string workingDirectory = Directory.GetCurrentDirectory();
-
+//            Debug.LogWarning($"SaveData String:{Player.m_localPlayer.m_customData[dataKey]} LogoutCount {__m_logoutCount}");
         }
 
         static void LoadPersistentData()
         {
-            string workingDirectory = Directory.GetCurrentDirectory();
+            string dataKey = GetPersistentDataKey();
 
-            Debug.LogError($"LoadPersistentData: {workingDirectory}, {BuildPersistentSaveFilename()}");
+            Debug.LogWarning($"LoadData {dataKey}");
 
-            SavePersistentData();
-        }
-
-        [HarmonyPatch(typeof(ZNet), nameof(ZNet.Save), new[] { typeof(bool), typeof(bool), typeof(bool) })]
-        public class ZNet_Save_Patch
-        {
-            static void Postfix(ZNet __instance, bool sync, bool saveOtherPlayerProfiles, bool waitForNextFrame)
+            if (Player.m_localPlayer == null || !Player.m_localPlayer.m_customData.ContainsKey(dataKey))
             {
-                Debug.LogError($"SAVE: {sync} {saveOtherPlayerProfiles} {waitForNextFrame} {BuildPersistentSaveFilename()}");
+                return;
+            }
 
-                SavePersistentData();
+            string data = Player.m_localPlayer.m_customData[dataKey];
+//            Debug.LogWarning($"LoadData String:{data}");
+
+            XmlSerializer xmlSerializer = new XmlSerializer(typeof(THMSaveData));
+            StringReader stream = new StringReader(data);
+
+            THMSaveData saveData = xmlSerializer.Deserialize(stream) as THMSaveData;
+
+            // The /showpath path
+            __m_playerPathData = saveData.m_playerPathData;
+
+            // Game timer settings
+            __m_gameTimerElapsedSeconds = saveData.m_gameTimerElapsedSeconds;
+            __m_gameTimerActive = saveData.m_gameTimerActive;
+            __m_gameTimerVisible = saveData.m_gameTimerVisible;
+            __m_gameTimerCountdown = saveData.m_gameTimerCountdown;
+
+            // Death and logout accounting
+            __m_slashDieCount = saveData.m_slashDieCount;
+            __m_logoutCount = saveData.m_logoutCount;
+
+            // world and seed info
+            __m_storedPlayerID = saveData.m_storedPlayerID;
+            __m_storedGameMode = saveData.m_storedGameMode;
+            __m_storedWorldSeed = saveData.m_storedWorldSeed;
+
+            // Unpack dropinfos and update the Dictionary
+            //
+            foreach (THMSaveDataDropInfo saveDropInfo in saveData.m_playerTrophyDropInfos)
+            {
+                if (__m_playerTrophyDropInfo.ContainsKey(saveDropInfo.m_name))
+                {
+                    DropInfo dropInfo = saveDropInfo.m_dropInfo;
+                    __m_playerTrophyDropInfo[saveDropInfo.m_name] = dropInfo;
+                }
+            }
+            foreach (THMSaveDataDropInfo saveDropInfo in saveData.m_allTrophyDropInfos)
+            {
+                if (__m_allTrophyDropInfo.ContainsKey(saveDropInfo.m_name))
+                {
+                    DropInfo dropInfo = saveDropInfo.m_dropInfo;
+                    __m_allTrophyDropInfo[saveDropInfo.m_name] = dropInfo;
+                }
+            }
+
+            foreach(THMSaveDataSpecialSagaDropCount dropCounts in saveData.m_specialSagaDropCounts)
+            {
+                string[] sagaDropCountKey = dropCounts.m_name.Split(',');
+                string enemyName = sagaDropCountKey[0];
+                string itemName = sagaDropCountKey[1];
+
+                List<SpecialSagaDrop> specials = __m_specialSagaDrops[enemyName];
+                for (int i = 0; i < specials.Count; i++)
+                {
+                    SpecialSagaDrop sagaDrop = specials[i];
+
+                    if (sagaDrop.m_itemName == itemName)
+                    {
+                        sagaDrop.m_numDropped = dropCounts.m_dropCount;
+
+                        specials[i] = sagaDrop;
+                        break;
+                    }
+                }
             }
         }
-*/
 
         private void Awake()
         {
@@ -504,6 +623,7 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
 
             __m_onlyModRunning = true;
 
+#if !SAGA_STANDALONE
             foreach (var plugin in loadedPlugins)
             {
  //               Debug.LogError($"{plugin.Key} : {plugin.Value.ToString()} : {plugin.Value.Metadata.Name}, {plugin.Value.Metadata.GUID}, {plugin.Value.Metadata.Version}, {plugin.Value.Metadata.TypeId}");
@@ -523,8 +643,8 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
             {
                 Debug.LogError($"[TrophyHuntMod] v{PluginVersion} found unauthorized mods. Score will be cyan colored, indicating invalid entry.");
             }
+#endif
         }
-
         public static void InitializeTrophyDropInfo()
         {
             __m_allTrophyDropInfo.Clear();
@@ -967,14 +1087,17 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
         public static void ToggleGameMode()
         {
             __m_trophyGameMode += 1;
-//            if (__m_trophyGameMode >= TrophyGameMode.Max)
+#if SAGA_STANDALONE
+            if (__m_trophyGameMode > TrophyGameMode.CulinarySaga)
+            {
+                __m_trophyGameMode = TrophyGameMode.TrophySaga;
+            }
+#else
             if (__m_trophyGameMode > TrophyGameMode.TrophyFiesta)
             {
                 __m_trophyGameMode = TrophyGameMode.TrophyHunt;
             }
-
-            //__m_trophyRushEnabled = !__m_trophyRushEnabled;
-
+#endif
             if (__m_trophyHuntMainMenuText != null)
             {
                 __m_trophyHuntMainMenuText.text = GetTrophyHuntMainMenuText();
@@ -1098,8 +1221,11 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
 
         public static string GetTrophyHuntMainMenuText()
         {
+#if SAGA_STANDALONE
+            string textStr = $"<b><size=50><color=#FFB75B>      Saga</color></size></b>\n<size=18>           (Version: {PluginVersion})</size>";
+#else
             string textStr = $"<b><size=34><color=#FFB75B>TrophyHuntMod</color></size></b>\n<size=18>           (Version: {PluginVersion})</size>";
-
+#endif
             textStr += GetGameModeText();
 
             //if (__m_showAllTrophyStats)
@@ -1208,28 +1334,11 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
                 Debug.Log($"Working Directory for Trophy Hunt Mod: {workingDirectory}");
                 Debug.Log($"Steam username: {SteamFriends.GetPersonaName()}");
 
-                // Load persistent data
-                //                LoadPersistentData();
-
-                // Do initial update of all UI elements to the current state of the game
-                UpdateModUI(Player.m_localPlayer);
-
-
-                // Start collecting player position map pin data
-                ShowPlayerPath(false);
-                StopCollectingPlayerPath();
-                StartCollectingPlayerPath();
-
                 // Store the current session data to help determine the player changing these
                 // things at the main menu
                 __m_storedPlayerID = Player.m_localPlayer.GetPlayerID();
                 __m_storedGameMode = __m_trophyGameMode;
                 __m_storedWorldSeed = WorldGenerator.instance.m_world.m_seedName;
-
-                if (GetGameMode() == TrophyGameMode.TrophyFiesta)
-                {
-                    TrophyFiesta.Initialize();
-                }
 
                 if (GetGameMode() != TrophyGameMode.TrophySaga && GetGameMode() != TrophyGameMode.CulinarySaga)
                 {
@@ -1239,6 +1348,28 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
                 {
                     __m_gameTimerVisible = true;
                 }
+
+
+
+
+                // Load persistent data
+                LoadPersistentData();
+
+                // Do initial update of all UI elements to the current state of the game
+                UpdateModUI(Player.m_localPlayer);
+
+                // Start collecting player position map pin data
+                ShowPlayerPath(false);
+                StopCollectingPlayerPath();
+                StartCollectingPlayerPath();
+
+                if (GetGameMode() == TrophyGameMode.TrophyFiesta)
+                {
+                    TrophyFiesta.Initialize();
+                }
+
+
+
             }
 
             public static void RaiseAllPlayerSkills(float skillLevel)
@@ -2610,6 +2741,12 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
                     if (!__m_ignoreLogouts)
                     {
                         __m_logoutCount++;
+//                        Debug.LogError($"Game.Logout() logoutCount = {__m_logoutCount}");
+
+                        if (Game.instance != null)
+                        {
+                            Game.instance.SavePlayerProfile(true);
+                        }
                     }
                 }
             }
@@ -4601,7 +4738,14 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
                     {
                         m_originalText = __instance.m_introText;
 
-                        __instance.m_introText = TROPHY_SAGA_INTRO_TEXT;
+                        if (GetGameMode() == TrophyGameMode.CulinarySaga)
+                        {
+                            __instance.m_introText = CULINARY_SAGA_INTRO_TEXT;
+                        }
+                        else
+                        {
+                            __instance.m_introText = TROPHY_SAGA_INTRO_TEXT;
+                        }
                     }
                 }
                 static void Postfix(Game __instance)
@@ -4637,6 +4781,10 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
                 {
                     if (__instance != null)
                     {
+#if SAGA_STANDALONE
+                        __instance.m_spinner.color = new Color(255f / 255f, 215f / 255f, 0, 1);
+                        __instance.m_spinnerOriginalColor = __instance.m_spinner.color;
+#else
                         //                        Debug.LogWarning($"LoadingIndicator.Awake() {__instance.m_spinner.name} {__instance.m_spinner.sprite.name}");
                         IEnumerable<AssetBundle> loadedBundles = AssetBundle.GetAllLoadedAssetBundles();
 
@@ -4663,6 +4811,7 @@ When Odin heard his enemies were growing once again in strength, he looked to Mi
                                 break;
                             }
                         }
+#endif
                     }
 
                     Texture2D CreateReadableTextureCopy(Texture2D texture)
