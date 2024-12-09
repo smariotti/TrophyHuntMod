@@ -9,6 +9,10 @@ It offers three modes, details are provided below.
   - This is an advanced version of the Trophy Hunt. Combat Difficulty is set to Very Hard, Resources drop at 2x rate and all Trophy-bearing enemies drop them 100% of the time.
 - **Trophy Saga**
   - This is a highly modified Trophy Hunt where many game mechanics are altered to speed up progression such as production building speeds, enemy drops, and crop growth times
+- **Culinary Saga**
+  - Trophy Saga game modifiers, but you score by creating one of each cooked food.
+- **Casual Saga**
+  - Trophy Saga game modifiers, but no time limit, no scoring, and no penalties. Free play!
 
 Available here:
 
@@ -90,6 +94,10 @@ In addition, this mode offers "Biome Bonuses" for completing the full set of non
 +100 Ashlands
 ```
 
+## Casual Saga
+
+Trophy Saga game modifiers, but no trophies/scoring or penalties. There is no time limit. Nothing is reported to the leaderboards. You just play and have fun.
+
 ## Trophy Saga
 
 This Trophy Hunt variant implements a good number of modifications to standard Valheim play to speed progression. Bosses no longer gate upgrade progression since boss dropped items can now drop from powerful minions in that boss' biome.
@@ -127,7 +135,23 @@ This Trophy Hunt variant implements a good number of modifications to standard V
 - All planted seeds and saplings grow to maturity within 10 seconds (as in previous version)
 - All Player Skills are learned at level 10 and then increase normally.
 
+## Culinary Saga
+TBD
+
 ## What's New?
+v0.8.1
+- Added "Casual Saga" game mode
+  - No scoring, no time limit, no leaderboards. Just Saga rule set and free-play mode. 
+- Save/Load of player data for all game modes
+  - Enables multi-session play
+    - Retains all trophy and food stats (player enemy kills/trophy pickups as well as all enemy deaths/trophy drops) between sessions
+    - Saves `/showpath` data with the player/world
+	- Stores current timer value in modes that use a game timer
+  - Prevents data loss of Logouts/slash-die counts if Valheim should crash
+- Saga
+  - Slight boat speed adjustment
+
+## Previous Changes
 v0.7.6
 - Saga Modes (Trophy and Culinary)
   - Speed Chickens!
@@ -147,7 +171,6 @@ v0.7.6
 - Trophy Fiesta
   - Fixed a bug where festival lighting was left on when switching to Culinary Saga (thanks @Xmal)
 
-## Previous Changes
 v0.7.5
 - Culinary Saga! >.<
   - New non-Trophy based game mode added! (EXPERIMENTAL!)

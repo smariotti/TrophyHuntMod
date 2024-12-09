@@ -1,7 +1,7 @@
 ﻿{
-    "name": "Saga",
-    "description": "Rewriting a few game rules to make an Epic Saga for the Ages",
-    "version_number": "0.1.0",
+    "name": "SagaMode",
+    "description": "Saga Mode is custom Valheim game mode to get you through the game in hours instead of days. It's super fun, and a great training mode for working through recipes, production dependencies and biome progression.",
+    "version_number": "0.8.1",
     "website_url": "https://github.com/smariotti/TrophyHuntMod",
     "dependencies": [
         "denikson-BepInExPack_Valheim-5.4.2202"
