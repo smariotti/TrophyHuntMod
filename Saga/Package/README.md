@@ -132,6 +132,12 @@ You can learn more on the Valheim Speedrun Discord channel here: https://discord
 You can find the source code on github at: https://github.com/smariotti/TrophyHuntMod
 
 # Release Notes
+v0.8.4
+- Casual Saga HOTFIX:
+  - Fixed a bug that would glitch your inventory when you picked up a trophy, causing all sorts of madness and mayhem. D'oh!
+
+v0.8.2
+- Fixed a bug with the timer where it would reset on death/respawn to what it was at the last save
 
 v0.8.1
 - Initial release of Saga Mode standalone mod

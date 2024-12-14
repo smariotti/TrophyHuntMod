@@ -47,7 +47,7 @@ namespace TrophyHuntMod
         public const string PluginName = "TrophyHuntMod";
         private const Boolean UPDATE_LEADERBOARD = true;
 #endif
-        public const string PluginVersion = "0.8.1";
+        public const string PluginVersion = "0.8.3";
         private readonly Harmony harmony = new Harmony(PluginGUID);
 
         // Configuration variables
@@ -247,7 +247,9 @@ namespace TrophyHuntMod
         static GameObject __m_scoreTextElement = null;
         static GameObject __m_deathsTextElement = null;
         static GameObject __m_relogsTextElement = null;
+        static GameObject __m_relogsIconElement = null;
         static GameObject __m_gameTimerTextElement = null;
+        static GameObject __m_luckOMeterElement = null;
 
         static List<GameObject> __m_iconList = null;
 
@@ -537,7 +539,10 @@ namespace TrophyHuntMod
             __m_playerPathData = saveData.m_playerPathData;
 
             // Game timer settings
-            __m_gameTimerElapsedSeconds = saveData.m_gameTimerElapsedSeconds;
+            if (__m_gameTimerElapsedSeconds < saveData.m_gameTimerElapsedSeconds)
+            {
+                __m_gameTimerElapsedSeconds = saveData.m_gameTimerElapsedSeconds;
+            }
             __m_gameTimerActive = saveData.m_gameTimerActive;
             __m_gameTimerVisible = saveData.m_gameTimerVisible;
             __m_gameTimerCountdown = saveData.m_gameTimerCountdown;
@@ -1012,6 +1017,19 @@ namespace TrophyHuntMod
                 ShowTrophies(__m_showingTrophies);
             });
 
+            ConsoleCommand showOnlyDeaths = new ConsoleCommand("showonlydeaths", "Hide all of the UI except for the death counter", delegate (ConsoleEventArgs args)
+            {
+                if (!Game.instance)
+                {
+                    PrintToConsole("'/showonlydeaths' console command can only be used during gameplay.");
+                    return;
+                }
+
+                __m_showOnlyDeaths = !__m_showOnlyDeaths;
+
+                ShowOnlyDeaths(__m_showOnlyDeaths);
+            });
+
             ConsoleCommand elderPowerCutsAllTrees = new ConsoleCommand("elderpowercutsalltrees", "All trees are choppable while elder power active", delegate (ConsoleEventArgs args)
             {
                 __m_elderPowerCutsAllTrees = !__m_elderPowerCutsAllTrees;
@@ -1087,12 +1105,41 @@ namespace TrophyHuntMod
         #endregion
 
         public static bool __m_showingTrophies = true;
+        public static bool __m_showOnlyDeaths = false;
 
         public static void ShowTrophies(bool show)
         {
             foreach (GameObject trophyIcon in __m_iconList)
             {
                 trophyIcon.SetActive(show);
+            }
+        }
+
+        public static void ShowOnlyDeaths(bool show)
+        {
+            foreach (GameObject trophyIcon in __m_iconList)
+            {
+                trophyIcon.SetActive(!show);
+            }
+
+            if (__m_luckOMeterElement != null)
+            {
+                __m_luckOMeterElement.SetActive(!show);
+            }
+
+            if (__m_relogsTextElement != null)
+            {
+                __m_relogsTextElement.SetActive(!show);
+            }
+
+            if (__m_relogsIconElement != null)
+            {
+                __m_relogsIconElement.SetActive(!show);
+            }
+
+            if (__m_scoreTextElement != null)
+            {
+                __m_scoreTextElement.SetActive(!show);
             }
         }
 
@@ -1650,6 +1697,8 @@ namespace TrophyHuntMod
                         __m_scoreTextElement = CreateScoreTextElement(healthPanelTransform);
                     }
 
+                    __m_iconList = new List<GameObject>();
+
                     if (GetGameMode() != TrophyGameMode.CasualSaga)
                     {
                         if (__m_deathsTextElement == null)
@@ -1667,8 +1716,6 @@ namespace TrophyHuntMod
                             __m_gameTimerTextElement = CreateTimerElements(healthPanelTransform);
                         }
 
-                        __m_iconList = new List<GameObject>();
-
                         if (GetGameMode() == TrophyGameMode.CulinarySaga)
                         {
                             CreateCookingIconElements(healthPanelTransform, __m_cookedFoodData, __m_iconList);
@@ -1684,14 +1731,14 @@ namespace TrophyHuntMod
 
                             CreateLuckTooltip();
 
-                            CreateLuckOMeterElements(healthPanelTransform);
+                            __m_luckOMeterElement = CreateLuckOMeterElements(healthPanelTransform);
                         }
                     }
 
                     CreateScoreTooltip();
                 }
             }
-
+            
             static IEnumerator TimerUpdate()
             {
                 while (__m_gameTimerActive)
@@ -1810,15 +1857,15 @@ namespace TrophyHuntMod
             {
                 Sprite logSprite = GetTrophySprite("RoundLog");
 
-                GameObject logElement = new GameObject("RelogsIcon");
-                logElement.transform.SetParent(parentTransform);
+                __m_relogsIconElement = new GameObject("RelogsIcon");
+                __m_relogsIconElement.transform.SetParent(parentTransform);
 
-                RectTransform rectTransform = logElement.AddComponent<RectTransform>();
+                RectTransform rectTransform = __m_relogsIconElement.AddComponent<RectTransform>();
                 rectTransform.sizeDelta = new Vector2(40, 40);
                 rectTransform.anchoredPosition = new Vector2(-70, -105);
                 rectTransform.localScale = new Vector3(__m_userIconScale, __m_userIconScale, __m_userIconScale);
 
-                UnityEngine.UI.Image image = logElement.AddComponent<UnityEngine.UI.Image>();
+                UnityEngine.UI.Image image = __m_relogsIconElement.AddComponent<UnityEngine.UI.Image>();
                 image.sprite = logSprite;
                 image.color = Color.white;
 
@@ -4760,7 +4807,7 @@ namespace TrophyHuntMod
                         {
                             __instance.m_secPerProduct = 1f;
                         }
-                        else if (__instance.m_name.Contains("bathtub"))
+                        else if (__instance.m_name.Contains("bathtub") || __instance.m_name.Contains("batteringram"))
                         {
                             // Do nothing to the hot tub
                         }

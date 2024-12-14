@@ -138,7 +138,17 @@ This Trophy Hunt variant implements a good number of modifications to standard V
 ## Culinary Saga
 TBD
 
-## What's New?
+## Change Log
+v0.8.4
+- Casual Saga HOTFIX:
+  - Fixed a bug that would glitch your inventory when you picked up a trophy, causing all sorts of madness and mayhem. D'oh!
+
+v0.8.3
+- Added console command `/showonlydeaths` which toggles show/hide of everything but the death counter (requested by Helga Blue)
+
+v0.8.2
+- Fixed a bug with the timer where it would reset on death/respawn to what it was at the last save
+
 v0.8.1
 - Added "Casual Saga" game mode
   - No scoring, no time limit, no leaderboards. Just Saga rule set and free-play mode. 
@@ -151,7 +161,6 @@ v0.8.1
 - Saga
   - Slight boat speed adjustment
 
-## Previous Changes
 v0.7.6
 - Saga Modes (Trophy and Culinary)
   - Speed Chickens!
