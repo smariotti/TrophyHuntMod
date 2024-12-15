@@ -47,7 +47,7 @@ namespace TrophyHuntMod
         public const string PluginName = "TrophyHuntMod";
         private const Boolean UPDATE_LEADERBOARD = true;
 #endif
-        public const string PluginVersion = "0.8.3";
+        public const string PluginVersion = "0.8.5";
         private readonly Harmony harmony = new Harmony(PluginGUID);
 
         // Configuration variables
@@ -198,7 +198,6 @@ namespace TrophyHuntMod
             new TrophyHuntData("TrophyVolture",                 "Volture",          Biome.Ashlands,     50,     50,     new List<string> { "$enemy_volture" }),
             new TrophyHuntData("TrophyWolf",                    "Wolf",             Biome.Mountains,    30,     10,     new List<string> { "$enemy_wolf" }),
             new TrophyHuntData("TrophyWraith",                  "Wraith",           Biome.Swamp,        20,     5,      new List<string> { "$enemy_wraith" }),
-
             new TrophyHuntData("TrophyKvastur",                 "Kvastur",          Biome.Bogwitch,     25,     100,    new List<string> { "$enemy_kvastur" })
         };
 
@@ -1475,7 +1474,11 @@ namespace TrophyHuntMod
                 }
                 else
                 {
+#if SAGA_STANDALONE
                     __m_gameTimerVisible = true;
+#else
+                    __m_gameTimerVisible = false;
+#endif
                 }
 
                 // Load persistent data
@@ -2690,6 +2693,14 @@ namespace TrophyHuntMod
                                     FlashBiomeTrophies(name);
                                 }
                             }
+                            else if (GetGameMode() == TrophyGameMode.TrophySaga)
+                            {
+                                if (__m_trophyCache.Count == __m_trophyHuntData.Length)
+                                {
+                                    MessageHud.instance.ShowBiomeFoundMsg("Odin is Pleased", playStinger: true);
+                                }
+                            }
+
                             UpdateModUI(player);
                         }
                     }
@@ -3666,7 +3677,7 @@ namespace TrophyHuntMod
 
             public struct SpecialSagaDrop
             {
-                public SpecialSagaDrop(string itemName, float dropPercent, int dropAmountMin, int dropAmountMax, bool dropOnlyOne)
+                public SpecialSagaDrop(string itemName, float dropPercent, int dropAmountMin, int dropAmountMax, bool dropOnlyOne = false, TrophyGameMode onlyInMode = TrophyGameMode.Max)
                 {
                     m_itemName = itemName;
                     m_dropPercent = dropPercent;
@@ -3674,6 +3685,7 @@ namespace TrophyHuntMod
                     m_dropAmountMax = dropAmountMax;
                     m_dropOnlyOne = dropOnlyOne;
                     m_numDropped = 0;
+                    m_onlyInMode = TrophyGameMode.Max;
                 }
 
                 public string m_itemName;
@@ -3681,6 +3693,7 @@ namespace TrophyHuntMod
                 public int m_dropAmountMin;
                 public int m_dropAmountMax;
                 public bool m_dropOnlyOne;
+                public TrophyGameMode m_onlyInMode;
                 public int m_numDropped;
             }
 
@@ -3709,18 +3722,27 @@ namespace TrophyHuntMod
                                                     new SpecialSagaDrop("BeltStrength",     15,  1, 1, true)
                                                 }
                 },
+                {
+                    "$enemy_neck",              new List<SpecialSagaDrop>
+                                                {
+                                                    new SpecialSagaDrop("FishingBait", 25,  5, 10, false, TrophyGameMode.CulinarySaga),
+                                                }
+                },
+
                 // The Elder Boss Item Drop
                 {
                     "$enemy_greydwarfbrute",    new List<SpecialSagaDrop>
                                                 {
                                                     new SpecialSagaDrop("CryptKey",        100,  1, 1, true),
+                                                    new SpecialSagaDrop("FishingRod",      100,  1, 1, true, TrophyGameMode.CulinarySaga),
                                                 }
                 },
                 {
                     "$enemy_troll",             new List<SpecialSagaDrop>
                                                 {
                                                     new SpecialSagaDrop("BeltStrength",    100,  1, 1, true),
-                                                    new SpecialSagaDrop("TrollHide",       100,  5, 5, false)
+                                                    new SpecialSagaDrop("TrollHide",       100,  5, 5, false),
+                                                    new SpecialSagaDrop("FishingBaitForest",      50,  1, 5, true, TrophyGameMode.CulinarySaga),
                                                 }
                 },
                 {
@@ -3742,7 +3764,7 @@ namespace TrophyHuntMod
                                                 {
                                                     new SpecialSagaDrop("Wishbone",       100,  1, 1, true),
                                                     new SpecialSagaDrop("Ooze",           100,  2, 5, false),
-
+                                                    new SpecialSagaDrop("FishingRod",      100,  1, 1, true, TrophyGameMode.CulinarySaga),
                                                 }
                 },
                 {
@@ -3751,6 +3773,13 @@ namespace TrophyHuntMod
                                                     new SpecialSagaDrop("Ooze",           100,  2, 5, false),
                                                 }
                 },
+                {
+                    "$enemy_abomination",       new List<SpecialSagaDrop>
+                                                {
+                                                    new SpecialSagaDrop("FishingBaitSwamp", 25,  1, 5, false, TrophyGameMode.CulinarySaga),
+                                                }
+                },
+                // $enemy_abomination
 
                 // Moder Boss Item Drop
                 {
@@ -3758,6 +3787,8 @@ namespace TrophyHuntMod
                     "$enemy_drake",           new List<SpecialSagaDrop>
                                                 {
                                                     new SpecialSagaDrop("DragonTear",      100,  1, 2, false),
+                                                    new SpecialSagaDrop("FishingRod",      100,  1, 1, true, TrophyGameMode.CulinarySaga),
+                                                    new SpecialSagaDrop("FishingBaitDeepNorth", 25,  1, 5, false, TrophyGameMode.CulinarySaga),
                                                 }
                 },
                 {
@@ -3767,18 +3798,33 @@ namespace TrophyHuntMod
                                                     new SpecialSagaDrop("DragonTear",      100,  2, 3, true),
                                                 }
                 },
+                {
+                    "$enemy_fenring",           new List<SpecialSagaDrop>
+                                                {
+                                                    new SpecialSagaDrop("FishingBaitCave", 25,  1, 10, false, TrophyGameMode.CulinarySaga),
+                                                }
+                },
 
                 // Yagluth Boss Item Drop
                 {
+                    "$enemy_goblin",      new List<SpecialSagaDrop>
+                                                {
+                                                    new SpecialSagaDrop("YagluthDrop",     100,  1, 1, true),
+                                                    new SpecialSagaDrop("FishingBaitPlains", 25,  1, 5, false, TrophyGameMode.CulinarySaga),
+                                                }
+                },
+               {
                     "$enemy_goblinshaman",      new List<SpecialSagaDrop>
                                                 {
                                                     new SpecialSagaDrop("YagluthDrop",     100,  1, 1, true),
+                                                    new SpecialSagaDrop("FishingRod",      100,  1, 1, true, TrophyGameMode.CulinarySaga),
                                                 }
                 },
                 {
                     "$enemy_goblinbrute",       new List<SpecialSagaDrop>
                                                 {
                                                     new SpecialSagaDrop("YagluthDrop",     100,  1, 1, true),
+                                                    new SpecialSagaDrop("FishingRod",      100,  1, 1, true, TrophyGameMode.CulinarySaga),
                                                 }
                 },
                 {
@@ -3793,12 +3839,19 @@ namespace TrophyHuntMod
                                                     new SpecialSagaDrop("YagluthDrop",     100,  1, 1, true),
                                                 }
                 },
+                {
+                    "$enemy_lox",               new List<SpecialSagaDrop>
+                                                {
+                                                    new SpecialSagaDrop("FishingBaitMistlands", 45,  1, 5, false, TrophyGameMode.CulinarySaga),
+                                                }
+                },
 
                 // Queen Boss Item Drop
                 {
                     "$enemy_seekerbrute",    new List<SpecialSagaDrop>
                                                 {
                                                     new SpecialSagaDrop("QueenDrop",       100,  1, 1, false),
+                                                    new SpecialSagaDrop("FishingRod",      100,  1, 1, true, TrophyGameMode.CulinarySaga),
                                                 }
                 },
 
@@ -3816,6 +3869,50 @@ namespace TrophyHuntMod
 //                                                    new SpecialSagaDrop("BlackCore",       100,  2, 3, false),
                                                 }
                 },
+                {
+                    "$enemy_serpent",               new List<SpecialSagaDrop>
+                                                {
+                                                    new SpecialSagaDrop("FishingBaitOcean", 100,  20, 20, false, TrophyGameMode.CulinarySaga),
+                                                }
+                },
+                {
+                    "$enemy_charred_melee",               new List<SpecialSagaDrop>
+                                                {
+                                                    new SpecialSagaDrop("FishingBaitAshlands", 25,  1, 5, false, TrophyGameMode.CulinarySaga),
+                                                }
+                },
+
+                {
+                    "$enemy_gdking",            new List<SpecialSagaDrop>
+                                                {
+                                                    new SpecialSagaDrop("YmirRemains",     100,  10, 10, true),
+                                                }
+                },
+                {
+                    "$enemy_bonemass",            new List<SpecialSagaDrop>
+                                                {
+                                                    new SpecialSagaDrop("YmirRemains",     100,  10, 10, true),
+                                                }
+                },
+                {
+                    "$enemy_dragon",            new List<SpecialSagaDrop>
+                                                {
+                                                    new SpecialSagaDrop("YmirRemains",     100,  10, 10, true),
+                                                }
+                },
+                {
+                    "$enemy_seekerqueen",            new List<SpecialSagaDrop>
+                                                {
+                                                    new SpecialSagaDrop("YmirRemains",     100,  10, 10, true),
+                                                }
+                },
+                {
+                    "$enemy_fader",            new List<SpecialSagaDrop>
+                                                {
+                                                    new SpecialSagaDrop("YmirRemains",     100,  10, 10, true),
+                                                }
+                },
+
             };
 
             public static void InitializeSagaDrops()
@@ -3833,6 +3930,27 @@ namespace TrophyHuntMod
                     }
                     __m_specialSagaDrops[key] = dropList;
                 }
+            }
+
+            public static bool HasAnyoneDropped(string itemName)
+            {
+                bool hasDropped = false;
+
+                foreach (KeyValuePair<string, List<SpecialSagaDrop>> specialDrops in __m_specialSagaDrops)
+                {
+                    foreach(SpecialSagaDrop sagaDrop in specialDrops.Value)
+                    {
+                        if (sagaDrop.m_itemName == itemName)
+                        {
+                            if (sagaDrop.m_numDropped > 0)
+                            {
+                                return true;
+                            }
+                        }
+                    }
+                }
+
+                return hasDropped;
             }
 
             // Watch character drops and see what characters drop what items (actual dropped items)
@@ -3955,28 +4073,42 @@ namespace TrophyHuntMod
                                 {
                                     SpecialSagaDrop sagaDrop = enemySagaDrops[i];
 
+                                    // If it only drops in a specific game mode
+                                    if (sagaDrop.m_onlyInMode != TrophyGameMode.Max)
+                                    {
+                                        // And we're not in that mode currently
+                                        if (GetGameMode() != sagaDrop.m_onlyInMode)
+                                        {
+                                            // Ignore this SagaDrop
+                                            continue;
+                                        }
+                                    }
+
                                     bool alreadyDropped = false;
                                     //                                    Debug.LogWarning($"{characterName} {sagaDrop.m_itemName} numDrops: {sagaDrop.m_numDropped}");
                                     if (sagaDrop.m_dropOnlyOne)
                                     {
-                                        alreadyDropped = sagaDrop.m_numDropped > 0;
-                                        if (!alreadyDropped)
-                                        {
-                                            // Special handling for the strength belt, either greylings or trolls can drop it but not both
-                                            if (sagaDrop.m_itemName == "BeltStrength")
-                                            {
-                                                List<SpecialSagaDrop> greylingDrops = __m_specialSagaDrops["$enemy_greyling"];
-                                                List<SpecialSagaDrop> trollDrops = __m_specialSagaDrops["$enemy_troll"];
+                                        alreadyDropped = HasAnyoneDropped(sagaDrop.m_itemName);
 
-                                                SpecialSagaDrop greylingBeltDrop = greylingDrops.Find(x => x.m_itemName == "BeltStrength");
-                                                SpecialSagaDrop trollBeltDrop = trollDrops.Find(x => x.m_itemName == "BeltStrength");
-                                                if (greylingBeltDrop.m_numDropped > 0 || trollBeltDrop.m_numDropped > 0)
-                                                {
-                                                    alreadyDropped = true;
-                                                    //                                                    Debug.LogWarning($"Greyling or Troll already dropped {sagaDrop.m_itemName}");
-                                                }
-                                            }
-                                        }
+                                        //alreadyDropped = sagaDrop.m_numDropped > 0;
+                                        //if (!alreadyDropped)
+                                        //{
+
+                                        //    // Special handling for the strength belt, either greylings or trolls can drop it but not both
+                                        //    if (sagaDrop.m_itemName == "BeltStrength")
+                                        //    {
+                                        //        List<SpecialSagaDrop> greylingDrops = __m_specialSagaDrops["$enemy_greyling"];
+                                        //        List<SpecialSagaDrop> trollDrops = __m_specialSagaDrops["$enemy_troll"];
+
+                                        //        SpecialSagaDrop greylingBeltDrop = greylingDrops.Find(x => x.m_itemName == "BeltStrength");
+                                        //        SpecialSagaDrop trollBeltDrop = trollDrops.Find(x => x.m_itemName == "BeltStrength");
+                                        //        if (greylingBeltDrop.m_numDropped > 0 || trollBeltDrop.m_numDropped > 0)
+                                        //        {
+                                        //            alreadyDropped = true;
+                                        //            //                                                    Debug.LogWarning($"Greyling or Troll already dropped {sagaDrop.m_itemName}");
+                                        //        }
+                                        //    }
+                                        //}
                                     }
 
                                     // If it's only meant to drop once, just ignore additional drops
@@ -4232,6 +4364,11 @@ namespace TrophyHuntMod
                                         FlashTrophy(item.m_dropPrefab.name);
 
                                         __m_cookedFoods.Add(item.m_dropPrefab.name);
+
+                                        if (__m_cookedFoods.Count == __m_cookedFoodData.Length)
+                                        {
+                                            MessageHud.instance.ShowBiomeFoundMsg("Odin is Sated", playStinger: true);
+                                        }
                                     }
                                 }
                                 UpdateModUI(Player.m_localPlayer);
@@ -4809,7 +4946,8 @@ namespace TrophyHuntMod
                         }
                         else if (__instance.m_name.Contains("bathtub") || __instance.m_name.Contains("batteringram"))
                         {
-                            // Do nothing to the hot tub
+                            // Do nothing to the hot tub or the battering ram
+
                         }
                         else
                         {
@@ -5274,5 +5412,19 @@ Maybe also:
  * 
  */
 
-
+/*
+ * Culinary Saga
+ * 
+ * Fishing Bait droppers
  
+FishingBait					$item_fishingbait			Fishing Bait		    Neck            
+FishingBaitAshlands			$item_fishingbait_ashlands	Hot Fishing Bait	    Charred Warrior     $enemy_charred_melee
+FishingBaitCave				$item_fishingbait_cave		Cold Fishing Bait	    Fenring             $enemy_fenring
+FishingBaitDeepNorth		$item_fishingbait_deepnorth	Frosty Fishing Bait	    Drake               $enemy_drake
+FishingBaitForest			$item_fishingbait_forest	Mossy Fishing Bait	    Troll               $enemy_troll
+FishingBaitMistlands		$item_fishingbait_mistlands	Misty Fishing Bait	    Lox                 $enemy_lox
+FishingBaitOcean			$item_fishingbait_ocean		Heavy Fishing Bait	    Serpent             $enemy_serpent
+FishingBaitPlains			$item_fishingbait_plains	Stingy Fishing Bait	    Fuling              $enemy_goblin
+FishingBaitSwamp			$item_fishingbait_swamp		Sticky Fishing Bait	    Abomination         $enemy_abomination
+
+ */

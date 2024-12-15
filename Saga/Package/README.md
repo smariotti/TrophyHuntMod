@@ -132,6 +132,25 @@ You can learn more on the Valheim Speedrun Discord channel here: https://discord
 You can find the source code on github at: https://github.com/smariotti/TrophyHuntMod
 
 # Release Notes
+v0.8.5
+- Battering Ram no longer eats through wood at an alarming rate and now operates normally.
+- The first boss you kill past Eikthyr will drop a stack of Ymir Flesh
+- Culinary Saga
+  - Fishing without Haldor!
+  - Powerful boss minions in each biome now have a chance to drop a Fishing Rod
+  - Various fishing baits drop directly from the enemies whose trophies you would trade to Haldor, except for Necks, which drop basic fishing bait
+	 | Bait | Dropping Enemy |
+	 | -------------------- | ---------------- |
+	 | Fishing Bait		    | Neck |
+	 | Hot Fishing Bait	    | Charred Warrior |
+	 | Cold Fishing Bait    | Fenring |
+	 | Frosty Fishing Bait	|   Drake |        
+	 | Mossy Fishing Bait	|   Troll |        
+	 | Misty Fishing Bait	|   Lox |        
+	 | Heavy Fishing Bait	|   Serpent |
+	 | Stingy Fishing Bait	|   Fuling |      
+	 | Sticky Fishing Bait	|   Abomination |
+
 v0.8.4
 - Casual Saga HOTFIX:
   - Fixed a bug that would glitch your inventory when you picked up a trophy, causing all sorts of madness and mayhem. D'oh!
