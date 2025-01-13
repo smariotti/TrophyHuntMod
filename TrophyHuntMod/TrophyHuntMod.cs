@@ -45,9 +45,9 @@ namespace TrophyHuntMod
 #else
         public const string PluginGUID = "com.oathorse.TrophyHuntMod";
         public const string PluginName = "TrophyHuntMod";
-        private const Boolean UPDATE_LEADERBOARD = true;
+        private const Boolean UPDATE_LEADERBOARD = false;
 #endif
-        public const string PluginVersion = "0.8.5";
+        public const string PluginVersion = "0.8.8";
         private readonly Harmony harmony = new Harmony(PluginGUID);
 
         // Configuration variables
@@ -535,7 +535,10 @@ namespace TrophyHuntMod
             THMSaveData saveData = xmlSerializer.Deserialize(stream) as THMSaveData;
 
             // The /showpath path
-            __m_playerPathData = saveData.m_playerPathData;
+            if (__m_playerPathData != null && saveData.m_playerPathData != null && __m_playerPathData.Count < saveData.m_playerPathData.Count)
+            {
+                __m_playerPathData = saveData.m_playerPathData;
+            }
 
             // Game timer settings
             if (__m_gameTimerElapsedSeconds < saveData.m_gameTimerElapsedSeconds)
@@ -616,7 +619,7 @@ namespace TrophyHuntMod
         {
             "org.bepinex.valheim.displayinfo",
             "com.oathorse.TrophyHuntMod",
-            "com.oathorse.TubaWalk",
+            "com.oathorse.Tuba",
             "wearable_trophies"
         };
 
@@ -625,7 +628,7 @@ namespace TrophyHuntMod
             // Get the list of loaded plugins
             var loadedPlugins = BepInEx.Bootstrap.Chainloader.PluginInfos;
 
- //           Debug.LogError($"[TrophyHut Mod] Found Plugins: {loadedPlugins.Count}");
+            Debug.LogError($"[TrophyHut Mod] Found Plugins: {loadedPlugins.Count}");
 
             __m_onlyModRunning = true;
 
@@ -2763,6 +2766,13 @@ namespace TrophyHuntMod
             #region Leaderboard
 
             [System.Serializable]
+            public class LeaderboardDataEx
+            {
+                public string event_name;
+                public string event_data;
+            }
+
+            [System.Serializable]
             public class LeaderboardData
             {
                 public string player_name;
@@ -2773,6 +2783,7 @@ namespace TrophyHuntMod
                 public int deaths;
                 public int logouts;
                 public string gamemode;
+//                public LeaderboardDataEx[] extra = new LeaderboardDataEx[] { };
             }
 
             private static void SendScoreToLeaderboard(int score)
@@ -2793,13 +2804,15 @@ namespace TrophyHuntMod
                     trophies = trophyList,
                     deaths = __m_deaths,
                     logouts = __m_logoutCount,
-                    gamemode = GetGameMode().ToString()
-                    //(GetGameMode() == TrophyGameMode.TrophyHunt)
-                    //                ? "TrophyHunt" : (GetGameMode() == TrophyGameMode.TrophyRush)
-                    //                ? "TrophyRush" : (GetGameMode() == TrophyGameMode.TrophySaga)
-                    //                ? "TrophySaga" : (GetGameMode() == TrophyGameMode.TrophyFiesta)
-                    //                ? "TrophyFiesta" : "CulinarySaga"
+                    gamemode = GetGameMode().ToString(),
+//                    extra = new LeaderboardDataEx()
                 };
+                //LeaderboardDataEx extra = new LeaderboardDataEx();
+
+                //extra.event_name = "trophy_get";
+                //extra.event_data = "TrophyBoar";
+
+//                leaderboardData.extra.AddItem(extra);
 
                 // Start the coroutine to post the data
                 __m_trophyHuntMod.StartCoroutine(PostLeaderboardDataCoroutine(LEADERBOARD_URL, leaderboardData));
@@ -3685,7 +3698,7 @@ namespace TrophyHuntMod
                     m_dropAmountMax = dropAmountMax;
                     m_dropOnlyOne = dropOnlyOne;
                     m_numDropped = 0;
-                    m_onlyInMode = TrophyGameMode.Max;
+                    m_onlyInMode = onlyInMode;
                 }
 
                 public string m_itemName;
@@ -3725,7 +3738,7 @@ namespace TrophyHuntMod
                 {
                     "$enemy_neck",              new List<SpecialSagaDrop>
                                                 {
-                                                    new SpecialSagaDrop("FishingBait", 25,  5, 10, false, TrophyGameMode.CulinarySaga),
+                                                    new SpecialSagaDrop("FishingBait", 25,  1, 5, false, TrophyGameMode.CulinarySaga),
                                                 }
                 },
 
@@ -3788,7 +3801,7 @@ namespace TrophyHuntMod
                                                 {
                                                     new SpecialSagaDrop("DragonTear",      100,  1, 2, false),
                                                     new SpecialSagaDrop("FishingRod",      100,  1, 1, true, TrophyGameMode.CulinarySaga),
-                                                    new SpecialSagaDrop("FishingBaitDeepNorth", 25,  1, 5, false, TrophyGameMode.CulinarySaga),
+                                                    new SpecialSagaDrop("FishingBaitDeepNorth", 15,  1, 5, false, TrophyGameMode.CulinarySaga),
                                                 }
                 },
                 {
@@ -3809,8 +3822,7 @@ namespace TrophyHuntMod
                 {
                     "$enemy_goblin",      new List<SpecialSagaDrop>
                                                 {
-                                                    new SpecialSagaDrop("YagluthDrop",     100,  1, 1, true),
-                                                    new SpecialSagaDrop("FishingBaitPlains", 25,  1, 5, false, TrophyGameMode.CulinarySaga),
+                                                    new SpecialSagaDrop("FishingBaitPlains", 15,  1, 5, false, TrophyGameMode.CulinarySaga),
                                                 }
                 },
                {
@@ -4073,13 +4085,15 @@ namespace TrophyHuntMod
                                 {
                                     SpecialSagaDrop sagaDrop = enemySagaDrops[i];
 
+                                    Debug.LogWarning($"{sagaDrop.m_itemName} {sagaDrop.m_onlyInMode.ToString()} ({GetGameMode()}");
+
                                     // If it only drops in a specific game mode
                                     if (sagaDrop.m_onlyInMode != TrophyGameMode.Max)
                                     {
                                         // And we're not in that mode currently
                                         if (GetGameMode() != sagaDrop.m_onlyInMode)
                                         {
-                                            // Ignore this SagaDrop
+                                            Debug.LogWarning($"{sagaDrop.m_itemName} Ignored");
                                             continue;
                                         }
                                     }

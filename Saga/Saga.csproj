@@ -136,8 +136,9 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>$(SolutionDir)\libraries\debug\pdb2mdb.exe $(TargetPath)
-copy /Y $(TargetDir)\$(TargetFileName)* $(ProjectDir)\Package\plugins
-copy /Y $(TargetDir)\$(TargetFileName)* "C:\Program Files (x86)\Steam\steamapps\common\Valheim_Dev\BepInEx\Plugins"</PostBuildEvent>
+    <PostBuildEvent>if $(ConfigurationName) == Debug $(SolutionDir)\libraries\debug\pdb2mdb.exe $(TargetPath)
+if $(ConfigurationName) == Debug xcopy /Y $(TargetDir)\$(TargetFileName)* "C:\Program Files (x86)\Steam\steamapps\common\Valheim_Dev\BepInEx\Plugins"
+if $(ConfigurationName) == Release xcopy /Y $(TargetDir)\$(TargetFileName)* $(ProjectDir)\Package\plugins
+</PostBuildEvent>
   </PropertyGroup>
 </Project>

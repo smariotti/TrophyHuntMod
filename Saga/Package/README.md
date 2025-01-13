@@ -132,6 +132,12 @@ You can learn more on the Valheim Speedrun Discord channel here: https://discord
 You can find the source code on github at: https://github.com/smariotti/TrophyHuntMod
 
 # Release Notes
+v0.8.7
+- Fixed bug with player path data being restored from previous save when it shouldn't have been
+
+v0.8.6
+- Fixed bug where fishing bait was dropping outside of Culinary Saga game mode
+
 v0.8.5
 - Battering Ram no longer eats through wood at an alarming rate and now operates normally.
 - The first boss you kill past Eikthyr will drop a stack of Ymir Flesh

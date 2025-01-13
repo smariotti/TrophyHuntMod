@@ -139,15 +139,26 @@ This Trophy Hunt variant implements a good number of modifications to standard V
 TBD
 
 ## Change Log
+v0.8.8
+- Disabled live Tracker/Leaderboard reporting. Any Trophy collection data will need to be entered manually on the website for tournaments. 
+  - The mod no longer reports live updates to http://valheim.help until some privacy issues are ironed out. @jv is aware of the issues.
+- Whitelisted TubaWalk mod so that it can be used without violating tournament rules. Bring the tuba guys!
+
+v0.8.7
+- Fixed bug with player path data being restored from previous save when it shouldn't have been
+
+v0.8.6
+- Fixed bug where fishing bait was dropping outside of Culinary Saga game mode
+
 v0.8.5
 - Saga game modes (Trophy Saga, Culinary Saga, Casual Saga)
   - Battering Ram no longer eats through wood at an alarming rate and now operates normally.
   - Timer display is now OFF by default (use `/timer show` to make it visible again) since the Saga timer doesn't adhere to Tournament rules.
-  - The first boss you kill past Eikthyr will drop five Ymir Flesh
+  - The first boss you kill past Eikthyr will drop a stack of Ymir Flesh
 - Culinary Saga
   - Fishing without Haldor!
   - Powerful boss minions in each biome now have a chance to drop a Fishing Rod
-  - Various fishing baits drop directly from the enemies whose trophies you would trade to Haldor, except for Necks, which drop basic fishing bait
+  - Various fishing baits can drop directly from the enemies whose trophies you would trade to Haldor, except for Necks, which drop basic fishing bait
 	 | Bait | Dropping Enemy |
 	 | -------------------- | ---------------- |
 	 | Fishing Bait		    | Neck |
