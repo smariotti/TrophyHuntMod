@@ -139,6 +139,9 @@
     <Compile Include="..\TrophyHuntMod\DiscordAuthentication.cs">
       <Link>DiscordAuthentication.cs</Link>
     </Compile>
+    <Compile Include="..\TrophyHuntMod\DiscordClientSecret.cs">
+      <Link>DiscordClientSecret.cs</Link>
+    </Compile>
     <Compile Include="..\TrophyHuntMod\TrophyFiesta.cs">
       <Link>TrophyFiesta.cs</Link>
     </Compile>

@@ -48,7 +48,7 @@ namespace TrophyHuntMod
         public const string PluginName = "TrophyHuntMod";
         private const Boolean UPDATE_LEADERBOARD = false;
 #endif
-        public const string PluginVersion = "0.8.9";
+        public const string PluginVersion = "0.9.0";
         private readonly Harmony harmony = new Harmony(PluginGUID);
 
         // Configuration variables
@@ -255,10 +255,12 @@ namespace TrophyHuntMod
         static List<GameObject> __m_iconList = null;
 
         // Online Integration
+        static DiscordOAuthFlow __m_discordAuthentication = new DiscordOAuthFlow();
         static bool __m_loggedInWithDiscord = false;
         static string __m_discordUser = "";
         static string __m_discordId = "";
         static string __m_discordGlobalUser = "";
+        static TextMeshProUGUI __m_discordLoginButtonText = null;
         static TextMeshProUGUI __m_onlineUsernameText = null;
         static TextMeshProUGUI __m_onlineStatusText = null;
 
@@ -2797,7 +2799,7 @@ namespace TrophyHuntMod
 
             private static void SendScoreToLeaderboard(int score)
             {
-                string steamName = SteamFriends.GetPersonaName();
+                string discordUser = __m_discordUser;
                 string seed = WorldGenerator.instance.m_world.m_seedName;
                 string sessionId = seed.ToString();
                 string playerPos = Player.m_localPlayer.transform.position.ToString();
@@ -2806,7 +2808,7 @@ namespace TrophyHuntMod
                 // Example data to send to the leaderboard
                 var leaderboardData = new LeaderboardData
                 {
-                    player_name = steamName,
+                    player_name = discordUser,
                     current_score = score,
                     session_id = sessionId,
                     player_location = playerPos,
@@ -4561,7 +4563,7 @@ namespace TrophyHuntMod
                 rectTransform.anchorMax = new Vector2(1.0f, 0.0f);
                 rectTransform.pivot = new Vector2(1.0f, 0.0f);
                 rectTransform.anchoredPosition = new Vector2(-140, -180); // Position below the logo
-                rectTransform.sizeDelta = new Vector2(140, 20);
+                rectTransform.sizeDelta = new Vector2(140, 22);
 
                 // Add the Button component
                 UnityEngine.UI.Button button = loginButton.AddComponent<UnityEngine.UI.Button>();
@@ -4591,21 +4593,20 @@ namespace TrophyHuntMod
                 textRect.anchoredPosition = new Vector2(0, 0);
 
                 // Change the button's text
-                TextMeshProUGUI buttonText = textObject.AddComponent<TextMeshProUGUI>();
+                __m_discordLoginButtonText = textObject.AddComponent<TextMeshProUGUI>();
 
                 if (__m_loggedInWithDiscord)
                 {
-                    buttonText.text = "Discord Logout";
+                    __m_discordLoginButtonText.text = "Discord Logout";
                 }
                 else
                 {
-                    buttonText.text = "Discord Login";
+                    __m_discordLoginButtonText.text = "Discord Login";
                 }
 
-                buttonText.fontSize = 16;
-                buttonText.color = Color.white;
-                buttonText.alignment = TextAlignmentOptions.Center;
-//                buttonText.fontStyle = FontStyles.Bold;
+                __m_discordLoginButtonText.fontSize = 16;
+                __m_discordLoginButtonText.color = Color.white;
+                __m_discordLoginButtonText.alignment = TextAlignmentOptions.Center;
 
                 // Set up the click listener
                 button.onClick.AddListener(LoginButtonClick);
@@ -4620,14 +4621,15 @@ namespace TrophyHuntMod
                 statusRectTransform.anchorMin = new Vector2(1.0f, 0.0f);
                 statusRectTransform.anchorMax = new Vector2(1.0f, 0.0f);
                 statusRectTransform.pivot = new Vector2(1.0f, 0.0f);
-                statusRectTransform.anchoredPosition = new Vector2(60, -180); // Position below the logo
-                statusRectTransform.sizeDelta = new Vector2(250, 20);
+                statusRectTransform.anchoredPosition = new Vector2(-5, -180);
+                statusRectTransform.sizeDelta = new Vector2(140, 22);
 
                 // Change the button's text
                 __m_onlineStatusText = statusTextObject.AddComponent<TextMeshProUGUI>();
                 __m_onlineStatusText.fontSize = 16;
                 __m_onlineStatusText.color = Color.white;
                 __m_onlineStatusText.alignment = TextAlignmentOptions.Center;
+                __m_onlineStatusText.raycastTarget = false;
 
                 __m_onlineStatusText.text = "Status: <Unknown>";
 
@@ -4641,7 +4643,7 @@ namespace TrophyHuntMod
                 usernameRectTransform.anchorMin = new Vector2(1.0f, 0.0f);
                 usernameRectTransform.anchorMax = new Vector2(1.0f, 0.0f);
                 usernameRectTransform.pivot = new Vector2(1.0f, 0.0f);
-                usernameRectTransform.anchoredPosition = new Vector2(-140, -200); // Position below the logo
+                usernameRectTransform.anchoredPosition = new Vector2(-40, -205);
                 usernameRectTransform.sizeDelta = new Vector2(250, 20);
 
                 // Change the button's text
@@ -4649,25 +4651,41 @@ namespace TrophyHuntMod
                 __m_onlineUsernameText.fontSize = 16;
                 __m_onlineUsernameText.color = Color.white;
                 __m_onlineUsernameText.alignment = TextAlignmentOptions.Center;
+                __m_onlineUsernameText.raycastTarget = false;
 
-                __m_onlineUsernameText.text = "username: <Online>";
-
+                __m_onlineUsernameText.text = "Discord User: <Unknown>";
 
                 UpdateOnlineStatus();
             }
 
             public static void UpdateOnlineStatus()
             {
+                __m_loggedInWithDiscord = false;
+
+                DiscordUserResponse response = __m_discordAuthentication.GetUserResponse();
+                if (response != null)
+                {
+                    __m_discordUser = response.username;
+                    __m_discordId = response.id;
+                    __m_discordGlobalUser = response.global_name;
+                    __m_loggedInWithDiscord = true;
+                }
+
+                Debug.Log($"UpdateOnlineStatus: {__m_loggedInWithDiscord} updating");
+
+
                 string onlineText = "n/a";
                 if (__m_loggedInWithDiscord)
                 {
-                    __m_onlineUsernameText.text = $"Username: {__m_discordUser}";
+                    __m_onlineUsernameText.text = $"Discord User: <color=yellow>{__m_discordUser}</color>";
                     onlineText = "<color=green>Online</color>";
+                    __m_discordLoginButtonText.text = "Discord Logout";
                 }
                 else
                 {
                     onlineText = "<color=red>Offline</color>";
                     __m_onlineUsernameText.text = "";
+                    __m_discordLoginButtonText.text = "Discord Login";
                 }
 
                 __m_onlineStatusText.text = $"Status: {onlineText}";
@@ -4679,28 +4697,21 @@ namespace TrophyHuntMod
 
             public static void LoginButtonClick()
             {
+                Debug.Log("LoginButtonClick");
+
                 if (!__m_loggedInWithDiscord)
                 {
                     string clientId = "1328474573334642728";
-                    string clientSecret = "_xNynKcfZMu7sjkzvMWe9mfmN4xFDYsV";
+                    string clientSecret = DiscordClientSecret.CLIENT_SECRET;
                     string redirectUri = "http://localhost:5000/callback";
 
-                    DiscordOAuthFlow auth = new DiscordOAuthFlow();
-
-                    auth.StartOAuthFlow(clientId, clientSecret, redirectUri);
-
-                    DiscordUserResponse response = auth.GetUserResponse();
-
-                    Debug.LogWarning(response.ToString());
-
-                    __m_discordUser = response.username;
-                    __m_discordId = response.id;
-                    __m_discordGlobalUser = response.global_name;
-                    __m_loggedInWithDiscord = true;
+                    __m_discordAuthentication.StartOAuthFlow(clientId, clientSecret, redirectUri, UpdateOnlineStatus);
                 }
                 else
                 {
                     __m_loggedInWithDiscord = false;
+                    Debug.Log("__m_loggedInWithDiscord = false");
+                    __m_discordAuthentication.ClearUserResponse();
                 }
 
                 UpdateOnlineStatus();
