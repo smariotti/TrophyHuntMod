@@ -32,6 +32,7 @@ using static TrophyHuntMod.TrophyHuntMod.Player_OnSpawned_Patch;
 using static TrophyHuntMod.TrophyHuntMod.THMSaveData;
 using System.Xml.Serialization;
 using System.Reflection.Emit;
+using System.Net;
 
 namespace TrophyHuntMod
 {
@@ -47,7 +48,7 @@ namespace TrophyHuntMod
         public const string PluginName = "TrophyHuntMod";
         private const Boolean UPDATE_LEADERBOARD = false;
 #endif
-        public const string PluginVersion = "0.8.8";
+        public const string PluginVersion = "0.8.9";
         private readonly Harmony harmony = new Harmony(PluginGUID);
 
         // Configuration variables
@@ -250,7 +251,16 @@ namespace TrophyHuntMod
         static GameObject __m_gameTimerTextElement = null;
         static GameObject __m_luckOMeterElement = null;
 
+        // Trophy Icons
         static List<GameObject> __m_iconList = null;
+
+        // Online Integration
+        static bool __m_loggedInWithDiscord = false;
+        static string __m_discordUser = "";
+        static string __m_discordId = "";
+        static string __m_discordGlobalUser = "";
+        static TextMeshProUGUI __m_onlineUsernameText = null;
+        static TextMeshProUGUI __m_onlineStatusText = null;
 
         // In game timer
         static long __m_gameTimerElapsedSeconds = 0;
@@ -600,7 +610,6 @@ namespace TrophyHuntMod
                 }
             }
         }
-
         private void Awake()
         {
             __m_trophyHuntMod = this;
@@ -2835,7 +2844,7 @@ namespace TrophyHuntMod
                 string jsonData = JsonUtility.ToJson(data);
 
                 Debug.Log(jsonData);
-
+                
                 // Create a UnityWebRequest for the POST operation
                 var request = new UnityWebRequest(url, "POST");
                 byte[] bodyRaw = System.Text.Encoding.UTF8.GetBytes(jsonData);
@@ -4489,11 +4498,11 @@ namespace TrophyHuntMod
             public static void AddToggleGameModeButton(Transform parentTransform)
             {
                 // Clone the existing button
-                GameObject trophyRushButton = new GameObject("ToggleGameModeButton");
-                trophyRushButton.transform.SetParent(parentTransform);
+                GameObject toggleGameModeButton = new GameObject("ToggleGameModeButton");
+                toggleGameModeButton.transform.SetParent(parentTransform);
 
                 // The UI RectTransform for the button
-                RectTransform rectTransform = trophyRushButton.AddComponent<RectTransform>();
+                RectTransform rectTransform = toggleGameModeButton.AddComponent<RectTransform>();
                 rectTransform.localScale = Vector3.one;
                 rectTransform.anchorMin = new Vector2(1.0f, 0.0f);
                 rectTransform.anchorMax = new Vector2(1.0f, 0.0f);
@@ -4502,7 +4511,7 @@ namespace TrophyHuntMod
                 rectTransform.sizeDelta = new Vector2(200, 25);
 
                 // Add the Button component
-                UnityEngine.UI.Button button = trophyRushButton.AddComponent<UnityEngine.UI.Button>();
+                UnityEngine.UI.Button button = toggleGameModeButton.AddComponent<UnityEngine.UI.Button>();
 
                 ColorBlock cb = button.colors;
                 cb.normalColor = Color.black;
@@ -4516,12 +4525,12 @@ namespace TrophyHuntMod
                 button.navigation = nav;
 
                 // Add an Image component for the button background
-                UnityEngine.UI.Image image = trophyRushButton.AddComponent<UnityEngine.UI.Image>();
+                UnityEngine.UI.Image image = toggleGameModeButton.AddComponent<UnityEngine.UI.Image>();
                 image.color = Color.white; // Set background color
 
                 // Create a sub-object for the text because the GameObject can't have an Image and a Text object
                 GameObject textObject = new GameObject("ToggleGameModeButtonText");
-                textObject.transform.SetParent(trophyRushButton.transform);
+                textObject.transform.SetParent(toggleGameModeButton.transform);
 
                 // Set the Text RectTransform
                 RectTransform textRect = textObject.AddComponent<RectTransform>();
@@ -4536,12 +4545,165 @@ namespace TrophyHuntMod
                 buttonText.fontStyle = FontStyles.Bold;
 
                 // Set up the click listener
-                button.onClick.AddListener(TrophyRushButtonClick);
+                button.onClick.AddListener(ToggleGameModeButtonClick);
             }
 
-            public static void TrophyRushButtonClick()
+            public static void AddLoginWithDiscordButton(Transform parentTransform)
+            {
+                // Clone the existing button
+                GameObject loginButton = new GameObject("LoginButton");
+                loginButton.transform.SetParent(parentTransform);
+
+                // The UI RectTransform for the button
+                RectTransform rectTransform = loginButton.AddComponent<RectTransform>();
+                rectTransform.localScale = Vector3.one;
+                rectTransform.anchorMin = new Vector2(1.0f, 0.0f);
+                rectTransform.anchorMax = new Vector2(1.0f, 0.0f);
+                rectTransform.pivot = new Vector2(1.0f, 0.0f);
+                rectTransform.anchoredPosition = new Vector2(-140, -180); // Position below the logo
+                rectTransform.sizeDelta = new Vector2(140, 20);
+
+                // Add the Button component
+                UnityEngine.UI.Button button = loginButton.AddComponent<UnityEngine.UI.Button>();
+
+                ColorBlock cb = button.colors;
+                cb.normalColor = new Color(88, 101, 242);
+                cb.highlightedColor = Color.yellow;  // When hovering
+                cb.pressedColor = Color.red;      // When pressed
+                cb.selectedColor = Color.white;   // When selected
+                button.colors = cb;
+
+                Navigation nav = new Navigation();
+                nav.mode = Navigation.Mode.None;
+                button.navigation = nav;
+
+                // Add an Image component for the button background
+                UnityEngine.UI.Image image = loginButton.AddComponent<UnityEngine.UI.Image>();
+                image.color = new Color(88f/256f, 101f/256f, 242f/256f); // Set background color
+//                image.color = Color.blue;
+
+                // Create a sub-object for the text because the GameObject can't have an Image and a Text object
+                GameObject textObject = new GameObject("LoginButtonText");
+                textObject.transform.SetParent(loginButton.transform);
+
+                // Set the Text RectTransform
+                RectTransform textRect = textObject.AddComponent<RectTransform>();
+                textRect.anchoredPosition = new Vector2(0, 0);
+
+                // Change the button's text
+                TextMeshProUGUI buttonText = textObject.AddComponent<TextMeshProUGUI>();
+
+                if (__m_loggedInWithDiscord)
+                {
+                    buttonText.text = "Discord Logout";
+                }
+                else
+                {
+                    buttonText.text = "Discord Login";
+                }
+
+                buttonText.fontSize = 16;
+                buttonText.color = Color.white;
+                buttonText.alignment = TextAlignmentOptions.Center;
+//                buttonText.fontStyle = FontStyles.Bold;
+
+                // Set up the click listener
+                button.onClick.AddListener(LoginButtonClick);
+
+                // Online Status Text
+                GameObject statusTextObject = new GameObject("StatusText");
+                statusTextObject.transform.SetParent(parentTransform);
+
+                // The UI RectTransform for the button
+                RectTransform statusRectTransform = statusTextObject.AddComponent<RectTransform>();
+                statusRectTransform.localScale = Vector3.one;
+                statusRectTransform.anchorMin = new Vector2(1.0f, 0.0f);
+                statusRectTransform.anchorMax = new Vector2(1.0f, 0.0f);
+                statusRectTransform.pivot = new Vector2(1.0f, 0.0f);
+                statusRectTransform.anchoredPosition = new Vector2(60, -180); // Position below the logo
+                statusRectTransform.sizeDelta = new Vector2(250, 20);
+
+                // Change the button's text
+                __m_onlineStatusText = statusTextObject.AddComponent<TextMeshProUGUI>();
+                __m_onlineStatusText.fontSize = 16;
+                __m_onlineStatusText.color = Color.white;
+                __m_onlineStatusText.alignment = TextAlignmentOptions.Center;
+
+                __m_onlineStatusText.text = "Status: <Unknown>";
+
+                // Username Text
+                GameObject usernameTextObject = new GameObject("usernameText");
+                usernameTextObject.transform.SetParent(parentTransform);
+
+                // The UI RectTransform for the button
+                RectTransform usernameRectTransform = usernameTextObject.AddComponent<RectTransform>();
+                usernameRectTransform.localScale = Vector3.one;
+                usernameRectTransform.anchorMin = new Vector2(1.0f, 0.0f);
+                usernameRectTransform.anchorMax = new Vector2(1.0f, 0.0f);
+                usernameRectTransform.pivot = new Vector2(1.0f, 0.0f);
+                usernameRectTransform.anchoredPosition = new Vector2(-140, -200); // Position below the logo
+                usernameRectTransform.sizeDelta = new Vector2(250, 20);
+
+                // Change the button's text
+                __m_onlineUsernameText = usernameTextObject.AddComponent<TextMeshProUGUI>();
+                __m_onlineUsernameText.fontSize = 16;
+                __m_onlineUsernameText.color = Color.white;
+                __m_onlineUsernameText.alignment = TextAlignmentOptions.Center;
+
+                __m_onlineUsernameText.text = "username: <Online>";
+
+
+                UpdateOnlineStatus();
+            }
+
+            public static void UpdateOnlineStatus()
+            {
+                string onlineText = "n/a";
+                if (__m_loggedInWithDiscord)
+                {
+                    __m_onlineUsernameText.text = $"Username: {__m_discordUser}";
+                    onlineText = "<color=green>Online</color>";
+                }
+                else
+                {
+                    onlineText = "<color=red>Offline</color>";
+                    __m_onlineUsernameText.text = "";
+                }
+
+                __m_onlineStatusText.text = $"Status: {onlineText}";
+            }
+            public static void ToggleGameModeButtonClick()
             {
                 ToggleGameMode();
+            }
+
+            public static void LoginButtonClick()
+            {
+                if (!__m_loggedInWithDiscord)
+                {
+                    string clientId = "1328474573334642728";
+                    string clientSecret = "_xNynKcfZMu7sjkzvMWe9mfmN4xFDYsV";
+                    string redirectUri = "http://localhost:5000/callback";
+
+                    DiscordOAuthFlow auth = new DiscordOAuthFlow();
+
+                    auth.StartOAuthFlow(clientId, clientSecret, redirectUri);
+
+                    DiscordUserResponse response = auth.GetUserResponse();
+
+                    Debug.LogWarning(response.ToString());
+
+                    __m_discordUser = response.username;
+                    __m_discordId = response.id;
+                    __m_discordGlobalUser = response.global_name;
+                    __m_loggedInWithDiscord = true;
+                }
+                else
+                {
+                    __m_loggedInWithDiscord = false;
+                }
+
+                UpdateOnlineStatus();
             }
 
             [HarmonyPatch(typeof(FejdStartup), nameof(FejdStartup.Start))]
@@ -4584,6 +4746,9 @@ namespace TrophyHuntMod
                             __m_trophyHuntMainMenuText.fontStyle = FontStyles.Bold;
 
                             AddToggleGameModeButton(textObject.transform);
+
+                            AddLoginWithDiscordButton(textObject.transform);
+
 
                             // Don't bother adding this button to the main menu, but keep the code around for new buttons
                             //
