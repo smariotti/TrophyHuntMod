@@ -33,6 +33,8 @@ using static TrophyHuntMod.TrophyHuntMod.THMSaveData;
 using System.Xml.Serialization;
 using System.Reflection.Emit;
 using System.Net;
+using BepInEx.Configuration;
+using static Incinerator;
 
 namespace TrophyHuntMod
 {
@@ -257,9 +259,9 @@ namespace TrophyHuntMod
         // Online Integration
         static DiscordOAuthFlow __m_discordAuthentication = new DiscordOAuthFlow();
         static bool __m_loggedInWithDiscord = false;
-        static string __m_discordUser = "";
-        static string __m_discordId = "";
-        static string __m_discordGlobalUser = "";
+//        static string __m_discordUser = "";
+//        static string __m_discordId = "";
+//        static string __m_discordGlobalUser = "";
         static TextMeshProUGUI __m_discordLoginButtonText = null;
         static TextMeshProUGUI __m_onlineUsernameText = null;
         static TextMeshProUGUI __m_onlineStatusText = null;
@@ -380,6 +382,13 @@ namespace TrophyHuntMod
         // SAVE DATA SECTION
         //
 
+        // BepInEx Mod Config File Data
+        static ConfigEntry<string> __m_configDiscordId;
+        static ConfigEntry<string> __m_configDiscordUser;
+        static ConfigEntry<string> __m_configDiscordGlobalUser;
+
+        // PlayerProfile save data
+        //
         [HarmonyPatch(typeof(Game), nameof(Game.SavePlayerProfile))]
         public class Game_SavePlayerProfile_Patch
         {
@@ -624,6 +633,20 @@ namespace TrophyHuntMod
             // Create the drop data for collecting info about trophy drops vs. kills
             //
             InitializeTrophyDropInfo();
+
+            __m_configDiscordId = Config.Bind("General", "DiscordUserId", "", "When signed in with Discord, the UserID of the Discord user");
+            __m_configDiscordUser = Config.Bind("General", "DiscordUserName", "", "When signed in with Discord, the User Name of the Discord user");
+            __m_configDiscordGlobalUser = Config.Bind("General", "DiscordGlobalUserName", "", "When signed in with Discord, the Global User Name of the Discord user");
+
+            Debug.LogError($"Config __m_configDiscordId:{__m_configDiscordId.Value}");
+            Debug.LogError($"Config __m_configDiscordUser:{__m_configDiscordUser.Value}");
+            Debug.LogError($"Config __m_configDiscordGlobalUser:{__m_configDiscordGlobalUser.Value}");
+
+            __m_loggedInWithDiscord = false;
+            if (__m_configDiscordUser.Value != "")
+            {
+                __m_loggedInWithDiscord = true;
+            }
         }
 
         private string[] __m_modWhiteList = new string[]
@@ -2799,7 +2822,12 @@ namespace TrophyHuntMod
 
             private static void SendScoreToLeaderboard(int score)
             {
-                string discordUser = __m_discordUser;
+                if (!__m_loggedInWithDiscord)
+                {
+                    return;
+                }
+
+                string discordUser = __m_configDiscordUser.Value;
                 string seed = WorldGenerator.instance.m_world.m_seedName;
                 string sessionId = seed.ToString();
                 string playerPos = Player.m_localPlayer.transform.position.ToString();
@@ -4660,15 +4688,15 @@ namespace TrophyHuntMod
 
             public static void UpdateOnlineStatus()
             {
-                __m_loggedInWithDiscord = false;
-
                 DiscordUserResponse response = __m_discordAuthentication.GetUserResponse();
                 if (response != null)
                 {
-                    __m_discordUser = response.username;
-                    __m_discordId = response.id;
-                    __m_discordGlobalUser = response.global_name;
                     __m_loggedInWithDiscord = true;
+
+                    __m_configDiscordId.SetSerializedValue(response.id);
+                    __m_configDiscordUser.SetSerializedValue(response.username);
+                    __m_configDiscordGlobalUser.SetSerializedValue(response.global_name);
+                    __m_trophyHuntMod.Config.Save();
                 }
 
                 Debug.Log($"UpdateOnlineStatus: {__m_loggedInWithDiscord} updating");
@@ -4677,7 +4705,7 @@ namespace TrophyHuntMod
                 string onlineText = "n/a";
                 if (__m_loggedInWithDiscord)
                 {
-                    __m_onlineUsernameText.text = $"Discord User: <color=yellow>{__m_discordUser}</color>";
+                    __m_onlineUsernameText.text = $"Discord User: <color=yellow>{__m_configDiscordUser.Value}</color>";
                     onlineText = "<color=green>Online</color>";
                     __m_discordLoginButtonText.text = "Discord Logout";
                 }
@@ -4712,6 +4740,11 @@ namespace TrophyHuntMod
                     __m_loggedInWithDiscord = false;
                     Debug.Log("__m_loggedInWithDiscord = false");
                     __m_discordAuthentication.ClearUserResponse();
+                    __m_configDiscordId.SetSerializedValue("");
+                    __m_configDiscordUser.SetSerializedValue("");
+                    __m_configDiscordGlobalUser.SetSerializedValue("");
+                    
+                    __m_trophyHuntMod.Config.Save();
                 }
 
                 UpdateOnlineStatus();
