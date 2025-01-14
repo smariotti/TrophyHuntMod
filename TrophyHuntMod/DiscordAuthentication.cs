@@ -22,6 +22,8 @@ public class DiscordOAuthFlow
     string m_code = string.Empty;
     DiscordUserResponse m_userInfo = null;
 
+    bool VERBOSE = false;
+
     public DiscordUserResponse GetUserResponse() { return m_userInfo; }
     public void ClearUserResponse() { m_userInfo = null; }
 
@@ -36,14 +38,14 @@ public class DiscordOAuthFlow
         m_redirectUri = redirectUri;
         m_statusCallback= callback;
 
-        Debug.WriteLine("Starting OAuth flow...");
+        if (VERBOSE) Debug.WriteLine("Starting OAuth flow...");
         StartServer(redirectUri);
         OpenDiscordAuthorization(clientId, redirectUri);
     }
 
     private void OpenDiscordAuthorization(string clientId, string redirectUri)
     {
-        Debug.WriteLine("Opening Discord authorization URL...");
+        if (VERBOSE) Debug.WriteLine("Opening Discord authorization URL...");
         string scope = "identify";
         string authUrl = $"https://discord.com/oauth2/authorize?client_id={clientId}&redirect_uri={Uri.EscapeDataString(redirectUri)}&response_type=code&scope={scope}";
 
@@ -57,7 +59,7 @@ public class DiscordOAuthFlow
 
     private void StartServer(string redirectUri)
     {
-        Debug.WriteLine("Starting local HTTP server to listen for authorization code...");
+        if (VERBOSE) Debug.WriteLine("Starting local HTTP server to listen for authorization code...");
         httpListener = new HttpListener();
         httpListener.Prefixes.Add("http://localhost:5000/");
         httpListener.Start();
@@ -67,7 +69,7 @@ public class DiscordOAuthFlow
 
     private async Task ListenForCode()
     {
-        Debug.WriteLine("Listening for authorization code...");
+        if (VERBOSE) Debug.WriteLine("Listening for authorization code...");
         while (httpListener.IsListening)
         {
             var context = await httpListener.GetContextAsync();
@@ -81,13 +83,13 @@ public class DiscordOAuthFlow
             context.Response.ContentLength64 = buffer.Length;
             context.Response.OutputStream.Write(buffer, 0, buffer.Length);
             context.Response.OutputStream.Close();
- 
-            Debug.WriteLine($"Authorization Code Received: {m_code}");
+
+            if (VERBOSE) Debug.WriteLine($"Authorization Code Received: {m_code}");
 
             // Stop the server
             StopServer();
 
-            Debug.WriteLine($"Exchanging code for token.");
+            if (VERBOSE) Debug.WriteLine($"Exchanging code for token.");
 
             try
             {
@@ -106,14 +108,14 @@ public class DiscordOAuthFlow
 
     private void StopServer()
     {
-        Debug.WriteLine("Stopping local HTTP server...");
+        if (VERBOSE) Debug.WriteLine("Stopping local HTTP server...");
         httpListener.Stop();
         httpListener.Close();
     }
 
     private async Task ExchangeCodeForToken(string code)
     {
-        Debug.WriteLine("Exchanging authorization code for access token...");
+        if (VERBOSE) Debug.WriteLine("Exchanging authorization code for access token...");
         using (HttpClient httpClient = new HttpClient())
         {
             var formData = new FormUrlEncodedContent(new[]
@@ -125,30 +127,30 @@ public class DiscordOAuthFlow
                 new KeyValuePair<string, string>("redirect_uri", m_redirectUri)
             });
 
-            Debug.WriteLine("PostAsync()");
+            if (VERBOSE) Debug.WriteLine("PostAsync()");
 
             var response = await httpClient.PostAsync(TokenEndpoint, formData);
             if (response.IsSuccessStatusCode)
             {
                 string responseBody = await response.Content.ReadAsStringAsync();
-                Debug.WriteLine("Access token successfully received.");
-                Debug.WriteLine($"Token Response: {responseBody}");
+                if (VERBOSE) Debug.WriteLine("Access token successfully received.");
+                if (VERBOSE) Debug.WriteLine($"Token Response: {responseBody}");
 
                 var tokenResponse = JsonConvert.DeserializeObject<DiscordTokenResponse>(responseBody);
                 await FetchDiscordUser(tokenResponse.access_token);
             }
             else
             {
-                Debug.WriteLine($"Error exchanging code for token: {response.StatusCode}");
+                if (VERBOSE) Debug.WriteLine($"Error exchanging code for token: {response.StatusCode}");
                 string errorResponse = await response.Content.ReadAsStringAsync();
-                Debug.WriteLine($"Response: {errorResponse}");
+                if (VERBOSE) Debug.WriteLine($"Response: {errorResponse}");
             }
         }
     }
 
     private async Task FetchDiscordUser(string accessToken)
     {
-        Debug.WriteLine("Fetching Discord user information...");
+        if (VERBOSE) Debug.WriteLine("Fetching Discord user information...");
         using (HttpClient httpClient = new HttpClient())
         {
             httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {accessToken}");
@@ -157,18 +159,18 @@ public class DiscordOAuthFlow
             if (response.IsSuccessStatusCode)
             {
                 string responseBody = await response.Content.ReadAsStringAsync();
-                Debug.WriteLine("User information successfully received.");
-                Debug.WriteLine($"User Info Response: {responseBody}");
+                if (VERBOSE) Debug.WriteLine("User information successfully received.");
+                if (VERBOSE) Debug.WriteLine($"User Info Response: {responseBody}");
 
                 m_userInfo = JsonConvert.DeserializeObject<DiscordUserResponse>(responseBody);
-                Debug.WriteLine($"User: {m_userInfo.username}#{m_userInfo.discriminator}");
-                Debug.WriteLine($"{m_userInfo.ToString()}");
+                if (VERBOSE) Debug.WriteLine($"User: {m_userInfo.username}#{m_userInfo.discriminator}");
+                if (VERBOSE) Debug.WriteLine($"{m_userInfo.ToString()}");
             }
             else
             {
-                Debug.WriteLine($"Error fetching user info: {response.StatusCode}");
+                if (VERBOSE) Debug.WriteLine($"Error fetching user info: {response.StatusCode}");
                 string errorResponse = await response.Content.ReadAsStringAsync();
-                Debug.WriteLine($"Response: {errorResponse}");
+                if (VERBOSE) Debug.WriteLine($"Response: {errorResponse}");
             }
         }
 

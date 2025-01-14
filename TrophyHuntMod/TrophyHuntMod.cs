@@ -386,6 +386,8 @@ namespace TrophyHuntMod
         static ConfigEntry<string> __m_configDiscordId;
         static ConfigEntry<string> __m_configDiscordUser;
         static ConfigEntry<string> __m_configDiscordGlobalUser;
+        static ConfigEntry<string> __m_configDiscordAvatar;
+        static ConfigEntry<string> __m_configDiscordDiscriminator;
 
         // PlayerProfile save data
         //
@@ -637,6 +639,8 @@ namespace TrophyHuntMod
             __m_configDiscordId = Config.Bind("General", "DiscordUserId", "", "When signed in with Discord, the UserID of the Discord user");
             __m_configDiscordUser = Config.Bind("General", "DiscordUserName", "", "When signed in with Discord, the User Name of the Discord user");
             __m_configDiscordGlobalUser = Config.Bind("General", "DiscordGlobalUserName", "", "When signed in with Discord, the Global User Name of the Discord user");
+            __m_configDiscordAvatar = Config.Bind("General", "DiscordAvatar", "", "When signed in with Discord, the Avatar id of the Discord user");
+            __m_configDiscordDiscriminator = Config.Bind("General", "DiscordDiscriminator", "", "When signed in with Discord, the User Discriminator of the Discord user");
 
             Debug.LogError($"Config __m_configDiscordId:{__m_configDiscordId.Value}");
             Debug.LogError($"Config __m_configDiscordUser:{__m_configDiscordUser.Value}");
@@ -4696,6 +4700,9 @@ namespace TrophyHuntMod
                     __m_configDiscordId.SetSerializedValue(response.id);
                     __m_configDiscordUser.SetSerializedValue(response.username);
                     __m_configDiscordGlobalUser.SetSerializedValue(response.global_name);
+                    __m_configDiscordAvatar.SetSerializedValue(response.avatar);
+                    __m_configDiscordDiscriminator.SetSerializedValue(response.discriminator);
+
                     __m_trophyHuntMod.Config.Save();
                 }
 
@@ -4725,8 +4732,6 @@ namespace TrophyHuntMod
 
             public static void LoginButtonClick()
             {
-                Debug.Log("LoginButtonClick");
-
                 if (!__m_loggedInWithDiscord)
                 {
                     string clientId = "1328474573334642728";
@@ -4743,7 +4748,9 @@ namespace TrophyHuntMod
                     __m_configDiscordId.SetSerializedValue("");
                     __m_configDiscordUser.SetSerializedValue("");
                     __m_configDiscordGlobalUser.SetSerializedValue("");
-                    
+                    __m_configDiscordAvatar.SetSerializedValue("");
+                    __m_configDiscordDiscriminator.SetSerializedValue("");
+
                     __m_trophyHuntMod.Config.Save();
                 }
 
