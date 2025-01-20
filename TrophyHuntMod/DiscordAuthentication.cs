@@ -6,9 +6,11 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Diagnostics;
 using Newtonsoft.Json;
+//using System.IO;
 
 using TrophyHuntMod;
 using System.Runtime.CompilerServices;
+using UnityEngine;
 
 public class DiscordOAuthFlow
 {
@@ -22,7 +24,7 @@ public class DiscordOAuthFlow
     string m_code = string.Empty;
     DiscordUserResponse m_userInfo = null;
 
-    bool VERBOSE = false;
+    bool VERBOSE = true;
 
     public DiscordUserResponse GetUserResponse() { return m_userInfo; }
     public void ClearUserResponse() { m_userInfo = null; }
@@ -38,14 +40,14 @@ public class DiscordOAuthFlow
         m_redirectUri = redirectUri;
         m_statusCallback= callback;
 
-        if (VERBOSE) Debug.WriteLine("Starting OAuth flow...");
+        if (VERBOSE) System.Diagnostics.Debug.WriteLine("Starting OAuth flow...");
         StartServer(redirectUri);
         OpenDiscordAuthorization(clientId, redirectUri);
     }
 
     private void OpenDiscordAuthorization(string clientId, string redirectUri)
     {
-        if (VERBOSE) Debug.WriteLine("Opening Discord authorization URL...");
+        if (VERBOSE) System.Diagnostics.Debug.WriteLine("Opening Discord authorization URL...");
         string scope = "identify";
         string authUrl = $"https://discord.com/oauth2/authorize?client_id={clientId}&redirect_uri={Uri.EscapeDataString(redirectUri)}&response_type=code&scope={scope}";
 
@@ -59,7 +61,7 @@ public class DiscordOAuthFlow
 
     private void StartServer(string redirectUri)
     {
-        if (VERBOSE) Debug.WriteLine("Starting local HTTP server to listen for authorization code...");
+        if (VERBOSE) System.Diagnostics.Debug.WriteLine("Starting local HTTP server to listen for authorization code...");
         httpListener = new HttpListener();
         httpListener.Prefixes.Add("http://localhost:5000/");
         httpListener.Start();
@@ -69,7 +71,7 @@ public class DiscordOAuthFlow
 
     private async Task ListenForCode()
     {
-        if (VERBOSE) Debug.WriteLine("Listening for authorization code...");
+        if (VERBOSE) System.Diagnostics.Debug.WriteLine("Listening for authorization code...");
         while (httpListener.IsListening)
         {
             var context = await httpListener.GetContextAsync();
@@ -84,12 +86,12 @@ public class DiscordOAuthFlow
             context.Response.OutputStream.Write(buffer, 0, buffer.Length);
             context.Response.OutputStream.Close();
 
-            if (VERBOSE) Debug.WriteLine($"Authorization Code Received: {m_code}");
+            if (VERBOSE) System.Diagnostics.Debug.WriteLine($"Authorization Code Received: {m_code}");
 
             // Stop the server
             StopServer();
 
-            if (VERBOSE) Debug.WriteLine($"Exchanging code for token.");
+            if (VERBOSE) System.Diagnostics.Debug.WriteLine($"Exchanging code for token.");
 
             try
             {
@@ -101,21 +103,21 @@ public class DiscordOAuthFlow
 
             catch (Exception ex)
             {
-                Debug.WriteLine(ex.ToString());
+                System.Diagnostics.Debug.WriteLine(ex.ToString());
             }
         }
     }
 
     private void StopServer()
     {
-        if (VERBOSE) Debug.WriteLine("Stopping local HTTP server...");
+        if (VERBOSE) System.Diagnostics.Debug.WriteLine("Stopping local HTTP server...");
         httpListener.Stop();
         httpListener.Close();
     }
 
     private async Task ExchangeCodeForToken(string code)
     {
-        if (VERBOSE) Debug.WriteLine("Exchanging authorization code for access token...");
+        if (VERBOSE) System.Diagnostics.Debug.WriteLine("Exchanging authorization code for access token...");
         using (HttpClient httpClient = new HttpClient())
         {
             var formData = new FormUrlEncodedContent(new[]
@@ -127,30 +129,30 @@ public class DiscordOAuthFlow
                 new KeyValuePair<string, string>("redirect_uri", m_redirectUri)
             });
 
-            if (VERBOSE) Debug.WriteLine("PostAsync()");
+            if (VERBOSE) System.Diagnostics.Debug.WriteLine("PostAsync()");
 
             var response = await httpClient.PostAsync(TokenEndpoint, formData);
             if (response.IsSuccessStatusCode)
             {
                 string responseBody = await response.Content.ReadAsStringAsync();
-                if (VERBOSE) Debug.WriteLine("Access token successfully received.");
-                if (VERBOSE) Debug.WriteLine($"Token Response: {responseBody}");
+                if (VERBOSE) System.Diagnostics.Debug.WriteLine("Access token successfully received.");
+                if (VERBOSE) System.Diagnostics.Debug.WriteLine($"Token Response: {responseBody}");
 
                 var tokenResponse = JsonConvert.DeserializeObject<DiscordTokenResponse>(responseBody);
                 await FetchDiscordUser(tokenResponse.access_token);
             }
             else
             {
-                if (VERBOSE) Debug.WriteLine($"Error exchanging code for token: {response.StatusCode}");
+                if (VERBOSE) System.Diagnostics.Debug.WriteLine($"Error exchanging code for token: {response.StatusCode}");
                 string errorResponse = await response.Content.ReadAsStringAsync();
-                if (VERBOSE) Debug.WriteLine($"Response: {errorResponse}");
+                if (VERBOSE) System.Diagnostics.Debug.WriteLine($"Response: {errorResponse}");
             }
         }
     }
 
     private async Task FetchDiscordUser(string accessToken)
     {
-        if (VERBOSE) Debug.WriteLine("Fetching Discord user information...");
+        if (VERBOSE) System.Diagnostics.Debug.WriteLine("Fetching Discord user information...");
         using (HttpClient httpClient = new HttpClient())
         {
             httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {accessToken}");
@@ -159,19 +161,60 @@ public class DiscordOAuthFlow
             if (response.IsSuccessStatusCode)
             {
                 string responseBody = await response.Content.ReadAsStringAsync();
-                if (VERBOSE) Debug.WriteLine("User information successfully received.");
-                if (VERBOSE) Debug.WriteLine($"User Info Response: {responseBody}");
+                if (VERBOSE) System.Diagnostics.Debug.WriteLine("User information successfully received.");
+                if (VERBOSE) System.Diagnostics.Debug.WriteLine($"User Info Response: {responseBody}");
 
                 m_userInfo = JsonConvert.DeserializeObject<DiscordUserResponse>(responseBody);
-                if (VERBOSE) Debug.WriteLine($"User: {m_userInfo.username}#{m_userInfo.discriminator}");
-                if (VERBOSE) Debug.WriteLine($"{m_userInfo.ToString()}");
+                if (VERBOSE) System.Diagnostics.Debug.WriteLine($"User: {m_userInfo.username}#{m_userInfo.discriminator}");
+                if (VERBOSE) System.Diagnostics.Debug.WriteLine($"{m_userInfo.ToString()}");
+
+                await FetchDiscordAvatar();
             }
             else
             {
-                if (VERBOSE) Debug.WriteLine($"Error fetching user info: {response.StatusCode}");
+                if (VERBOSE) System.Diagnostics.Debug.WriteLine($"Error fetching user info: {response.StatusCode}");
                 string errorResponse = await response.Content.ReadAsStringAsync();
-                if (VERBOSE) Debug.WriteLine($"Response: {errorResponse}");
+                if (VERBOSE) System.Diagnostics.Debug.WriteLine($"Response: {errorResponse}");
             }
+        }
+    }
+
+    private async Task FetchDiscordAvatar()
+    {
+        using (HttpClient httpClient = new HttpClient())
+        {
+            string imageUrl = $"https://cdn.discordapp.com/avatars/{m_userInfo.id}/{m_userInfo.avatar}.png";
+
+            // Download the image as a byte array
+            byte[] imageData = await httpClient.GetByteArrayAsync(imageUrl).ConfigureAwait(false);
+
+            //File.WriteAllBytes("avatar.png", imageData);
+
+            MainThreadDispatcher.Instance.Enqueue(() =>
+            {
+ 
+                // Create a Texture2D from the downloaded data
+                Texture2D texture = new Texture2D(2, 2);
+                if (texture.LoadImage(imageData))
+                {
+                    // Create a sprite from the texture
+                    Sprite sprite = Sprite.Create(
+                        texture,
+                        new Rect(0, 0, texture.width, texture.height),
+                        new Vector2(0.5f, 0.5f)
+                    );
+
+                    // Assign the sprite to the target image
+                    m_userInfo.avatarSprite = sprite;
+
+                    if (VERBOSE) System.Diagnostics.Debug.WriteLine("Sprite Loaded");
+
+                }
+                else
+                {
+                    if (VERBOSE) System.Diagnostics.Debug.WriteLine("Failed to load image into Texture2D");
+                }
+            });
         }
 
         m_statusCallback();
@@ -195,4 +238,46 @@ public class DiscordUserResponse
     public string discriminator { get; set; }
     public string avatar { get; set; }
     public string global_name { get; set; }
+
+    public Sprite avatarSprite = null;
+}
+
+public class MainThreadDispatcher : MonoBehaviour
+{
+    private static MainThreadDispatcher _instance;
+    private readonly Queue<Action> _actions = new Queue<Action>();
+
+    public static MainThreadDispatcher Instance
+    {
+        get
+        {
+            if (_instance == null)
+            {
+                var obj = new GameObject("MainThreadDispatcher");
+                _instance = obj.AddComponent<MainThreadDispatcher>();
+                DontDestroyOnLoad(obj);
+            }
+            return _instance;
+        }
+    }
+
+    private void Update()
+    {
+        lock (_actions)
+        {
+            while (_actions.Count > 0)
+            {
+                _actions.Dequeue()?.Invoke();
+            }
+        }
+    }
+
+    public void Enqueue(Action action)
+    {
+        if (action == null) return;
+        lock (_actions)
+        {
+            _actions.Enqueue(action);
+        }
+    }
 }

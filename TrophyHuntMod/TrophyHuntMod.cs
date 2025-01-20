@@ -48,7 +48,7 @@ namespace TrophyHuntMod
 #else
         public const string PluginGUID = "com.oathorse.TrophyHuntMod";
         public const string PluginName = "TrophyHuntMod";
-        private const Boolean UPDATE_LEADERBOARD = false;
+        private const Boolean UPDATE_LEADERBOARD = true;
 #endif
         public const string PluginVersion = "0.9.0";
         private readonly Harmony harmony = new Harmony(PluginGUID);
@@ -265,6 +265,7 @@ namespace TrophyHuntMod
         static TextMeshProUGUI __m_discordLoginButtonText = null;
         static TextMeshProUGUI __m_onlineUsernameText = null;
         static TextMeshProUGUI __m_onlineStatusText = null;
+        static UnityEngine.UI.Image __m_discordAvatarImage = null;
 
         // In game timer
         static long __m_gameTimerElapsedSeconds = 0;
@@ -2814,6 +2815,7 @@ namespace TrophyHuntMod
             public class LeaderboardData
             {
                 public string player_name;
+//                public string player_id;
                 public int current_score;
                 public string session_id;
                 public string player_location;
@@ -2832,6 +2834,8 @@ namespace TrophyHuntMod
                 }
 
                 string discordUser = __m_configDiscordUser.Value;
+                string discordId = __m_configDiscordId.Value;
+
                 string seed = WorldGenerator.instance.m_world.m_seedName;
                 string sessionId = seed.ToString();
                 string playerPos = Player.m_localPlayer.transform.position.ToString();
@@ -2840,7 +2844,8 @@ namespace TrophyHuntMod
                 // Example data to send to the leaderboard
                 var leaderboardData = new LeaderboardData
                 {
-                    player_name = discordUser,
+                    player_name = discordId,
+//                    player_id = discordId,
                     current_score = score,
                     session_id = sessionId,
                     player_location = playerPos,
@@ -2848,7 +2853,7 @@ namespace TrophyHuntMod
                     deaths = __m_deaths,
                     logouts = __m_logoutCount,
                     gamemode = GetGameMode().ToString(),
-//                    extra = new LeaderboardDataEx()
+                    //                    extra = new LeaderboardDataEx()
                 };
                 //LeaderboardDataEx extra = new LeaderboardDataEx();
 
@@ -2901,8 +2906,8 @@ namespace TrophyHuntMod
                     Debug.LogError("Leaderboard POST failed: " + request.error);
                 }
 
-                Debug.Log("Leaderboard Response: " + request.error);
-                Debug.Log(request.downloadHandler.text);
+//                Debug.Log("Leaderboard Response: " + request.error);
+//                Debug.Log(request.downloadHandler.text);
             }
             #endregion Leaderboard
 
@@ -4687,6 +4692,18 @@ namespace TrophyHuntMod
 
                 __m_onlineUsernameText.text = "Discord User: <Unknown>";
 
+                GameObject avatarObject = new GameObject("AvatarObject");
+                avatarObject.transform.SetParent(parentTransform);
+
+                RectTransform avatarTransform = avatarObject.AddComponent<RectTransform>();
+                avatarTransform.sizeDelta = new Vector2(40, 40);
+                avatarTransform.anchoredPosition = new Vector2(0, -340);
+                avatarTransform.localScale = Vector3.one;
+               
+                __m_discordAvatarImage = avatarObject.AddComponent<UnityEngine.UI.Image>();
+                __m_discordAvatarImage.raycastTarget = false;
+                __m_discordAvatarImage.color = Color.white;
+
                 UpdateOnlineStatus();
             }
 
@@ -4715,8 +4732,11 @@ namespace TrophyHuntMod
                     __m_onlineUsernameText.text = $"Discord User: <color=yellow>{__m_configDiscordUser.Value}</color>";
                     onlineText = "<color=green>Online</color>";
                     __m_discordLoginButtonText.text = "Discord Logout";
+
+                    //if (__m_discordAvatarImage != null)
+                    //    __m_discordAvatarImage.sprite = response.avatarSprite;
                 }
-                else
+                else  
                 {
                     onlineText = "<color=red>Offline</color>";
                     __m_onlineUsernameText.text = "";
