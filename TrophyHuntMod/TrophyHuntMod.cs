@@ -35,6 +35,8 @@ using System.Reflection.Emit;
 using System.Net;
 using BepInEx.Configuration;
 using static Incinerator;
+using Newtonsoft.Json;
+using System.Security.Policy;
 
 namespace TrophyHuntMod
 {
@@ -94,7 +96,7 @@ namespace TrophyHuntMod
 
         const int TROPHY_HUNT_DEATH_PENALTY = -20;
         const int TROPHY_HUNT_LOGOUT_PENALTY = -10;
-        
+
         const int TROPHY_RUSH_DEATH_PENALTY = -10;
         const int TROPHY_RUSH_SLASHDIE_PENALTY = -10;
         const int TROPHY_RUSH_LOGOUT_PENALTY = -5;
@@ -104,14 +106,14 @@ namespace TrophyHuntMod
 
         const int CULINARY_SAGA_DEATH_PENALTY = -30;
         const int CULINARY_SAGA_LOGOUT_PENALTY = -10;
-        
+
         static float __m_sagaSailingSpeedMultiplier = 2.5f;
         static float __m_sagaPaddlingSpeedMultiplier = 2.0f;
 
         const float TROPHY_SAGA_TROPHY_DROP_MULTIPLIER = 2f;
         const float TROPHY_SAGA_BASE_SKILL_LEVEL = 20.0f;
         const int TROPHY_SAGA_MINING_MULTIPLIER = 2;
-         
+
         const string TROPHY_SAGA_INTRO_TEXT = "You were once a great warrior, though your memory of deeds past has long grown dim, shrouded by eons slumbering in the lands beyond death…\n\n\n\n" +
             "Ragnarok looms and the tenth world remains only for a few scant hours. You are reborn with one purpose: collect the heads of Odin's enemies before this cycle ends…\n\n\n\n" +
             "Odin will cast these heads into the well of Mimir where his lost eye still resides. With knowledge of the Forsaken he can finally banish them forever…\n\n\n" +
@@ -259,9 +261,6 @@ namespace TrophyHuntMod
         // Online Integration
         static DiscordOAuthFlow __m_discordAuthentication = new DiscordOAuthFlow();
         static bool __m_loggedInWithDiscord = false;
-//        static string __m_discordUser = "";
-//        static string __m_discordId = "";
-//        static string __m_discordGlobalUser = "";
         static TextMeshProUGUI __m_discordLoginButtonText = null;
         static TextMeshProUGUI __m_onlineUsernameText = null;
         static TextMeshProUGUI __m_onlineStatusText = null;
@@ -358,6 +357,12 @@ namespace TrophyHuntMod
         static TrophyGameMode __m_storedGameMode = TrophyGameMode.Max;
         static string __m_storedWorldSeed = "";
 
+        // Currently computed score value
+        static int __m_playerCurrentScore = 0;
+
+        // Log of in-game events we track
+        static public List<PlayerEventLog> __m_playerEventLog = new List<PlayerEventLog>();
+
         public struct DropInfo
         {
             public DropInfo()
@@ -398,7 +403,7 @@ namespace TrophyHuntMod
             static void Prefix(PlayerProfile __instance, bool setLogoutPoint)
             {
 
-//              Debug.LogError($"Game.SavePlayerProfile() __m_logoutCount={__m_logoutCount}");
+                //              Debug.LogError($"Game.SavePlayerProfile() __m_logoutCount={__m_logoutCount}");
 
                 SavePersistentData();
             }
@@ -495,9 +500,9 @@ namespace TrophyHuntMod
             // public KeyValuePair<string, int> m_specialSagaDropCounts;
 
             saveData.m_specialSagaDropCounts = new List<THMSaveDataSpecialSagaDropCount>();
-            foreach(KeyValuePair<string, List<SpecialSagaDrop>> sagaDrops in __m_specialSagaDrops)
+            foreach (KeyValuePair<string, List<SpecialSagaDrop>> sagaDrops in __m_specialSagaDrops)
             {
-                foreach(SpecialSagaDrop sagaDrop in sagaDrops.Value)
+                foreach (SpecialSagaDrop sagaDrop in sagaDrops.Value)
                 {
                     string sagaDropCountKey = sagaDrops.Key + "," + sagaDrop.m_itemName;
                     THMSaveDataSpecialSagaDropCount savedCount = new THMSaveDataSpecialSagaDropCount();
@@ -536,7 +541,7 @@ namespace TrophyHuntMod
 
             Player.m_localPlayer.m_customData[dataKey] = saveDataString;
 
-//            Debug.LogWarning($"SaveData String:{Player.m_localPlayer.m_customData[dataKey]} LogoutCount {__m_logoutCount}");
+            //            Debug.LogWarning($"SaveData String:{Player.m_localPlayer.m_customData[dataKey]} LogoutCount {__m_logoutCount}");
         }
 
         static void LoadPersistentData()
@@ -551,7 +556,7 @@ namespace TrophyHuntMod
             }
 
             string data = Player.m_localPlayer.m_customData[dataKey];
-//            Debug.LogWarning($"LoadData String:{data}");
+            //            Debug.LogWarning($"LoadData String:{data}");
 
             XmlSerializer xmlSerializer = new XmlSerializer(typeof(THMSaveData));
             StringReader stream = new StringReader(data);
@@ -603,7 +608,7 @@ namespace TrophyHuntMod
                 }
             }
 
-            foreach(THMSaveDataSpecialSagaDropCount dropCounts in saveData.m_specialSagaDropCounts)
+            foreach (THMSaveDataSpecialSagaDropCount dropCounts in saveData.m_specialSagaDropCounts)
             {
                 string[] sagaDropCountKey = dropCounts.m_name.Split(',');
                 string enemyName = sagaDropCountKey[0];
@@ -643,15 +648,18 @@ namespace TrophyHuntMod
             __m_configDiscordAvatar = Config.Bind("General", "DiscordAvatar", "", "When signed in with Discord, the Avatar id of the Discord user");
             __m_configDiscordDiscriminator = Config.Bind("General", "DiscordDiscriminator", "", "When signed in with Discord, the User Discriminator of the Discord user");
 
-            Debug.LogError($"Config __m_configDiscordId:{__m_configDiscordId.Value}");
-            Debug.LogError($"Config __m_configDiscordUser:{__m_configDiscordUser.Value}");
-            Debug.LogError($"Config __m_configDiscordGlobalUser:{__m_configDiscordGlobalUser.Value}");
+            Debug.Log($"Config __m_configDiscordId:{__m_configDiscordId.Value}");
+            Debug.Log($"Config __m_configDiscordUser:{__m_configDiscordUser.Value}");
+            Debug.Log($"Config __m_configDiscordGlobalUser:{__m_configDiscordGlobalUser.Value}");
 
             __m_loggedInWithDiscord = false;
             if (__m_configDiscordUser.Value != "")
             {
                 __m_loggedInWithDiscord = true;
             }
+
+            //            PostStandingsRequest();
+//            PostTrackLogEntry("TrophyDeer", 10);
         }
 
         private string[] __m_modWhiteList = new string[]
@@ -674,7 +682,7 @@ namespace TrophyHuntMod
 #if !SAGA_STANDALONE
             foreach (var plugin in loadedPlugins)
             {
- //               Debug.LogError($"{plugin.Key} : {plugin.Value.ToString()} : {plugin.Value.Metadata.Name}, {plugin.Value.Metadata.GUID}, {plugin.Value.Metadata.Version}, {plugin.Value.Metadata.TypeId}");
+                //               Debug.LogError($"{plugin.Key} : {plugin.Value.ToString()} : {plugin.Value.Metadata.Name}, {plugin.Value.Metadata.GUID}, {plugin.Value.Metadata.Version}, {plugin.Value.Metadata.TypeId}");
                 if (!__m_modWhiteList.Contains(plugin.Value.Metadata.GUID))
                 {
                     __m_onlyModRunning = false;
@@ -851,38 +859,38 @@ namespace TrophyHuntMod
             });
             */
 
-        ConsoleCommand ignoreLogoutsCommand = new ConsoleCommand("ignorelogouts", "Don't subtract points for logouts", delegate (ConsoleEventArgs args)
-            {
-                if (!Game.instance)
+            ConsoleCommand ignoreLogoutsCommand = new ConsoleCommand("ignorelogouts", "Don't subtract points for logouts", delegate (ConsoleEventArgs args)
                 {
-                    PrintToConsole("'/ignorelogouts' can only be used in gameplay.");
-                    return;
-                }
-
-                __m_ignoreLogouts = !__m_ignoreLogouts;
-
-                __m_invalidForTournamentPlay = true;
-
-                if (__m_scoreTextElement != null)
-                {
-                    if (__m_ignoreLogouts)
+                    if (!Game.instance)
                     {
-                        TMPro.TextMeshProUGUI tmText = __m_scoreTextElement.GetComponent<TMPro.TextMeshProUGUI>();
-
-                        tmText.color = Color.green;
+                        PrintToConsole("'/ignorelogouts' can only be used in gameplay.");
+                        return;
                     }
-                }
 
-                if (__m_relogsTextElement != null)
-                {
-                    if (__m_ignoreLogouts)
+                    __m_ignoreLogouts = !__m_ignoreLogouts;
+
+                    __m_invalidForTournamentPlay = true;
+
+                    if (__m_scoreTextElement != null)
                     {
-                        TMPro.TextMeshProUGUI tmText = __m_relogsTextElement.GetComponent<TMPro.TextMeshProUGUI>();
+                        if (__m_ignoreLogouts)
+                        {
+                            TMPro.TextMeshProUGUI tmText = __m_scoreTextElement.GetComponent<TMPro.TextMeshProUGUI>();
 
-                        tmText.color = Color.gray;
+                            tmText.color = Color.green;
+                        }
                     }
-                }
-            });
+
+                    if (__m_relogsTextElement != null)
+                    {
+                        if (__m_ignoreLogouts)
+                        {
+                            TMPro.TextMeshProUGUI tmText = __m_relogsTextElement.GetComponent<TMPro.TextMeshProUGUI>();
+
+                            tmText.color = Color.gray;
+                        }
+                    }
+                });
 
 
             ConsoleCommand showAllTrophyStats = new ConsoleCommand("showalltrophystats", "Toggle tracking ALL enemy deaths and trophies with JUST tracking player kills and trophies", delegate (ConsoleEventArgs args)
@@ -1107,13 +1115,13 @@ namespace TrophyHuntMod
                     string timerCommand = args[1].Trim();
                     switch (timerCommand)
                     {
-                        case "start":   Player_OnSpawned_Patch.TimerStart();            break;
-                        case "stop":    Player_OnSpawned_Patch.TimerStop();             break;
-                        case "reset":   Player_OnSpawned_Patch.TimerReset();            break;
-                        case "show":    __m_gameTimerVisible = true;                    break;
-                        case "hide":    __m_gameTimerVisible = false;                   break;
-                        case "set":     Player_OnSpawned_Patch.TimerSet(args[2]);       break;
-                        case "toggle":  Player_OnSpawned_Patch.TimerToggle();           break;
+                        case "start": Player_OnSpawned_Patch.TimerStart(); break;
+                        case "stop": Player_OnSpawned_Patch.TimerStop(); break;
+                        case "reset": Player_OnSpawned_Patch.TimerReset(); break;
+                        case "show": __m_gameTimerVisible = true; break;
+                        case "hide": __m_gameTimerVisible = false; break;
+                        case "set": Player_OnSpawned_Patch.TimerSet(args[2]); break;
+                        case "toggle": Player_OnSpawned_Patch.TimerToggle(); break;
                     }
                 }
                 else
@@ -1510,7 +1518,7 @@ namespace TrophyHuntMod
                 __m_storedGameMode = __m_trophyGameMode;
                 __m_storedWorldSeed = WorldGenerator.instance.m_world.m_seedName;
 
-                if (!IsSagaMode() )
+                if (!IsSagaMode())
                 {
                     __m_gameTimerVisible = false;
                 }
@@ -1538,6 +1546,8 @@ namespace TrophyHuntMod
                 {
                     TrophyFiesta.Initialize();
                 }
+
+                PostTrackLogs();
             }
 
             public static void RaiseAllPlayerSkills(float skillLevel)
@@ -1783,7 +1793,7 @@ namespace TrophyHuntMod
                     CreateScoreTooltip();
                 }
             }
-            
+
             static IEnumerator TimerUpdate()
             {
                 while (__m_gameTimerActive)
@@ -2490,9 +2500,11 @@ namespace TrophyHuntMod
                     // Send the score to the web page
                     if (GetGameMode() != TrophyGameMode.CasualSaga)
                     {
-                        SendScoreToLeaderboard(score);
+                        //                        SendScoreToLeaderboard(score);
                     }
                 }
+
+                __m_playerCurrentScore = score;
             }
 
             static IEnumerator FlashImage(UnityEngine.UI.Image targetImage, RectTransform imageRect)
@@ -2744,6 +2756,8 @@ namespace TrophyHuntMod
                             }
 
                             UpdateModUI(player);
+
+                            AddPlayerEvent(PlayerEventType.Trophy, name, player.transform.position);
                         }
                     }
                 }
@@ -2815,7 +2829,7 @@ namespace TrophyHuntMod
             public class LeaderboardData
             {
                 public string player_name;
-//                public string player_id;
+                //                public string player_id;
                 public int current_score;
                 public string session_id;
                 public string player_location;
@@ -2823,7 +2837,7 @@ namespace TrophyHuntMod
                 public int deaths;
                 public int logouts;
                 public string gamemode;
-//                public LeaderboardDataEx[] extra = new LeaderboardDataEx[] { };
+                //                public LeaderboardDataEx[] extra = new LeaderboardDataEx[] { };
             }
 
             private static void SendScoreToLeaderboard(int score)
@@ -2845,7 +2859,7 @@ namespace TrophyHuntMod
                 var leaderboardData = new LeaderboardData
                 {
                     player_name = discordId,
-//                    player_id = discordId,
+                    //                    player_id = discordId,
                     current_score = score,
                     session_id = sessionId,
                     player_location = playerPos,
@@ -2860,7 +2874,7 @@ namespace TrophyHuntMod
                 //extra.event_name = "trophy_get";
                 //extra.event_data = "TrophyBoar";
 
-//                leaderboardData.extra.AddItem(extra);
+                //                leaderboardData.extra.AddItem(extra);
 
                 // Start the coroutine to post the data
                 __m_trophyHuntMod.StartCoroutine(PostLeaderboardDataCoroutine(LEADERBOARD_URL, leaderboardData));
@@ -2883,7 +2897,7 @@ namespace TrophyHuntMod
                 string jsonData = JsonUtility.ToJson(data);
 
                 Debug.Log(jsonData);
-                
+
                 // Create a UnityWebRequest for the POST operation
                 var request = new UnityWebRequest(url, "POST");
                 byte[] bodyRaw = System.Text.Encoding.UTF8.GetBytes(jsonData);
@@ -2906,9 +2920,10 @@ namespace TrophyHuntMod
                     Debug.LogError("Leaderboard POST failed: " + request.error);
                 }
 
-//                Debug.Log("Leaderboard Response: " + request.error);
-//                Debug.Log(request.downloadHandler.text);
+                //                Debug.Log("Leaderboard Response: " + request.error);
+                //                Debug.Log(request.downloadHandler.text);
             }
+
             #endregion Leaderboard
 
             // Logout Tracking
@@ -2944,6 +2959,11 @@ namespace TrophyHuntMod
             {
                 public static void Postfix(Game __instance, bool save, bool changeToStartScene)
                 {
+                    if (Player.m_localPlayer == null)
+                    {
+                        return;
+                    }
+
                     float onFootDistance = GetTotalOnFootDistance(__instance);
                     //                    Debug.LogError($"Total on-foot distance moved: {onFootDistance}");
 
@@ -2957,6 +2977,9 @@ namespace TrophyHuntMod
                     if (!__m_ignoreLogouts)
                     {
                         __m_logoutCount++;
+
+                        AddPlayerEvent(PlayerEventType.Misc, "PenaltyLogout", Player.m_localPlayer.transform.position);
+
                         //                        Debug.LogError($"Game.Logout() logoutCount = {__m_logoutCount}");
 
                         if (Game.instance != null)
@@ -3061,7 +3084,7 @@ namespace TrophyHuntMod
 
                 string gameModeText = GetGameModeNameText();
 
-                 text = $"<size=20><b><color=#FFB75B>{gameModeText}</color><b></size>\n";
+                text = $"<size=20><b><color=#FFB75B>{gameModeText}</color><b></size>\n";
 
                 if (GetGameMode() == TrophyGameMode.CasualSaga)
                 {
@@ -3572,7 +3595,7 @@ namespace TrophyHuntMod
                     $"<color=white>  Health: </color><color=orange>{cookedFoodData.m_health}</color>\n" +
                     $"<color=white>  Stamina: </color><color=orange>{cookedFoodData.m_stamina}</color>\n" +
                     $"<color=white>  Regen: </color><color=orange>{cookedFoodData.m_regen}</color>/sec\n" +
-                    $"<color=white>  Eitr: <color=orange>{cookedFoodData.m_eitr}</color>\n" + 
+                    $"<color=white>  Eitr: <color=orange>{cookedFoodData.m_eitr}</color>\n" +
                     $"<color=white>  Biome: <color=orange>{cookedFoodData.m_biome.ToString()}</color>\n";
 
                 return text;
@@ -3998,7 +4021,7 @@ namespace TrophyHuntMod
 
                 foreach (KeyValuePair<string, List<SpecialSagaDrop>> specialDrops in __m_specialSagaDrops)
                 {
-                    foreach(SpecialSagaDrop sagaDrop in specialDrops.Value)
+                    foreach (SpecialSagaDrop sagaDrop in specialDrops.Value)
                     {
                         if (sagaDrop.m_itemName == itemName)
                         {
@@ -4390,12 +4413,16 @@ namespace TrophyHuntMod
             }
 
 
+            // This is called when items are picked up
+            //
             // Insta-Smelt when moving items between inventories
             [HarmonyPatch(typeof(Inventory), nameof(Inventory.AddItem), new[] { typeof(ItemDrop.ItemData) })]
             public static class Inventory_AddItem_Patch
             {
                 static void Prefix(Inventory __instance, ref ItemDrop.ItemData item, bool __result)
                 {
+                    Debug.LogWarning("Inventory.AddItem() 1");
+
                     if (__instance != null && Player.m_localPlayer != null
                         && __instance == Player.m_localPlayer.GetInventory())
                     {
@@ -4436,6 +4463,37 @@ namespace TrophyHuntMod
                                 UpdateModUI(Player.m_localPlayer);
                             }
                         }
+
+                        string itemName = item.m_dropPrefab.name;
+
+                        if (item.m_quality > 1)
+                        {
+                            itemName += item.m_quality.ToString();
+                        }
+
+                        AddPlayerEvent(PlayerEventType.Item, itemName, Player.m_localPlayer.transform.position);
+                    }
+                }
+            }
+
+            // This is called when items are upgraded, so need to log upgrades as well as pickups
+            [HarmonyPatch(typeof(Inventory), nameof(Inventory.AddItem), new[] { typeof(string), typeof(int), typeof(int), typeof(int), typeof(long), typeof(string), typeof(Vector2i), typeof(bool) })]
+            public class UpgradeItemPatch
+            {
+                static void Postfix(Inventory __instance, string name, int stack, int quality, int variant, long crafterID, string crafterName, Vector2i position, bool pickedUp)
+                {
+                    Debug.LogWarning("Inventory.AddItem() 2");
+
+                    if (__instance != null)
+                    {
+                        string itemName = name;
+
+                        if (quality > 1)
+                        {
+                            itemName += quality.ToString();
+                        }
+
+                        AddPlayerEvent(PlayerEventType.Item, itemName, Player.m_localPlayer.transform.position);
                     }
                 }
             }
@@ -4534,6 +4592,26 @@ namespace TrophyHuntMod
                 }
             }
 
+            [HarmonyPatch(typeof(Player), "PlacePiece")]
+            public class PlacePiecePatch
+            {
+                static void Postfix(Player __instance, Piece piece)
+                {
+                    if (__instance == null)
+                    {
+                        return;
+                    }
+
+                    if (piece != null)
+                    {
+                        Debug.Log($"Player {__instance.GetPlayerName()} placed a building: {piece.m_name}");
+
+                        AddPlayerEvent(PlayerEventType.Build, piece.m_name, __instance.transform.position);
+                    }
+
+                }
+            }
+
             public static void AddToggleGameModeButton(Transform parentTransform)
             {
                 // Clone the existing button
@@ -4618,8 +4696,8 @@ namespace TrophyHuntMod
 
                 // Add an Image component for the button background
                 UnityEngine.UI.Image image = loginButton.AddComponent<UnityEngine.UI.Image>();
-                image.color = new Color(88f/256f, 101f/256f, 242f/256f); // Set background color
-//                image.color = Color.blue;
+                image.color = new Color(88f / 256f, 101f / 256f, 242f / 256f); // Set background color
+                                                                               //                image.color = Color.blue;
 
                 // Create a sub-object for the text because the GameObject can't have an Image and a Text object
                 GameObject textObject = new GameObject("LoginButtonText");
@@ -4699,7 +4777,7 @@ namespace TrophyHuntMod
                 avatarTransform.sizeDelta = new Vector2(40, 40);
                 avatarTransform.anchoredPosition = new Vector2(0, -340);
                 avatarTransform.localScale = Vector3.one;
-               
+
                 __m_discordAvatarImage = avatarObject.AddComponent<UnityEngine.UI.Image>();
                 __m_discordAvatarImage.raycastTarget = false;
                 __m_discordAvatarImage.color = Color.white;
@@ -4736,7 +4814,7 @@ namespace TrophyHuntMod
                     //if (__m_discordAvatarImage != null)
                     //    __m_discordAvatarImage.sprite = response.avatarSprite;
                 }
-                else  
+                else
                 {
                     onlineText = "<color=red>Offline</color>";
                     __m_onlineUsernameText.text = "";
@@ -4776,6 +4854,315 @@ namespace TrophyHuntMod
 
                 UpdateOnlineStatus();
             }
+
+            // Player Log
+            //
+            // Log of events encountered during gameplay
+            //
+            public enum PlayerEventType
+            {
+                None,
+                Trophy,
+                Build,
+                Item,
+                Misc,
+                Max
+            }
+
+            public class PlayerEventLog
+            {
+                public PlayerEventLog(PlayerEventType _eventType, string _eventName, Vector3 _eventPos, DateTime _eventTime)
+                {
+                    eventType = _eventType;
+                    eventName = _eventName;
+                    eventPos = _eventPos;
+                    eventTime = _eventTime;
+                }
+
+                public PlayerEventType eventType = PlayerEventType.None;
+                public string eventName = "";
+                public Vector3 eventPos = Vector3.zero;
+                public DateTime eventTime = DateTime.MinValue;
+            }
+
+            // Legal Events
+            public struct EventDescription
+            {
+                public EventDescription(PlayerEventType _eventType, List<string> _legalEvents)
+                {
+                    eventType = _eventType;
+                    legalEvents = _legalEvents;
+                }
+
+                public PlayerEventType eventType;
+                public List<string> legalEvents;
+            }
+
+            static public readonly Dictionary<PlayerEventType, List<string>> __m_eventDescriptions = new Dictionary<PlayerEventType, List<string>>()
+            {
+                {
+                    PlayerEventType.Trophy, null    // pass all trophy events (no whitelist)
+                },
+                { 
+                    PlayerEventType.Build, new List<string> 
+                    { 
+                        // Base pieces
+                        "$piece_workbench",
+                        
+                        // Plantables
+                        "$piece_sapling_turnip",
+                        "$piece_sapling_onion",
+
+                        // Misc
+                        "$piece_bonfire"
+                    } 
+                },
+                {
+                    PlayerEventType.Item, new List<string> 
+                    {
+                        // Wood types
+                        "RoundLog",
+                        "Finewood",
+                        "ElderBark",
+
+                        // Weapon types
+                        "SpearFlint",
+                        "SpearFlint2",
+                        "SpearFlint3",
+                        "SpearFlint4",
+
+                        // Armor types
+                        "ArmorTrollLeatherChest",
+                        "ArmorTrollLeatherChest2",
+                        "ArmorTrollLeatherChest3",
+                        "ArmorRootChest",
+                        "ArmorRootChest2",
+                    }
+                },
+                { 
+                    PlayerEventType.Misc, null      // pass all misc events, no whitelist
+                },
+            };
+
+            public static bool IsLoggableEvent(PlayerEventType eventType, string eventName)
+            {
+                List<string> trackedEvents = __m_eventDescriptions[eventType];
+
+                // If no list, all events are considered loggable
+                if (trackedEvents == null)
+                    return true;
+
+                return trackedEvents.Contains(eventName);
+            }
+
+            public static bool IsAlreadyLogged(PlayerEventType eventType, string eventName)
+            {
+                PlayerEventLog existingEntry = __m_playerEventLog.Find(x => x.eventName == eventName);
+                if (existingEntry != null)
+                {
+                    return true;
+                }
+
+                return false;
+            }
+
+            public static void AddPlayerEvent(PlayerEventType eventType, string eventName, Vector3 eventPos)
+            {
+                Debug.LogWarning($"AddPlayerEvent() Logging Event: {eventType.ToString()}, {eventName}, {eventPos}");
+
+                if (!IsLoggableEvent(eventType, eventName))
+                {
+                    return;
+                }
+
+                // Some events we only want to log the first time they occur
+                if (eventType != PlayerEventType.Trophy)
+                {
+                    if (IsAlreadyLogged(eventType, eventName))
+                    {
+                        return;
+                    }
+                }
+
+                // Add the event to our internal tracking log
+                __m_playerEventLog.Add(new PlayerEventLog(eventType, eventName, eventPos, DateTime.UtcNow));
+
+                PostTrackLogEntry(eventName, __m_playerCurrentScore);
+            }
+
+            // Tracker Logs
+
+            // Single Log update
+            [Serializable]
+            public class TrackLogEntry
+            {
+                public string id;       // discord id
+                public string seed;     // game seed
+                public int score;       // Current score
+                public string code;     // event name
+                public string at;       // UTC time
+            }
+
+            // List of Logs update
+            [Serializable]
+            public class TrackLogs
+            {
+                public string id;
+                public string user;
+                public string seed;
+                public string mode;
+                public int score;
+                public List<TrackLogsElement> logs;
+            }
+
+            [Serializable]
+            public class TrackLogsElement
+            {
+                public string code;     // event name
+                public string at;       // UTC time
+            }
+
+            static public IEnumerator UnityPostRequest(string url, string json)
+            {
+                Debug.LogWarning($"UnityPostRequest(): {url}\n{json}");
+
+                UnityWebRequest request = UnityWebRequest.Post(url, json, "application/json");
+                yield return request.SendWebRequest();
+
+                if (request.result != UnityWebRequest.Result.Success)
+                {
+                    Debug.LogError(request.error);
+                }
+                else
+                {
+                    Debug.Log("Form upload complete!");
+                }
+
+                Debug.LogWarning($"UnityPostRequest(): Result: {request.result.ToString()}");
+
+            }
+
+            public static void PostTrackLogs()
+            {
+                TrackLogs trackLogs = new TrackLogs();
+
+                trackLogs.id = __m_configDiscordId.Value;
+                trackLogs.user = __m_configDiscordUser.Value;
+                trackLogs.seed = __m_storedWorldSeed;
+                trackLogs.mode = GetGameMode().ToString();
+                trackLogs.score = __m_playerCurrentScore;
+
+                trackLogs.logs = new List<TrackLogsElement>();
+                
+                foreach (PlayerEventLog logEntry in __m_playerEventLog)
+                {
+                    TrackLogsElement elem = new TrackLogsElement();
+                    elem.code = logEntry.eventName;
+                    elem.at = logEntry.eventTime.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ss.fffZ");
+                    trackLogs.logs.Add(elem);
+                }
+
+                string json = JsonConvert.SerializeObject(trackLogs);
+
+                string url = "https://valhelp.azurewebsites.net/api/track/logs";
+
+                __m_trophyHuntMod.StartCoroutine(UnityPostRequest(url, json));
+            }
+
+            public static void PostTrackLogEntry(string eventName, int score)
+            {
+                TrackLogEntry entry = new TrackLogEntry();
+
+                entry.id = __m_configDiscordId.Value;
+                entry.seed = __m_storedWorldSeed;
+                entry.score = score;
+                entry.code = eventName;
+                entry.at = DateTime.UtcNow.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ss.fffZ");
+
+                string json = JsonConvert.SerializeObject(entry);
+
+//                Debug.LogWarning($"PostTrackLogEntry: {json}");
+
+                string url = "https://valhelp.azurewebsites.net/api/track/log";
+
+                __m_trophyHuntMod.StartCoroutine(UnityPostRequest(url, json));
+            }
+
+            // Tracker Standings
+
+            [Serializable]
+            public class TrackStandingsPlayer
+            {
+                public string name = "";
+                public string avatarUrl = "";
+                public int score = 0;
+            }
+
+            [Serializable]
+            public class TrackStandings
+            {
+                public string name = ""; // tournament event name
+                public string mode = ""; // tournament event game mode
+                public string startAt = ""; // start time in UTC
+                public string endAt = ""; // end time in UTC
+                public int status = 0;
+                public List<TrackStandingsPlayer> players = new List<TrackStandingsPlayer>();
+
+            }
+
+            public static IEnumerator UnityGetRequest(string uri)
+            {
+                using (UnityWebRequest webRequest = UnityWebRequest.Get(uri))
+                {
+                    // Request and wait for the desired page.
+                    yield return webRequest.SendWebRequest();
+
+                    switch (webRequest.result)
+                    {
+                        case UnityWebRequest.Result.ConnectionError:
+                        case UnityWebRequest.Result.DataProcessingError:
+                            Debug.LogError("Error: " + webRequest.error);
+                            break;
+                        case UnityWebRequest.Result.ProtocolError:
+                            Debug.LogError("HTTP Error: " + webRequest.error);
+                            break;
+                        case UnityWebRequest.Result.Success:
+                            Debug.Log($"Received: {webRequest.downloadHandler.text}");
+
+                            string responseText = webRequest.downloadHandler.text;
+
+                            TrackStandings standings = JsonConvert.DeserializeObject<TrackStandings>(webRequest.downloadHandler.text);
+
+                            Debug.LogWarning(standings.name);
+                            Debug.LogWarning(standings.mode);
+                            Debug.LogWarning(standings.startAt);
+                            Debug.LogWarning(standings.endAt);
+                            Debug.LogWarning(standings.status);
+                            foreach (TrackStandingsPlayer player in standings.players)
+                            {
+                                Debug.LogWarning(" " + player.name);
+                                Debug.LogWarning(" " + player.avatarUrl);
+                                Debug.LogWarning(" " + player.score);
+                            }
+
+                            break;
+                    }
+                }
+
+            }
+
+            public static void PostStandingsRequest()
+            {
+                string url = "https://valhelp.azurewebsites.net/api/track/standings?seed=tkPNcLYEYg&mode=TrophyHunt";
+
+                string seed = __m_storedWorldSeed;
+                string mode = GetGameMode().ToString();
+
+                __m_trophyHuntMod.StartCoroutine(UnityGetRequest(url));
+            }
+
+
+            /* ------------------------------------------ */
 
             [HarmonyPatch(typeof(FejdStartup), nameof(FejdStartup.Start))]
             public class FejdStartup_Start_Patch
@@ -4965,60 +5352,32 @@ namespace TrophyHuntMod
                                    }
            */
 
-
-            //[HarmonyPatch(typeof(Inventory), nameof(Inventory.RemoveItem), new[] { typeof(ItemDrop.ItemData), typeof(int) })]
-            //public static class Inventory_RemoveItem_Patch
-            //{
-            //    static void Postfix(Inventory __instance, ItemDrop.ItemData item, int amount, bool __result)
-            //    {
-            //        if (__instance == Player.m_localPlayer.GetInventory())
-            //        {
-            //            if (__result)
-            //            {
-            //                // Item successfully removed from inventory
-            //                Debug.LogError($"Item removed from inventory: {item.m_shared.m_name} (Amount: {amount})");
-            //            }
-
-            //            Inventory playerInventory = Player.m_localPlayer.GetInventory();
-            //            bool hasItem = playerInventory.ContainsItem(item);
-
-            //            if (hasItem)
-            //            {
-            //                Debug.LogError($"Player has item: {item.m_shared.m_name}");
-            //            }
-            //        }
-            //    }
-            //}
-
-            //[HarmonyPatch(typeof(Inventory), nameof(Inventory.Changed))]
-            //public static class Inventory_Changed_Patch
-            //{
-            //    static void Postfix(Inventory __instance)
-            //    {
-            //        if (__instance != null && Player.m_localPlayer != null
-            //            && __instance == Player.m_localPlayer.GetInventory())
-            //        {
-            //            Debug.LogWarning($"Player Inventory Changed");
-            //            //foreach(ItemDrop.ItemData item in __instance.m_inventory)
-            //            //{
-            //            //    Debug.LogWarning($"  item: {item.m_shared.m_name} ({item.m_dropPrefab.name}) {item.m_stack}");
-            //            //}
-            //        }
-            //    }
-            //}
-
             // Catch /die console command to track it
             [HarmonyPatch(typeof(ConsoleCommand), nameof(ConsoleCommand.RunAction), new[] { typeof(ConsoleEventArgs) })]
             public static class ConsoleCommand_RunAction_Patch
             {
-                static void Postfix(Inventory __instance, ConsoleEventArgs args)
+                static void Postfix(ConsoleEventArgs args)
                 {
-                    if (__instance != null)
+                    if (Player.m_localPlayer != null)
                     {
                         if (args.Length > 0 && args[0] == "die")
                         {
                             __m_slashDieCount += 1;
+
+                            AddPlayerEvent(PlayerEventType.Misc, "PenaltySlashDie", Player.m_localPlayer.transform.position);
                         }
+                    }
+                }
+            }
+
+            [HarmonyPatch(typeof(Player), nameof(Player.OnDeath))]
+            public static class Patch_Player_OnDeath
+            {
+                static void Prefix(Player __instance)
+                {
+                    if (__instance != null)
+                    {
+                        AddPlayerEvent(PlayerEventType.Misc, "PenaltyDeath", __instance.transform.position);
                     }
                 }
             }
@@ -5092,27 +5451,6 @@ namespace TrophyHuntMod
                     //Debug.LogWarning($"HitData.m_toolTier: {hit.m_toolTier}");
                 }
             }
-
-
-            // In trophy saga, fermentation time is greatly reduced
-            /*
-                        [HarmonyPatch(typeof(Fermenter), nameof(Fermenter.AddItem))]
-                        public static class Fermenter_AddItem_Patch
-                        {
-                            static void Postfix(Fermenter __instance, Humanoid user, ItemDrop.ItemData item, ref bool __result)
-                            {
-                                if (__instance != null && GetGameMode() == TrophyGameMode.TrophySaga)
-                                {
-            //                        Debug.LogWarning("Fermenter.AddItem()");
-
-                                    if (__result)
-                                    {
-                                        __instance.m_fermentationDuration = 10;
-                                    }
-                                }
-                            }
-                        }
-            */
 
             [HarmonyPatch(typeof(Fermenter), nameof(Fermenter.Awake))]
             public static class Fermenter_AddItem_Patch
