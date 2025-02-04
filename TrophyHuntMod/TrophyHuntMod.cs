@@ -254,9 +254,13 @@ namespace TrophyHuntMod
         static GameObject __m_relogsIconElement = null;
         static GameObject __m_gameTimerTextElement = null;
         static GameObject __m_luckOMeterElement = null;
+        static GameObject __m_standingsElement = null;
 
         // Trophy Icons
         static List<GameObject> __m_iconList = null;
+
+        // Trophy Sprite
+        static Sprite __m_trophySprite = null;
 
         // Online Integration
         static DiscordOAuthFlow __m_discordAuthentication = new DiscordOAuthFlow();
@@ -271,6 +275,9 @@ namespace TrophyHuntMod
         static bool __m_gameTimerActive = false;
         static bool __m_gameTimerVisible = true;
         static bool __m_gameTimerCountdown = true;
+
+        const long UPDATE_STANDINGS_INTERVAL = 30;  // Update standings every 30 seconds
+
 
         static float __m_baseTrophyScale = 1.4f;
         static float __m_userIconScale = 1.0f;
@@ -1176,6 +1183,11 @@ namespace TrophyHuntMod
                 __m_luckOMeterElement.SetActive(!show);
             }
 
+            if (__m_standingsElement != null)
+            {
+                __m_standingsElement.SetActive(!show);
+            }
+
             if (__m_relogsTextElement != null)
             {
                 __m_relogsTextElement.SetActive(!show);
@@ -1548,6 +1560,7 @@ namespace TrophyHuntMod
                 }
 
                 PostTrackLogs();
+                PostStandingsRequest();
             }
 
             public static void RaiseAllPlayerSkills(float skillLevel)
@@ -1786,7 +1799,12 @@ namespace TrophyHuntMod
 
                             CreateLuckTooltip();
 
+                            CreateStandingsTooltip();
+
                             __m_luckOMeterElement = CreateLuckOMeterElements(healthPanelTransform);
+
+                            __m_standingsElement = CreateStandingsElements(healthPanelTransform);
+                            __m_standingsElement.SetActive(false);
                         }
                     }
 
@@ -1833,6 +1851,11 @@ namespace TrophyHuntMod
                             {
                                 tmText.text = "";
                             }
+                        }
+
+                        if (__m_gameTimerElapsedSeconds % UPDATE_STANDINGS_INTERVAL == 0)
+                        {
+                            PostStandingsRequest();
                         }
 
                         __m_gameTimerElapsedSeconds++;
@@ -1973,6 +1996,28 @@ namespace TrophyHuntMod
                 AddTooltipTriggersToLuckObject(luckElement);
 
                 return luckElement;
+            }
+
+            static GameObject CreateStandingsElements(Transform parentTransform)
+            {
+                Sprite standingsSprite = __m_trophySprite;
+
+                GameObject standingsElement = new GameObject("StandingsImage");
+                standingsElement.transform.SetParent(parentTransform);
+
+                RectTransform rectTransform = standingsElement.AddComponent<RectTransform>();
+                rectTransform.sizeDelta = new Vector2(40, 40);
+                rectTransform.anchoredPosition = new Vector2(-70, 20);
+                rectTransform.localScale = new Vector3(__m_userIconScale, __m_userIconScale, __m_userIconScale);
+
+                UnityEngine.UI.Image image = standingsElement.AddComponent<UnityEngine.UI.Image>();
+                image.sprite = standingsSprite;
+                image.color = Color.yellow;
+                image.raycastTarget = true;
+
+                AddTooltipTriggersToStandingsObject(standingsElement);
+
+                return standingsElement;
             }
 
             static GameObject CreateDeathsElement(Transform parentTransform)
@@ -3460,7 +3505,166 @@ namespace TrophyHuntMod
                 __m_luckTooltipObject.SetActive(false);
             }
 
+            // Standings Tooltips
 
+            static GameObject __m_standingsTooltipObject = null;
+            static GameObject __m_standingsTooltipBackground = null;
+            static TextMeshProUGUI __m_standingsTooltip;
+            static Vector2 __m_standingsTooltipWindowSize = new Vector2(250, 300);
+            static Vector2 __m_standingsTooltipTextOffset = new Vector2(5, 2);
+
+            public static void CreateStandingsTooltip()
+            {
+                // Tooltip Background
+                __m_standingsTooltipBackground = new GameObject("Standings Tooltip Background");
+
+                // Set %the parent to the HUD
+                Transform hudrootTransform = Hud.instance.transform;
+                __m_standingsTooltipBackground.transform.SetParent(hudrootTransform, false);
+
+                RectTransform bgTransform = __m_standingsTooltipBackground.AddComponent<RectTransform>();
+                bgTransform.sizeDelta = __m_standingsTooltipWindowSize;
+
+                // Add an Image component for the background
+                UnityEngine.UI.Image backgroundImage = __m_standingsTooltipBackground.AddComponent<UnityEngine.UI.Image>();
+                backgroundImage.color = new Color(0, 0, 0, 0.90f); // Semi-transparent black background
+
+                __m_standingsTooltipBackground.SetActive(false);
+
+                // Create a new GameObject for the tooltip
+                __m_standingsTooltipObject = new GameObject("Standings Tooltip Text");
+                __m_standingsTooltipObject.transform.SetParent(__m_standingsTooltipBackground.transform, false);
+
+                // Add a RectTransform component for positioning
+                RectTransform rectTransform = __m_standingsTooltipObject.AddComponent<RectTransform>();
+                rectTransform.sizeDelta = new Vector2(__m_standingsTooltipWindowSize.x - __m_standingsTooltipTextOffset.x, __m_standingsTooltipWindowSize.y - __m_standingsTooltipTextOffset.y);
+
+                // Add a TextMeshProUGUI component for displaying the tooltip text
+                __m_standingsTooltip = __m_standingsTooltipObject.AddComponent<TextMeshProUGUI>();
+                __m_standingsTooltip.fontSize = 14;
+                __m_standingsTooltip.alignment = TextAlignmentOptions.TopLeft;
+                __m_standingsTooltip.color = Color.yellow;
+
+                // Initially hide the tooltip
+                __m_standingsTooltipObject.SetActive(false);
+            }
+
+            public static void AddTooltipTriggersToStandingsObject(GameObject uiObject)
+            {
+                // Add EventTrigger component if not already present
+                EventTrigger trigger = uiObject.GetComponent<EventTrigger>();
+                if (trigger != null)
+                {
+                    return;
+                }
+
+                trigger = uiObject.AddComponent<EventTrigger>();
+
+                // Mouse Enter event (pointer enters the icon area)
+                EventTrigger.Entry entryEnter = new EventTrigger.Entry();
+                entryEnter.eventID = EventTriggerType.PointerEnter;
+                entryEnter.callback.AddListener((eventData) => ShowStandingsTooltip(uiObject));
+                trigger.triggers.Add(entryEnter);
+
+                // Mouse Exit event (pointer exits the icon area)
+                EventTrigger.Entry entryExit = new EventTrigger.Entry();
+                entryExit.eventID = EventTriggerType.PointerExit;
+                entryExit.callback.AddListener((eventData) => HideStandingsTooltip());
+                trigger.triggers.Add(entryExit);
+            }
+
+            public static string BuildStandingsTooltipText(GameObject uiObject)
+            {
+                string nameString = "<color=gray>No Tournament Active</color>";
+                string modeString = "";
+
+                if (__m_tournamentStatus != TournamentStatus.NotRunning)
+                {
+                    nameString = __m_tournamentName;
+                    modeString = __m_tournamentMode;
+
+                }
+                string statusString = "<color=red>Not Running</color>";
+                if (__m_tournamentStatus == TournamentStatus.Live)
+                {
+                    statusString = "<color=green>Live</color>";
+                }
+                else
+                if (__m_tournamentStatus == TournamentStatus.Over)
+                {
+                    statusString = "<color=orange>Ended</color>";
+                }
+
+                string tooltipText = $"<color=#FFB75B><size=24> Leaderboard</size></color>";
+                tooltipText += $"\n   <size=18><color=white> Name: '<color=orange>{nameString}</color>'</color></size>";
+                tooltipText += $"\n   <size=16><color=white> Game: <color=orange>{modeString}</color> [{statusString}]</color></size>\n";
+
+                int size = 20;
+
+                // Sort the list before displaying
+                __m_tournamentPlayerInfo.Sort((p1, p2) => p2.score.CompareTo(p1.score));
+
+                foreach (TournamentPlayerInfo info in __m_tournamentPlayerInfo)
+                {
+                    int score = info.score;
+                    if (info.id == __m_configDiscordId.Value)
+                    {
+                        score = __m_playerCurrentScore;
+                    }
+                    tooltipText += $"<indent=10%><size={size}><color=white>{info.name}</color></size><indent=70%><size={size+2}><color=yellow>{score}</color>\n";
+                }
+
+                return tooltipText;
+            }
+
+            public static void ShowStandingsTooltip(GameObject uiObject)
+            {
+                if (uiObject == null)
+                    return;
+
+                string text = BuildStandingsTooltipText(uiObject);
+
+                __m_standingsTooltip.text = text;
+
+                __m_standingsTooltipBackground.SetActive(true);
+                __m_standingsTooltipObject.SetActive(true);
+
+                __m_standingsTooltip.ForceMeshUpdate(true, true);
+
+                Bounds bounds = __m_standingsTooltip.textBounds;
+
+                RectTransform objRectTransform = __m_standingsTooltipObject.GetComponent<RectTransform>();
+                RectTransform bgRectTransform = __m_standingsTooltipBackground.GetComponent<RectTransform>();
+
+                Vector2 size = new Vector2(bounds.size.x + 20, bounds.size.y + 10);
+                __m_standingsTooltipWindowSize = size;
+
+                objRectTransform.sizeDelta = size;
+                bgRectTransform.sizeDelta = size;
+
+                __m_standingsTooltip.ForceMeshUpdate(true, true);
+
+                Vector3 tooltipOffset = new Vector3(__m_standingsTooltipWindowSize.x / 2, __m_standingsTooltipWindowSize.y, 0);
+                Vector3 mousePosition = Input.mousePosition;
+                Vector3 desiredPosition = mousePosition + tooltipOffset;
+
+                // Clamp the tooltip window onscreen
+                if (desiredPosition.x < 150) desiredPosition.x = 150;
+                if (desiredPosition.y < 150) desiredPosition.y = 150;
+                if (desiredPosition.x > Screen.width - __m_standingsTooltipWindowSize.x)
+                    desiredPosition.x = Screen.width - __m_standingsTooltipWindowSize.x;
+                if (desiredPosition.y > Screen.height - __m_standingsTooltipWindowSize.y)
+                    desiredPosition.y = Screen.height - __m_standingsTooltipWindowSize.y;
+
+                __m_standingsTooltipBackground.transform.position = desiredPosition;
+                __m_standingsTooltipObject.transform.position = new Vector3(desiredPosition.x + __m_standingsTooltipTextOffset.x, desiredPosition.y - __m_standingsTooltipTextOffset.y, 0f);
+            }
+
+            public static void HideStandingsTooltip()
+            {
+                __m_standingsTooltipBackground.SetActive(false);
+                __m_standingsTooltipObject.SetActive(false);
+            }
 
             // Trophy Tooltips
 
@@ -4421,7 +4625,7 @@ namespace TrophyHuntMod
             {
                 static void Prefix(Inventory __instance, ref ItemDrop.ItemData item, bool __result)
                 {
-                    Debug.LogWarning("Inventory.AddItem() 1");
+//                    Debug.LogWarning("Inventory.AddItem() 1");
 
                     if (__instance != null && Player.m_localPlayer != null
                         && __instance == Player.m_localPlayer.GetInventory())
@@ -4482,7 +4686,7 @@ namespace TrophyHuntMod
             {
                 static void Postfix(Inventory __instance, string name, int stack, int quality, int variant, long crafterID, string crafterName, Vector2i position, bool pickedUp)
                 {
-                    Debug.LogWarning("Inventory.AddItem() 2");
+//                    Debug.LogWarning("Inventory.AddItem() 2");
 
                     if (__instance != null)
                     {
@@ -5044,6 +5248,11 @@ namespace TrophyHuntMod
 
             public static void PostTrackLogs()
             {
+                if (!__m_loggedInWithDiscord)
+                {
+                    return;
+                }
+                
                 TrackLogs trackLogs = new TrackLogs();
 
                 trackLogs.id = __m_configDiscordId.Value;
@@ -5071,6 +5280,11 @@ namespace TrophyHuntMod
 
             public static void PostTrackLogEntry(string eventName, int score)
             {
+                if (!__m_loggedInWithDiscord)
+                {
+                    return;
+                }
+
                 TrackLogEntry entry = new TrackLogEntry();
 
                 entry.id = __m_configDiscordId.Value;
@@ -5089,11 +5303,37 @@ namespace TrophyHuntMod
             }
 
             // Tracker Standings
+            static public TournamentStatus __m_tournamentStatus = TournamentStatus.NotRunning;
+            static public string __m_tournamentName = "";
+            static public string __m_tournamentMode = "";
+
+            public enum TournamentStatus
+            {
+                NotRunning = 0,
+                Live = 20,
+                Over = 30
+            }
+            public class TournamentPlayerInfo
+            {
+                public TournamentPlayerInfo(string _name, int _score, string _id)
+                {
+                    name = _name;
+                    score = _score;
+                    id = _id;
+                }
+                public string name;
+                public int score;
+                public string id;
+            }
+
+            static public List<TournamentPlayerInfo> __m_tournamentPlayerInfo = new List<TournamentPlayerInfo>();
+
 
             [Serializable]
             public class TrackStandingsPlayer
             {
                 public string name = "";
+                public string id = "";
                 public string avatarUrl = "";
                 public int score = 0;
             }
@@ -5110,42 +5350,60 @@ namespace TrophyHuntMod
 
             }
 
-            public static IEnumerator UnityGetRequest(string uri)
+            public static IEnumerator UnityGetStandingsRequest(string uri)
             {
                 using (UnityWebRequest webRequest = UnityWebRequest.Get(uri))
                 {
                     // Request and wait for the desired page.
                     yield return webRequest.SendWebRequest();
 
-                    switch (webRequest.result)
+                    if (webRequest.result == UnityWebRequest.Result.Success)
                     {
-                        case UnityWebRequest.Result.ConnectionError:
-                        case UnityWebRequest.Result.DataProcessingError:
-                            Debug.LogError("Error: " + webRequest.error);
-                            break;
-                        case UnityWebRequest.Result.ProtocolError:
-                            Debug.LogError("HTTP Error: " + webRequest.error);
-                            break;
-                        case UnityWebRequest.Result.Success:
-                            Debug.Log($"Received: {webRequest.downloadHandler.text}");
+                        Debug.Log($"Standings Recieved: {webRequest.downloadHandler.text}");
 
-                            string responseText = webRequest.downloadHandler.text;
+                        string responseText = webRequest.downloadHandler.text;
 
-                            TrackStandings standings = JsonConvert.DeserializeObject<TrackStandings>(webRequest.downloadHandler.text);
+                        TrackStandings standings = JsonConvert.DeserializeObject<TrackStandings>(webRequest.downloadHandler.text);
 
-                            Debug.LogWarning(standings.name);
-                            Debug.LogWarning(standings.mode);
-                            Debug.LogWarning(standings.startAt);
-                            Debug.LogWarning(standings.endAt);
-                            Debug.LogWarning(standings.status);
+                        __m_tournamentStatus = (TournamentStatus)standings.status;
+                        __m_tournamentName = standings.name;
+                        __m_tournamentMode = standings.mode;
+
+                        __m_standingsElement.SetActive(__m_tournamentStatus != TournamentStatus.NotRunning);
+
+                        __m_tournamentPlayerInfo.Clear();
+
+//                        for (int i = 0; i < 8; i++)
+                        {
                             foreach (TrackStandingsPlayer player in standings.players)
                             {
-                                Debug.LogWarning(" " + player.name);
-                                Debug.LogWarning(" " + player.avatarUrl);
-                                Debug.LogWarning(" " + player.score);
+                                __m_tournamentPlayerInfo.Add(new TournamentPlayerInfo(player.name, player.score, player.id));
                             }
+                        }
 
-                            break;
+                        //Debug.LogWarning($"Tournament Standings");
+                        //Debug.LogWarning($" Name: {__m_tournamentName}");
+                        //Debug.LogWarning($" Mode: {__m_tournamentMode}");
+                        //Debug.LogWarning($" Status: {__m_tournamentStatus}");
+                        //foreach (TournamentPlayerInfo pi in __m_tournamentPlayerInfo)
+                        //{
+                        //    Debug.LogWarning($" - {pi.score} - {pi.name}");
+                        //}
+                    }
+                    else
+                    {
+                        switch (webRequest.result)
+                        {
+                            case UnityWebRequest.Result.ConnectionError:
+                            case UnityWebRequest.Result.DataProcessingError:
+                                Debug.LogError("Error: " + webRequest.error);
+                                __m_tournamentStatus = TournamentStatus.NotRunning;
+                                break;
+                            case UnityWebRequest.Result.ProtocolError:
+                                Debug.LogError("HTTP Error: " + webRequest.error);
+                                __m_tournamentStatus = TournamentStatus.NotRunning;
+                                break;
+                        }
                     }
                 }
 
@@ -5153,12 +5411,20 @@ namespace TrophyHuntMod
 
             public static void PostStandingsRequest()
             {
-                string url = "https://valhelp.azurewebsites.net/api/track/standings?seed=tkPNcLYEYg&mode=TrophyHunt";
+                if (!__m_loggedInWithDiscord)
+                {
+                    return;
+                }
+                string standingsUrl = "https://valhelp.azurewebsites.net/api/track/standings";
 
                 string seed = __m_storedWorldSeed;
                 string mode = GetGameMode().ToString();
+                string url = $"{standingsUrl}?seed={seed}&mode={mode}";
 
-                __m_trophyHuntMod.StartCoroutine(UnityGetRequest(url));
+                Debug.Log($"Standings Request: {url}");
+
+
+                __m_trophyHuntMod.StartCoroutine(UnityGetStandingsRequest(url));
             }
 
 
@@ -5669,6 +5935,8 @@ namespace TrophyHuntMod
                                     __instance.m_spinner.sprite = trophySprite;
                                     __instance.m_spinner.color = new Color(255f / 255f, 215f / 255f, 0, 1);
                                     __instance.m_spinnerOriginalColor = __instance.m_spinner.color;
+
+                                    __m_trophySprite = trophySprite;
 
                                     //Texture2D newTexture = CreateReadableTextureCopy(texture);
                                     //byte[] pngData = newTexture.EncodeToPNG();
