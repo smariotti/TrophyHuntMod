@@ -62,8 +62,16 @@ public class DiscordOAuthFlow
     private void StartServer(string redirectUri)
     {
         if (VERBOSE) System.Diagnostics.Debug.WriteLine("Starting local HTTP server to listen for authorization code...");
-        httpListener = new HttpListener();
-        httpListener.Prefixes.Add("http://localhost:5000/");
+        if (httpListener != null)
+        {
+            httpListener.Stop();
+        }
+        else
+        { 
+            httpListener = new HttpListener();
+            httpListener.Prefixes.Add("http://localhost:5000/");
+        }
+
         httpListener.Start();
 
         Task.Run(() => ListenForCode());
@@ -95,8 +103,6 @@ public class DiscordOAuthFlow
 
             try
             {
-
-
                 // Exchange the code for a token
                 await ExchangeCodeForToken(m_code);
             }
@@ -112,7 +118,6 @@ public class DiscordOAuthFlow
     {
         if (VERBOSE) System.Diagnostics.Debug.WriteLine("Stopping local HTTP server...");
         httpListener.Stop();
-        httpListener.Close();
     }
 
     private async Task ExchangeCodeForToken(string code)
@@ -140,6 +145,9 @@ public class DiscordOAuthFlow
 
                 var tokenResponse = JsonConvert.DeserializeObject<DiscordTokenResponse>(responseBody);
                 await FetchDiscordUser(tokenResponse.access_token);
+
+                if (VERBOSE) System.Diagnostics.Debug.WriteLine("Discord User Fetched");
+                m_statusCallback();
             }
             else
             {
@@ -166,9 +174,6 @@ public class DiscordOAuthFlow
 
                 m_userInfo = JsonConvert.DeserializeObject<DiscordUserResponse>(responseBody);
                 if (VERBOSE) System.Diagnostics.Debug.WriteLine($"User: {m_userInfo.username}#{m_userInfo.discriminator}");
-                if (VERBOSE) System.Diagnostics.Debug.WriteLine($"{m_userInfo.ToString()}");
-
-                await FetchDiscordAvatar();
             }
             else
             {
@@ -177,47 +182,6 @@ public class DiscordOAuthFlow
                 if (VERBOSE) System.Diagnostics.Debug.WriteLine($"Response: {errorResponse}");
             }
         }
-    }
-
-    private async Task FetchDiscordAvatar()
-    {
-        using (HttpClient httpClient = new HttpClient())
-        {
-            string imageUrl = $"https://cdn.discordapp.com/avatars/{m_userInfo.id}/{m_userInfo.avatar}.png";
-
-            // Download the image as a byte array
-            byte[] imageData = await httpClient.GetByteArrayAsync(imageUrl).ConfigureAwait(false);
-
-            //File.WriteAllBytes("avatar.png", imageData);
-
-            MainThreadDispatcher.Instance.Enqueue(() =>
-            {
- 
-                // Create a Texture2D from the downloaded data
-                Texture2D texture = new Texture2D(2, 2);
-                if (texture.LoadImage(imageData))
-                {
-                    // Create a sprite from the texture
-                    Sprite sprite = Sprite.Create(
-                        texture,
-                        new Rect(0, 0, texture.width, texture.height),
-                        new Vector2(0.5f, 0.5f)
-                    );
-
-                    // Assign the sprite to the target image
-                    m_userInfo.avatarSprite = sprite;
-
-                    if (VERBOSE) System.Diagnostics.Debug.WriteLine("Sprite Loaded");
-
-                }
-                else
-                {
-                    if (VERBOSE) System.Diagnostics.Debug.WriteLine("Failed to load image into Texture2D");
-                }
-            });
-        }
-
-        m_statusCallback();
     }
 }
 

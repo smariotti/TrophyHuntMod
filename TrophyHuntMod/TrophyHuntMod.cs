@@ -37,6 +37,8 @@ using BepInEx.Configuration;
 using static Incinerator;
 using Newtonsoft.Json;
 using System.Security.Policy;
+using System.Net.Http;
+using System.Threading.Tasks;
 
 namespace TrophyHuntMod
 {
@@ -58,7 +60,7 @@ namespace TrophyHuntMod
         // Configuration variables
         private const Boolean DUMP_TROPHY_DATA = false;
 
-        static TrophyHuntMod __m_trophyHuntMod;
+        static public TrophyHuntMod __m_trophyHuntMod;
 
         public enum Biome
         {
@@ -1559,8 +1561,9 @@ namespace TrophyHuntMod
                     TrophyFiesta.Initialize();
                 }
 
-                PostTrackLogs();
                 PostStandingsRequest();
+
+                PostTrackLogs();
             }
 
             public static void RaiseAllPlayerSkills(float skillLevel)
@@ -2540,16 +2543,18 @@ namespace TrophyHuntMod
                     __m_relogsTextElement.GetComponent<TMPro.TextMeshProUGUI>().text = __m_logoutCount.ToString();
                 }
 
+
+                __m_playerCurrentScore = score;
+
                 if (UPDATE_LEADERBOARD)
                 {
                     // Send the score to the web page
                     if (GetGameMode() != TrophyGameMode.CasualSaga)
                     {
-                        //                        SendScoreToLeaderboard(score);
+                        //SendScoreToLeaderboard(score);
+                        PostTrackHunt();
                     }
                 }
-
-                __m_playerCurrentScore = score;
             }
 
             static IEnumerator FlashImage(UnityEngine.UI.Image targetImage, RectTransform imageRect)
@@ -3575,13 +3580,17 @@ namespace TrophyHuntMod
 
             public static string BuildStandingsTooltipText(GameObject uiObject)
             {
-                string nameString = "<color=gray>No Tournament Active</color>";
+                string nameString = "<color=yellow>No Tournament Active</color>";
                 string modeString = "";
 
                 if (__m_tournamentStatus != TournamentStatus.NotRunning)
                 {
                     nameString = __m_tournamentName;
                     modeString = __m_tournamentMode;
+                    if (modeString == "")
+                    {
+                        modeString = GetGameMode().ToString();
+                    }
 
                 }
                 string statusString = "<color=red>Not Running</color>";
@@ -3592,12 +3601,12 @@ namespace TrophyHuntMod
                 else
                 if (__m_tournamentStatus == TournamentStatus.Over)
                 {
-                    statusString = "<color=orange>Ended</color>";
+                    statusString = "<color=yellow>Ended</color>";
                 }
 
                 string tooltipText = $"<color=#FFB75B><size=24> Leaderboard</size></color>";
                 tooltipText += $"\n   <size=18><color=white> Name: '<color=orange>{nameString}</color>'</color></size>";
-                tooltipText += $"\n   <size=16><color=white> Game: <color=orange>{modeString}</color> [{statusString}]</color></size>\n";
+                tooltipText += $"\n   <size=16><color=white> Game: <color=orange>{modeString}</color> [</color=yellow>{statusString}</color>]</size></color>\n";
 
                 int size = 20;
 
@@ -4978,7 +4987,7 @@ namespace TrophyHuntMod
                 avatarObject.transform.SetParent(parentTransform);
 
                 RectTransform avatarTransform = avatarObject.AddComponent<RectTransform>();
-                avatarTransform.sizeDelta = new Vector2(40, 40);
+                avatarTransform.sizeDelta = new Vector2(64, 64);
                 avatarTransform.anchoredPosition = new Vector2(0, -340);
                 avatarTransform.localScale = Vector3.one;
 
@@ -4989,8 +4998,45 @@ namespace TrophyHuntMod
                 UpdateOnlineStatus();
             }
 
+
+            static private async Task FetchDiscordAvatar(string userId, string avatarId)
+            {
+                using (HttpClient httpClient = new HttpClient())
+                {
+                    string imageUrl = $"https://cdn.discordapp.com/avatars/{userId}/{avatarId}.png";
+
+                    // Download the image as a byte array
+                    byte[] imageData = await httpClient.GetByteArrayAsync(imageUrl).ConfigureAwait(false);
+
+                    //File.WriteAllBytes("avatar.png", imageData);
+
+                    MainThreadDispatcher.Instance.Enqueue(() =>
+                    {
+
+                        // Create a Texture2D from the downloaded data
+                        Texture2D texture = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+                        if (texture.LoadImage(imageData, true))
+                        {
+                            // Create a sprite from the texture
+                            Sprite sprite = Sprite.Create(
+                                texture,
+                                new Rect(0, 0, texture.width, texture.height),
+                                new Vector2(0.5f, 0.5f)
+                            );
+
+                            // Assign the sprite to the target image
+                            if (__m_discordAvatarImage != null)
+                                __m_discordAvatarImage.sprite = sprite;
+                        }
+                    });
+                }
+            }
+            
+
+
             public static void UpdateOnlineStatus()
             {
+
                 DiscordUserResponse response = __m_discordAuthentication.GetUserResponse();
                 if (response != null)
                 {
@@ -5005,6 +5051,7 @@ namespace TrophyHuntMod
                     __m_trophyHuntMod.Config.Save();
                 }
 
+                System.Diagnostics.Debug.WriteLine($"UpdateOnlineStatus {__m_loggedInWithDiscord}");
                 Debug.Log($"UpdateOnlineStatus: {__m_loggedInWithDiscord} updating");
 
 
@@ -5015,18 +5062,27 @@ namespace TrophyHuntMod
                     onlineText = "<color=green>Online</color>";
                     __m_discordLoginButtonText.text = "Discord Logout";
 
-                    //if (__m_discordAvatarImage != null)
-                    //    __m_discordAvatarImage.sprite = response.avatarSprite;
+                    if (__m_discordAvatarImage != null)
+                    {
+                        __m_discordAvatarImage.color = new Color(1, 1, 1, 1);
+                    }
+                    Task.Run(() => FetchDiscordAvatar(__m_configDiscordId.Value, __m_configDiscordAvatar.Value));
                 }
                 else
                 {
                     onlineText = "<color=red>Offline</color>";
                     __m_onlineUsernameText.text = "";
                     __m_discordLoginButtonText.text = "Discord Login";
+
+                    if (__m_discordAvatarImage != null)
+                    {
+                        __m_discordAvatarImage.color = new Color(0, 0, 0, 0);
+                    }
                 }
 
                 __m_onlineStatusText.text = $"Status: {onlineText}";
             }
+
             public static void ToggleGameModeButtonClick()
             {
                 ToggleGameMode();
@@ -5204,7 +5260,7 @@ namespace TrophyHuntMod
                 public string seed;     // game seed
                 public int score;       // Current score
                 public string code;     // event name
-                public string at;       // UTC time
+//                public string at;       // UTC time
             }
 
             // List of Logs update
@@ -5223,7 +5279,23 @@ namespace TrophyHuntMod
             public class TrackLogsElement
             {
                 public string code;     // event name
-                public string at;       // UTC time
+                public string at;
+            }
+
+
+            [Serializable]
+            public class TrackHunt
+            {
+                // List of Logs update
+                    public string id;
+                    public string user;
+                    public string seed;
+                    public string mode;
+                    public int score;
+                    public int deaths;
+                    public int relogs;
+                    public int slashdies;
+                    public List<string> trophies;
             }
 
             static public IEnumerator UnityPostRequest(string url, string json)
@@ -5246,13 +5318,26 @@ namespace TrophyHuntMod
 
             }
 
-            public static void PostTrackLogs()
+            public static void PostTrackLogs(bool force = false)
             {
                 if (!__m_loggedInWithDiscord)
                 {
                     return;
                 }
-                
+
+                if (force == false)
+                {
+                    if (__m_tournamentStatus != TournamentStatus.Live)
+                    {
+                        return;
+                    }
+
+                    if (DateTime.Now > __m_tournamentEndTime)
+                    {
+                        return;
+                    }
+                }
+
                 TrackLogs trackLogs = new TrackLogs();
 
                 trackLogs.id = __m_configDiscordId.Value;
@@ -5260,7 +5345,6 @@ namespace TrophyHuntMod
                 trackLogs.seed = __m_storedWorldSeed;
                 trackLogs.mode = GetGameMode().ToString();
                 trackLogs.score = __m_playerCurrentScore;
-
                 trackLogs.logs = new List<TrackLogsElement>();
                 
                 foreach (PlayerEventLog logEntry in __m_playerEventLog)
@@ -5272,6 +5356,8 @@ namespace TrophyHuntMod
                 }
 
                 string json = JsonConvert.SerializeObject(trackLogs);
+
+                Debug.LogWarning(json);
 
                 string url = "https://valhelp.azurewebsites.net/api/track/logs";
 
@@ -5285,13 +5371,23 @@ namespace TrophyHuntMod
                     return;
                 }
 
+                if (__m_tournamentStatus != TournamentStatus.Live)
+                {
+                    return;
+                }
+
+                if (DateTime.Now > __m_tournamentEndTime)
+                {
+                    return;
+                }
+
                 TrackLogEntry entry = new TrackLogEntry();
 
                 entry.id = __m_configDiscordId.Value;
                 entry.seed = __m_storedWorldSeed;
                 entry.score = score;
                 entry.code = eventName;
-                entry.at = DateTime.UtcNow.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ss.fffZ");
+//                entry.at = DateTime.UtcNow.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ss.fffZ");
 
                 string json = JsonConvert.SerializeObject(entry);
 
@@ -5302,10 +5398,47 @@ namespace TrophyHuntMod
                 __m_trophyHuntMod.StartCoroutine(UnityPostRequest(url, json));
             }
 
+            public static void PostTrackHunt()
+            {
+                if (!__m_loggedInWithDiscord)
+                {
+                    return;
+                }
+
+                if (__m_tournamentStatus != TournamentStatus.Live)
+                {
+                    return;
+                }
+
+                if (DateTime.Now > __m_tournamentEndTime)
+                {
+                    return;
+                }
+
+                TrackHunt trackHunt = new TrackHunt();
+
+                trackHunt.id = __m_configDiscordId.Value;
+                trackHunt.user = __m_configDiscordUser.Value;
+                trackHunt.seed = __m_storedWorldSeed;
+                trackHunt.mode = GetGameMode().ToString();
+                trackHunt.score = __m_playerCurrentScore;
+                trackHunt.trophies = __m_trophyCache.ToList();
+                trackHunt.deaths = __m_deaths;
+                trackHunt.slashdies = __m_slashDieCount;
+                trackHunt.relogs = __m_logoutCount;
+
+                string json = JsonConvert.SerializeObject(trackHunt);
+
+                string url = "https://valhelp.azurewebsites.net/api/track/hunt";
+
+                __m_trophyHuntMod.StartCoroutine(UnityPostRequest(url, json));
+            }
+
             // Tracker Standings
             static public TournamentStatus __m_tournamentStatus = TournamentStatus.NotRunning;
             static public string __m_tournamentName = "";
             static public string __m_tournamentMode = "";
+            static public DateTime __m_tournamentEndTime;
 
             public enum TournamentStatus
             {
@@ -5370,6 +5503,12 @@ namespace TrophyHuntMod
                         __m_tournamentMode = standings.mode;
 
                         __m_standingsElement.SetActive(__m_tournamentStatus != TournamentStatus.NotRunning);
+
+                        DateTime endTime;
+                        if (DateTime.TryParse(standings.endAt, out endTime))
+                        {
+                            __m_tournamentEndTime = endTime;
+                        }
 
                         __m_tournamentPlayerInfo.Clear();
 
