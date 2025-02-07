@@ -371,6 +371,7 @@ namespace TrophyHuntMod
 
         // Log of in-game events we track
         static public List<PlayerEventLog> __m_playerEventLog = new List<PlayerEventLog>();
+        static public bool __m_refreshLogsAndStandings = false;
 
         public struct DropInfo
         {
@@ -418,7 +419,7 @@ namespace TrophyHuntMod
             }
         }
 
-        static public string __m_saveDataVersionNumber = "2";
+        static public string __m_saveDataVersionNumber = "3";
 
         // WARNING!
         //
@@ -461,6 +462,8 @@ namespace TrophyHuntMod
             public string m_storedWorldSeed;
 
             public List<string> m_cookedFoods = null;
+
+            public List<PlayerEventLog> m_playerEventLog = null;
         }
 
         static string GetPersistentDataKey()
@@ -542,6 +545,8 @@ namespace TrophyHuntMod
 
             saveData.m_cookedFoods = __m_cookedFoods;
 
+            saveData.m_playerEventLog = __m_playerEventLog;
+
             XmlSerializer xmlSerializer = new XmlSerializer(typeof(THMSaveData));
             StringWriter stream = new StringWriter();
             xmlSerializer.Serialize(stream, saveData);
@@ -597,6 +602,8 @@ namespace TrophyHuntMod
             __m_storedWorldSeed = saveData.m_storedWorldSeed;
 
             __m_cookedFoods = saveData.m_cookedFoods;
+
+            __m_playerEventLog = saveData.m_playerEventLog;
 
             // Unpack dropinfos and update the Dictionary
             //
@@ -1561,9 +1568,9 @@ namespace TrophyHuntMod
                     TrophyFiesta.Initialize();
                 }
 
-                PostStandingsRequest();
+                __m_refreshLogsAndStandings = true;
 
-                PostTrackLogs();
+                PostStandingsRequest();
             }
 
             public static void RaiseAllPlayerSkills(float skillLevel)
@@ -1651,6 +1658,16 @@ namespace TrophyHuntMod
 
                 // Clear the dropped trophies tracking data
                 InitializeTrophyDropInfo();
+
+                if (__m_playerEventLog != null)
+                {
+                    __m_playerEventLog.Clear();
+                }
+                else 
+                {
+                    __m_playerEventLog = new List<PlayerEventLog> ();
+                }
+
             }
 
             public static int CalculateCookingPoints(bool displayToLog = false)
@@ -5129,8 +5146,16 @@ namespace TrophyHuntMod
                 Max
             }
 
+            [Serializable]
             public class PlayerEventLog
             {
+                public PlayerEventLog()
+                {
+                    eventType = PlayerEventType.None;
+                    eventName = "";
+                    eventPos = Vector3.zero;
+                    eventTime = DateTime.MinValue;
+                }
                 public PlayerEventLog(PlayerEventType _eventType, string _eventName, Vector3 _eventPos, DateTime _eventTime)
                 {
                     eventType = _eventType;
@@ -5337,6 +5362,10 @@ namespace TrophyHuntMod
                         return;
                     }
                 }
+                else
+                {
+                    Debug.LogWarning("PostTrackLogs: Forced track log request");
+                }
 
                 TrackLogs trackLogs = new TrackLogs();
 
@@ -5528,6 +5557,16 @@ namespace TrophyHuntMod
                         //{
                         //    Debug.LogWarning($" - {pi.score} - {pi.name}");
                         //}
+
+                        if (__m_refreshLogsAndStandings)
+                        {
+                            PostTrackLogs();
+                            if (Player.m_localPlayer != null)
+                            {
+                                UpdateModUI(Player.m_localPlayer);
+                                __m_refreshLogsAndStandings = false;
+                            }
+                        }
                     }
                     else
                     {

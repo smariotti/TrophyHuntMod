@@ -136,9 +136,23 @@ This Trophy Hunt variant implements a good number of modifications to standard V
 - All Player Skills are learned at level 10 and then increase normally.
 
 ## Culinary Saga
-TBD
+- Like Trophy Saga, but you score by making food.
+
 
 ## Change Log
+v0.9.0
+- Discord Authentication for going Online with TrophyHuntMod!
+  - Now, to report gameplay data to the Trophy Hunt server, you must Go Online via authentication with Discord. 
+  - A Discord account is required to "go online" with TrophyHuntMod.
+  - "Going online" means you will report your gameplay data to the Trophy Hunt server, which maintains leaderboards for live Trophy Hunt tournament events.
+  - You need not "go online" with TrophyHuntMod unless you're competing in a live tournament and wish to report your gameplay to the online Tracker and Leaderboard.
+  - At the main menu, use the Discord Login or Discord Logout button to change your online status.
+- In-game Leaderboard support for when you're Online.
+  - New Golden Trophy icon in the lower left corner of the HUD indicates that you're participating in a live online event 
+  - Hovering over the icon shows the current names and scores of the players in the event
+- Support for new valheim.help database backend for tracking Trophy Hunt events
+- Support for future ad hoc or unofficial trophy hunt events created at valheim.help
+
 v0.8.8
 - Disabled live Tracker/Leaderboard reporting. Any Trophy collection data will need to be entered manually on the website for tournaments. 
   - The mod no longer reports live updates to http://valheim.help until some privacy issues are ironed out. @jv is aware of the issues.
