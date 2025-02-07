@@ -11,6 +11,8 @@ using Newtonsoft.Json;
 using TrophyHuntMod;
 using System.Runtime.CompilerServices;
 using UnityEngine;
+using static UnityEngine.GUI;
+using static PrivilegeManager;
 
 public class DiscordOAuthFlow
 {
@@ -19,7 +21,6 @@ public class DiscordOAuthFlow
     private HttpListener httpListener;
 
     string m_clientId = string.Empty;
-    string m_clientSecret = string.Empty;
     string m_redirectUri = string.Empty;
     string m_code = string.Empty;
     DiscordUserResponse m_userInfo = null;
@@ -33,10 +34,9 @@ public class DiscordOAuthFlow
 
     StatusCallback m_statusCallback = null;
 
-    public void StartOAuthFlow(string clientId, string clientSecret, string redirectUri, StatusCallback callback)
+    public void StartOAuthFlow(string clientId, string redirectUri, StatusCallback callback)
     {
         m_clientId = clientId;
-        m_clientSecret = clientSecret;  
         m_redirectUri = redirectUri;
         m_statusCallback= callback;
 
@@ -49,7 +49,14 @@ public class DiscordOAuthFlow
     {
         if (VERBOSE) System.Diagnostics.Debug.WriteLine("Opening Discord authorization URL...");
         string scope = "identify";
-        string authUrl = $"https://discord.com/oauth2/authorize?client_id={clientId}&redirect_uri={Uri.EscapeDataString(redirectUri)}&response_type=code&scope={scope}";
+
+        if (VERBOSE) System.Diagnostics.Debug.WriteLine("[INFO] Opening browser for Discord authentication...");
+
+        string authUrl = $"https://discord.com/oauth2/authorize" +
+                         $"?client_id={clientId}" +
+                         $"&redirect_uri={Uri.EscapeDataString(redirectUri)}" +
+                         $"&response_type=token" +
+                         $"&scope={scope}";
 
         // Opens the authorization URL in the default web browser
         System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
@@ -74,44 +81,7 @@ public class DiscordOAuthFlow
 
         httpListener.Start();
 
-        Task.Run(() => ListenForCode());
-    }
-
-    private async Task ListenForCode()
-    {
-        if (VERBOSE) System.Diagnostics.Debug.WriteLine("Listening for authorization code...");
-        while (httpListener.IsListening)
-        {
-            var context = await httpListener.GetContextAsync();
-            m_code = context.Request.QueryString["code"];
-
-            // Send a response back to the browser
-            string responseString = //"<html><body>Authentication successful! You can close this window.</body></html>";
-            "<html>\r\n\r\n<body style=\"background-color:#202020;\\\">\r\n    <center>\r\n        <figure class=\"image image-style-align-left\\\"><img style=\"aspect-ratio:256/256;\" src=\"https://gcdn.thunderstore.io/live/repository/icons/oathorse-TrophyHuntMod-0.8.8.png.256x256_q95_crop.jpg\" width=\"256\\\" height=\"256\\\"></figure>\r\n        <p>&nbsp;</p>\r\n        <p><span style=\"color:#f0e080;font-size:22px;\"><strong>Congratulations! You've connected Discord to the TrophyHuntMod and have enabled online reporting!</p></strong></span>\r\n        \r\n        <p><span style=\"color:#e0e0e0;font-size:20px;\"><strong>Data reported by the mod can now be used in official Trophy Hunt Tournaments.</strong></span></p>\r\n        <p>&nbsp;</p>\r\n        <p><span style=\"color:#e0e0e0;font-size:22px;\"><strong>Only your Discord id and username are used, and not for anything but Trophy Hunt event leaderboards.</strong></span></p>\r\n        <p><span style=\"color:#e04040;font-size:20px;\"><strong>They will not be shared with anyone else.</strong></span></p>\r\n        <p>&nbsp;</p>\r\n        <p>&nbsp;</p>\r\n        <p><span style=\"color:#e0e0e0;font-size:24px;\\\"><strong>You can now close this window.</strong></span></p>\r\n    </center>\r\n</body>\r\n\r\n</html>";
-            
-            byte[] buffer = Encoding.UTF8.GetBytes(responseString);
-            context.Response.ContentLength64 = buffer.Length;
-            context.Response.OutputStream.Write(buffer, 0, buffer.Length);
-            context.Response.OutputStream.Close();
-
-            if (VERBOSE) System.Diagnostics.Debug.WriteLine($"Authorization Code Received: {m_code}");
-
-            // Stop the server
-            StopServer();
-
-            if (VERBOSE) System.Diagnostics.Debug.WriteLine($"Exchanging code for token.");
-
-            try
-            {
-                // Exchange the code for a token
-                await ExchangeCodeForToken(m_code);
-            }
-
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine(ex.ToString());
-            }
-        }
+        Task.Run(() => ImplicitGrantWaitForCallback());
     }
 
     private void StopServer()
@@ -120,79 +90,95 @@ public class DiscordOAuthFlow
         httpListener.Stop();
     }
 
-    private async Task ExchangeCodeForToken(string code)
+    private async Task ImplicitGrantWaitForCallback()
     {
-        if (VERBOSE) System.Diagnostics.Debug.WriteLine("Exchanging authorization code for access token...");
-        using (HttpClient httpClient = new HttpClient())
+        if (VERBOSE) System.Diagnostics.Debug.WriteLine("[INFO] Waiting for Discord authentication...");
+
+        while (true)
         {
-            var formData = new FormUrlEncodedContent(new[]
+            HttpListenerContext context = await httpListener.GetContextAsync();
+            HttpListenerRequest request = context.Request;
+            HttpListenerResponse response = context.Response;
+
+            if (request.Url.AbsolutePath == "/callback" && string.IsNullOrEmpty(request.QueryString["token"]))
             {
-                new KeyValuePair<string, string>("client_id", m_clientId),
-                new KeyValuePair<string, string>("client_secret", m_clientSecret),
-                new KeyValuePair<string, string>("grant_type", "authorization_code"),
-                new KeyValuePair<string, string>("code", code),
-                new KeyValuePair<string, string>("redirect_uri", m_redirectUri)
-            });
-
-            if (VERBOSE) System.Diagnostics.Debug.WriteLine("PostAsync()");
-
-            var response = await httpClient.PostAsync(TokenEndpoint, formData);
-            if (response.IsSuccessStatusCode)
+                // Serve the JavaScript callback page
+                string htmlContent = GetCallbackHtml();
+                byte[] buffer = System.Text.Encoding.UTF8.GetBytes(htmlContent);
+                response.ContentLength64 = buffer.Length;
+                response.ContentType = "text/html";
+                await response.OutputStream.WriteAsync(buffer, 0, buffer.Length);
+                response.OutputStream.Close();
+            }
+            else if (request.QueryString["token"] != null)
             {
-                string responseBody = await response.Content.ReadAsStringAsync();
-                if (VERBOSE) System.Diagnostics.Debug.WriteLine("Access token successfully received.");
-                if (VERBOSE) System.Diagnostics.Debug.WriteLine($"Token Response: {responseBody}");
+                // Process the token
+                string accessToken = request.QueryString["token"];
+                if (VERBOSE) System.Diagnostics.Debug.WriteLine($"[SUCCESS] Received access token: {accessToken}");
 
-                var tokenResponse = JsonConvert.DeserializeObject<DiscordTokenResponse>(responseBody);
-                await FetchDiscordUser(tokenResponse.access_token);
+                // Send response to browser
+                string successResponse = "<html>\r\n\r\n<body style=\"background-color:#202020;\\\">\r\n    <center>\r\n        <figure class=\"image image-style-align-left\\\"><img style=\"aspect-ratio:256/256;\" src=\"https://gcdn.thunderstore.io/live/repository/icons/oathorse-TrophyHuntMod-0.8.8.png.256x256_q95_crop.jpg\" width=\"256\\\" height=\"256\\\"></figure>\r\n        <p>&nbsp;</p>\r\n        <p><span style=\"color:#f0e080;font-size:22px;\"><strong>Congratulations! You've connected Discord to the TrophyHuntMod and have enabled online reporting!</p></strong></span>\r\n        \r\n        <p><span style=\"color:#e0e0e0;font-size:20px;\"><strong>Data reported by the mod can now be used in official Trophy Hunt Tournaments.</strong></span></p>\r\n        <p>&nbsp;</p>\r\n        <p><span style=\"color:#e0e0e0;font-size:22px;\"><strong>Only your Discord id and username are used, and not for anything but Trophy Hunt event leaderboards.</strong></span></p>\r\n        <p><span style=\"color:#e04040;font-size:20px;\"><strong>They will not be shared with anyone else.</strong></span></p>\r\n        <p>&nbsp;</p>\r\n        <p>&nbsp;</p>\r\n        <p><span style=\"color:#e0e0e0;font-size:24px;\\\"><strong>You can now close this window.</strong></span></p>\r\n    </center>\r\n</body>\r\n\r\n</html>";
+                byte[] buffer = System.Text.Encoding.UTF8.GetBytes(successResponse);
+                response.ContentLength64 = buffer.Length;
+                response.ContentType = "text/html";
+                await response.OutputStream.WriteAsync(buffer, 0, buffer.Length);
+                response.OutputStream.Close();
 
-                if (VERBOSE) System.Diagnostics.Debug.WriteLine("Discord User Fetched");
+                StopServer();
+
+                // Fetch user info
+                await ImplicitGrantGetDiscordUserInfo(accessToken);
+
                 m_statusCallback();
-            }
-            else
-            {
-                if (VERBOSE) System.Diagnostics.Debug.WriteLine($"Error exchanging code for token: {response.StatusCode}");
-                string errorResponse = await response.Content.ReadAsStringAsync();
-                if (VERBOSE) System.Diagnostics.Debug.WriteLine($"Response: {errorResponse}");
+
+                break;
             }
         }
     }
 
-    private async Task FetchDiscordUser(string accessToken)
+    private async Task ImplicitGrantGetDiscordUserInfo(string accessToken)
     {
-        if (VERBOSE) System.Diagnostics.Debug.WriteLine("Fetching Discord user information...");
-        using (HttpClient httpClient = new HttpClient())
+        using HttpClient client = new HttpClient();
+        client.DefaultRequestHeaders.Add("Authorization", $"Bearer {accessToken}");
+
+        HttpResponseMessage response = await client.GetAsync("https://discord.com/api/users/@me");
+        string responseBody = await response.Content.ReadAsStringAsync();
+
+        if (VERBOSE) System.Diagnostics.Debug.WriteLine($"ResponseBody: {responseBody}");
+
+        if (response.IsSuccessStatusCode)
         {
-            httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {accessToken}");
-
-            var response = await httpClient.GetAsync(UserEndpoint);
-            if (response.IsSuccessStatusCode)
-            {
-                string responseBody = await response.Content.ReadAsStringAsync();
-                if (VERBOSE) System.Diagnostics.Debug.WriteLine("User information successfully received.");
-                if (VERBOSE) System.Diagnostics.Debug.WriteLine($"User Info Response: {responseBody}");
-
-                m_userInfo = JsonConvert.DeserializeObject<DiscordUserResponse>(responseBody);
-                if (VERBOSE) System.Diagnostics.Debug.WriteLine($"User: {m_userInfo.username}#{m_userInfo.discriminator}");
-            }
-            else
-            {
-                if (VERBOSE) System.Diagnostics.Debug.WriteLine($"Error fetching user info: {response.StatusCode}");
-                string errorResponse = await response.Content.ReadAsStringAsync();
-                if (VERBOSE) System.Diagnostics.Debug.WriteLine($"Response: {errorResponse}");
-            }
+            m_userInfo = JsonConvert.DeserializeObject<DiscordUserResponse>(responseBody);
+        }
+        else
+        {
+            if (VERBOSE) System.Diagnostics.Debug.WriteLine($"[ERROR] Failed to get user info: {responseBody}");
         }
     }
-}
 
-// Helper Classes
-public class DiscordTokenResponse
-{
-    public string access_token { get; set; }
-    public string token_type { get; set; }
-    public int expires_in { get; set; }
-    public string refresh_token { get; set; }
-    public string scope { get; set; }
+    private string GetCallbackHtml()
+    {
+        return @"<!DOCTYPE html>
+<html>
+<head>
+    <title>Discord Auth</title>
+    <script>
+        window.onload = function() {
+            const params = new URLSearchParams(window.location.hash.substr(1));
+            const accessToken = params.get('access_token');
+            if (accessToken) {
+                window.location.href = 'http://localhost:5000/callback?token=' + encodeURIComponent(accessToken);
+            } else {
+                document.body.innerHTML = '<h2>Error: No access token found.</h2>';
+            }
+        };
+    </script>
+</head>
+<body>
+    <h2>Authenticating...</h2>
+</body>
+</html>";
+    }
 }
 
 public class DiscordUserResponse

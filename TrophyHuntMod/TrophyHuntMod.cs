@@ -5110,10 +5110,9 @@ namespace TrophyHuntMod
                 if (!__m_loggedInWithDiscord)
                 {
                     string clientId = "1328474573334642728";
-                    string clientSecret = DiscordClientSecret.CLIENT_SECRET;
                     string redirectUri = "http://localhost:5000/callback";
 
-                    __m_discordAuthentication.StartOAuthFlow(clientId, clientSecret, redirectUri, UpdateOnlineStatus);
+                    __m_discordAuthentication.StartOAuthFlow(clientId, redirectUri, UpdateOnlineStatus);
                 }
                 else
                 {

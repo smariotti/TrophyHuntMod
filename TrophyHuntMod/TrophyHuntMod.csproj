@@ -86,7 +86,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="DiscordAuthentication.cs" />
-    <Compile Include="DiscordClientSecret.cs" />
     <Compile Include="Properties\IgnoreAccessModifiers.cs" />
     <Compile Include="TrophyConsoleCommands.cs" />
     <Compile Include="TrophyFiesta.cs" />
