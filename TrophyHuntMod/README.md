@@ -133,13 +133,19 @@ This Trophy Hunt variant implements a good number of modifications to standard V
   - NOTE: Cooking buildings are unchanged from vanilla (Cooking Station, Mead Ketill, Iron Cooking Station, Cauldron, Stone Oven)
 - Pickaxes are more productive when mining
 - All planted seeds and saplings grow to maturity within 10 seconds (as in previous version)
-- All Player Skills are learned at level 10 and then increase normally.
+- All Player Skills are learned at level 20 and then increase normally.
 
 ## Culinary Saga
 - Like Trophy Saga, but you score by making food.
 
 
 ## Change Log
+v0.9.2
+- Removed debug logging calls for new leaderboard support.
+
+v0.9.1
+- Switched authentication to use implicit grant OAUTH2 workflow for increased security.
+
 v0.9.0
 - Discord Authentication for going Online with TrophyHuntMod!
   - Now, to report gameplay data to the Trophy Hunt server, you must Go Online via authentication with Discord. 

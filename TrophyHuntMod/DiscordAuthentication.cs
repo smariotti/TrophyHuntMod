@@ -25,7 +25,7 @@ public class DiscordOAuthFlow
     string m_code = string.Empty;
     DiscordUserResponse m_userInfo = null;
 
-    bool VERBOSE = true;
+    bool VERBOSE = false;
 
     public DiscordUserResponse GetUserResponse() { return m_userInfo; }
     public void ClearUserResponse() { m_userInfo = null; }

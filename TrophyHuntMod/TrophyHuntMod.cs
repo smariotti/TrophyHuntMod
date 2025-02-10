@@ -54,7 +54,7 @@ namespace TrophyHuntMod
         public const string PluginName = "TrophyHuntMod";
         private const Boolean UPDATE_LEADERBOARD = true;
 #endif
-        public const string PluginVersion = "0.9.0";
+        public const string PluginVersion = "0.9.2";
         private readonly Harmony harmony = new Harmony(PluginGUID);
 
         // Configuration variables
@@ -2963,7 +2963,7 @@ namespace TrophyHuntMod
                 // Convert the data to JSON
                 string jsonData = JsonUtility.ToJson(data);
 
-                Debug.Log(jsonData);
+//                Debug.Log(jsonData);
 
                 // Create a UnityWebRequest for the POST operation
                 var request = new UnityWebRequest(url, "POST");
@@ -2980,7 +2980,7 @@ namespace TrophyHuntMod
                 // Handle the response
                 if (request.result == UnityWebRequest.Result.Success)
                 {
-                    Debug.Log("Leaderboard POST successful! Response: " + request.downloadHandler.text);
+//                    Debug.Log("Leaderboard POST successful! Response: " + request.downloadHandler.text);
                 }
                 else
                 {
@@ -4386,7 +4386,7 @@ namespace TrophyHuntMod
                                 {
                                     SpecialSagaDrop sagaDrop = enemySagaDrops[i];
 
-                                    Debug.LogWarning($"{sagaDrop.m_itemName} {sagaDrop.m_onlyInMode.ToString()} ({GetGameMode()}");
+//                                    Debug.LogWarning($"{sagaDrop.m_itemName} {sagaDrop.m_onlyInMode.ToString()} ({GetGameMode()}");
 
                                     // If it only drops in a specific game mode
                                     if (sagaDrop.m_onlyInMode != TrophyGameMode.Max)
@@ -4834,7 +4834,7 @@ namespace TrophyHuntMod
 
                     if (piece != null)
                     {
-                        Debug.Log($"Player {__instance.GetPlayerName()} placed a building: {piece.m_name}");
+//                        Debug.Log($"Player {__instance.GetPlayerName()} placed a building: {piece.m_name}");
 
                         AddPlayerEvent(PlayerEventType.Build, piece.m_name, __instance.transform.position);
                     }
@@ -5068,8 +5068,8 @@ namespace TrophyHuntMod
                     __m_trophyHuntMod.Config.Save();
                 }
 
-                System.Diagnostics.Debug.WriteLine($"UpdateOnlineStatus {__m_loggedInWithDiscord}");
-                Debug.Log($"UpdateOnlineStatus: {__m_loggedInWithDiscord} updating");
+//                System.Diagnostics.Debug.WriteLine($"UpdateOnlineStatus {__m_loggedInWithDiscord}");
+//                Debug.Log($"UpdateOnlineStatus: {__m_loggedInWithDiscord} updating");
 
 
                 string onlineText = "n/a";
@@ -5117,7 +5117,7 @@ namespace TrophyHuntMod
                 else
                 {
                     __m_loggedInWithDiscord = false;
-                    Debug.Log("__m_loggedInWithDiscord = false");
+//                    Debug.Log("__m_loggedInWithDiscord = false");
                     __m_discordAuthentication.ClearUserResponse();
                     __m_configDiscordId.SetSerializedValue("");
                     __m_configDiscordUser.SetSerializedValue("");
@@ -5252,7 +5252,7 @@ namespace TrophyHuntMod
 
             public static void AddPlayerEvent(PlayerEventType eventType, string eventName, Vector3 eventPos)
             {
-                Debug.LogWarning($"AddPlayerEvent() Logging Event: {eventType.ToString()}, {eventName}, {eventPos}");
+//                Debug.LogWarning($"AddPlayerEvent() Logging Event: {eventType.ToString()}, {eventName}, {eventPos}");
 
                 if (!IsLoggableEvent(eventType, eventName))
                 {
@@ -5324,7 +5324,7 @@ namespace TrophyHuntMod
 
             static public IEnumerator UnityPostRequest(string url, string json)
             {
-                Debug.LogWarning($"UnityPostRequest(): {url}\n{json}");
+//                Debug.LogWarning($"UnityPostRequest(): {url}\n{json}");
 
                 UnityWebRequest request = UnityWebRequest.Post(url, json, "application/json");
                 yield return request.SendWebRequest();
@@ -5335,10 +5335,10 @@ namespace TrophyHuntMod
                 }
                 else
                 {
-                    Debug.Log("Form upload complete!");
+//                    Debug.Log("Form upload complete!");
                 }
 
-                Debug.LogWarning($"UnityPostRequest(): Result: {request.result.ToString()}");
+//                Debug.LogWarning($"UnityPostRequest(): Result: {request.result.ToString()}");
 
             }
 
@@ -5363,7 +5363,7 @@ namespace TrophyHuntMod
                 }
                 else
                 {
-                    Debug.LogWarning("PostTrackLogs: Forced track log request");
+//                    Debug.LogWarning("PostTrackLogs: Forced track log request");
                 }
 
                 TrackLogs trackLogs = new TrackLogs();
@@ -5385,7 +5385,7 @@ namespace TrophyHuntMod
 
                 string json = JsonConvert.SerializeObject(trackLogs);
 
-                Debug.LogWarning(json);
+//                Debug.LogWarning(json);
 
                 string url = "https://valhelp.azurewebsites.net/api/track/logs";
 
@@ -5520,7 +5520,7 @@ namespace TrophyHuntMod
 
                     if (webRequest.result == UnityWebRequest.Result.Success)
                     {
-                        Debug.Log($"Standings Recieved: {webRequest.downloadHandler.text}");
+//                        Debug.Log($"Standings Recieved: {webRequest.downloadHandler.text}");
 
                         string responseText = webRequest.downloadHandler.text;
 
@@ -5598,7 +5598,7 @@ namespace TrophyHuntMod
                 string mode = GetGameMode().ToString();
                 string url = $"{standingsUrl}?seed={seed}&mode={mode}";
 
-                Debug.Log($"Standings Request: {url}");
+//                Debug.Log($"Standings Request: {url}");
 
 
                 __m_trophyHuntMod.StartCoroutine(UnityGetStandingsRequest(url));
