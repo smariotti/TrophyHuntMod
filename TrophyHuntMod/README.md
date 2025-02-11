@@ -140,6 +140,10 @@ This Trophy Hunt variant implements a good number of modifications to standard V
 
 
 ## Change Log
+v0.9.3
+- Trophy Saga
+  - Fixed a bug with insta-smelt where duplicate metal bars would be generated and placed in the world at a random location while manipulating ores.
+
 v0.9.2
 - Removed debug logging calls for new leaderboard support.
 

@@ -54,7 +54,7 @@ namespace TrophyHuntMod
         public const string PluginName = "TrophyHuntMod";
         private const Boolean UPDATE_LEADERBOARD = true;
 #endif
-        public const string PluginVersion = "0.9.2";
+        public const string PluginVersion = "0.9.3";
         private readonly Harmony harmony = new Harmony(PluginGUID);
 
         // Configuration variables
@@ -4544,29 +4544,28 @@ namespace TrophyHuntMod
                     return;
                 }
 
+                Debug.LogWarning($"ConvertMetal(): Creating {itemData.ToString()} {itemData.m_dropPrefab.name}");
+
                 string cookedMetalName;
                 if (__m_oreNameToBarPrefabName.TryGetValue(itemData.m_dropPrefab.name, out cookedMetalName))
                 {
                     GameObject metalPrefab = zNetScene.GetPrefab(cookedMetalName);
-                    GameObject tempMetalObject = UnityEngine.Object.Instantiate<GameObject>(metalPrefab);
-
-                    if (tempMetalObject)
+                    if (metalPrefab == null)
                     {
-                        //                        Debug.LogWarning($"ConvertMetal(): Created {tempMetalObject.name}");
+                        return;
+                    }
 
-                        ItemDrop tempItemDrop = tempMetalObject.GetComponent<ItemDrop>();
-
-                        //if (metalPrefab != null)
-                        //{
-                        //    Debug.LogWarning($"ConvertMetal(): Ingot {tempItemDrop.m_itemData.m_shared.m_name} weight {tempItemDrop.m_itemData.m_shared.m_weight}");
-                        //}
-
+                    ItemDrop tempItemDrop = metalPrefab.GetComponent<ItemDrop>();
+                    if (tempItemDrop != null)
+                    {
                         int stackSize = itemData.m_stack;
 
                         // Replace the ore/scrap itemdata with the cooked metal itemdata
                         ItemDrop.ItemData tempItemData = tempItemDrop.m_itemData;
+
                         itemData = tempItemData.Clone();
                         itemData.m_stack = stackSize;
+                        itemData.m_dropPrefab = metalPrefab;
                     }
                 }
             }
