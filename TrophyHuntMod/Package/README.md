@@ -140,6 +140,11 @@ This Trophy Hunt variant implements a good number of modifications to standard V
 
 
 ## Change Log
+v0.9.4
+- Trophy Saga
+  - Changed Megingjord drop logic to stop dropping off of Greylings or Trolls only after you've picked one up, rather than after one has dropped at all. Helps prevent missing the drop if mob vs. mob violence offscreen results in a Megingjord dropping. May result in multiple Megingjords dropping during play.
+  - Removed some debug logging for ore/bar conversion.
+
 v0.9.3
 - Trophy Saga
   - Fixed a bug with insta-smelt where duplicate metal bars would be generated and placed in the world at a random location while manipulating ores.

@@ -54,7 +54,7 @@ namespace TrophyHuntMod
         public const string PluginName = "TrophyHuntMod";
         private const Boolean UPDATE_LEADERBOARD = true;
 #endif
-        public const string PluginVersion = "0.9.3";
+        public const string PluginVersion = "0.9.4";
         private readonly Harmony harmony = new Harmony(PluginGUID);
 
         // Configuration variables
@@ -419,7 +419,7 @@ namespace TrophyHuntMod
             }
         }
 
-        static public string __m_saveDataVersionNumber = "3";
+        static public string __m_saveDataVersionNumber = "4";
 
         // WARNING!
         //
@@ -437,6 +437,7 @@ namespace TrophyHuntMod
             {
                 public string m_name;
                 public int m_dropCount;
+                public int m_numPickedUp;
             }
 
             public List<THMSaveDataDropInfo> m_playerTrophyDropInfos = null;
@@ -520,7 +521,7 @@ namespace TrophyHuntMod
                     THMSaveDataSpecialSagaDropCount savedCount = new THMSaveDataSpecialSagaDropCount();
                     savedCount.m_name = sagaDropCountKey;
                     savedCount.m_dropCount = sagaDrop.m_numDropped;
-
+                    savedCount.m_numPickedUp = sagaDrop.m_numPickedUp;
                     saveData.m_specialSagaDropCounts.Add(savedCount);
                 }
             }
@@ -638,7 +639,7 @@ namespace TrophyHuntMod
                     if (sagaDrop.m_itemName == itemName)
                     {
                         sagaDrop.m_numDropped = dropCounts.m_dropCount;
-
+                        sagaDrop.m_numPickedUp = dropCounts.m_numPickedUp;
                         specials[i] = sagaDrop;
                         break;
                     }
@@ -3991,14 +3992,16 @@ namespace TrophyHuntMod
 
             public struct SpecialSagaDrop
             {
-                public SpecialSagaDrop(string itemName, float dropPercent, int dropAmountMin, int dropAmountMax, bool dropOnlyOne = false, TrophyGameMode onlyInMode = TrophyGameMode.Max)
+                public SpecialSagaDrop(string itemName, float dropPercent, int dropAmountMin, int dropAmountMax, bool dropOnlyOne = false, bool stopDroppingOnPickup = false, TrophyGameMode onlyInMode = TrophyGameMode.Max)
                 {
                     m_itemName = itemName;
                     m_dropPercent = dropPercent;
                     m_dropAmountMin = dropAmountMin;
                     m_dropAmountMax = dropAmountMax;
                     m_dropOnlyOne = dropOnlyOne;
+                    m_stopDroppingOnPickup = stopDroppingOnPickup;
                     m_numDropped = 0;
+                    m_numPickedUp = 0;
                     m_onlyInMode = onlyInMode;
                 }
 
@@ -4007,8 +4010,10 @@ namespace TrophyHuntMod
                 public int m_dropAmountMin;
                 public int m_dropAmountMax;
                 public bool m_dropOnlyOne;
+                public bool m_stopDroppingOnPickup;
                 public TrophyGameMode m_onlyInMode;
                 public int m_numDropped;
+                public int m_numPickedUp;
             }
 
             static public Dictionary<string, List<SpecialSagaDrop>> __m_specialSagaDrops = new Dictionary<string, List<SpecialSagaDrop>>
@@ -4033,13 +4038,13 @@ namespace TrophyHuntMod
                                                     new SpecialSagaDrop("Honey",            8,  1, 2, false),
                                                     new SpecialSagaDrop("Blueberries",      7,  2, 4, false),
 
-                                                    new SpecialSagaDrop("BeltStrength",     15,  1, 1, true)
+                                                    new SpecialSagaDrop("BeltStrength",     15,  1, 1, false, true)
                                                 }
                 },
                 {
                     "$enemy_neck",              new List<SpecialSagaDrop>
                                                 {
-                                                    new SpecialSagaDrop("FishingBait", 25,  1, 5, false, TrophyGameMode.CulinarySaga),
+                                                    new SpecialSagaDrop("FishingBait", 25,  1, 5, false, false, TrophyGameMode.CulinarySaga),
                                                 }
                 },
 
@@ -4048,15 +4053,15 @@ namespace TrophyHuntMod
                     "$enemy_greydwarfbrute",    new List<SpecialSagaDrop>
                                                 {
                                                     new SpecialSagaDrop("CryptKey",        100,  1, 1, true),
-                                                    new SpecialSagaDrop("FishingRod",      100,  1, 1, true, TrophyGameMode.CulinarySaga),
+                                                    new SpecialSagaDrop("FishingRod",      100,  1, 1, true, false, TrophyGameMode.CulinarySaga),
                                                 }
                 },
                 {
                     "$enemy_troll",             new List<SpecialSagaDrop>
                                                 {
-                                                    new SpecialSagaDrop("BeltStrength",    100,  1, 1, true),
+                                                    new SpecialSagaDrop("BeltStrength",    100,  1, 1, false, true),
                                                     new SpecialSagaDrop("TrollHide",       100,  5, 5, false),
-                                                    new SpecialSagaDrop("FishingBaitForest",      50,  1, 5, true, TrophyGameMode.CulinarySaga),
+                                                    new SpecialSagaDrop("FishingBaitForest",      50,  1, 5, true, false, TrophyGameMode.CulinarySaga),
                                                 }
                 },
                 {
@@ -4078,7 +4083,7 @@ namespace TrophyHuntMod
                                                 {
                                                     new SpecialSagaDrop("Wishbone",       100,  1, 1, true),
                                                     new SpecialSagaDrop("Ooze",           100,  2, 5, false),
-                                                    new SpecialSagaDrop("FishingRod",      100,  1, 1, true, TrophyGameMode.CulinarySaga),
+                                                    new SpecialSagaDrop("FishingRod",      100,  1, 1, true, false, TrophyGameMode.CulinarySaga),
                                                 }
                 },
                 {
@@ -4090,7 +4095,7 @@ namespace TrophyHuntMod
                 {
                     "$enemy_abomination",       new List<SpecialSagaDrop>
                                                 {
-                                                    new SpecialSagaDrop("FishingBaitSwamp", 25,  1, 5, false, TrophyGameMode.CulinarySaga),
+                                                    new SpecialSagaDrop("FishingBaitSwamp", 25,  1, 5, false, false, TrophyGameMode.CulinarySaga),
                                                 }
                 },
                 // $enemy_abomination
@@ -4101,8 +4106,8 @@ namespace TrophyHuntMod
                     "$enemy_drake",           new List<SpecialSagaDrop>
                                                 {
                                                     new SpecialSagaDrop("DragonTear",      100,  1, 2, false),
-                                                    new SpecialSagaDrop("FishingRod",      100,  1, 1, true, TrophyGameMode.CulinarySaga),
-                                                    new SpecialSagaDrop("FishingBaitDeepNorth", 15,  1, 5, false, TrophyGameMode.CulinarySaga),
+                                                    new SpecialSagaDrop("FishingRod",      100,  1, 1, true, false, TrophyGameMode.CulinarySaga),
+                                                    new SpecialSagaDrop("FishingBaitDeepNorth", 15,  1, 5, false, false, TrophyGameMode.CulinarySaga),
                                                 }
                 },
                 {
@@ -4115,7 +4120,7 @@ namespace TrophyHuntMod
                 {
                     "$enemy_fenring",           new List<SpecialSagaDrop>
                                                 {
-                                                    new SpecialSagaDrop("FishingBaitCave", 25,  1, 10, false, TrophyGameMode.CulinarySaga),
+                                                    new SpecialSagaDrop("FishingBaitCave", 25,  1, 10, false, false, TrophyGameMode.CulinarySaga),
                                                 }
                 },
 
@@ -4123,21 +4128,21 @@ namespace TrophyHuntMod
                 {
                     "$enemy_goblin",      new List<SpecialSagaDrop>
                                                 {
-                                                    new SpecialSagaDrop("FishingBaitPlains", 15,  1, 5, false, TrophyGameMode.CulinarySaga),
+                                                    new SpecialSagaDrop("FishingBaitPlains", 15,  1, 5, false, false, TrophyGameMode.CulinarySaga),
                                                 }
                 },
                {
                     "$enemy_goblinshaman",      new List<SpecialSagaDrop>
                                                 {
                                                     new SpecialSagaDrop("YagluthDrop",     100,  1, 1, true),
-                                                    new SpecialSagaDrop("FishingRod",      100,  1, 1, true, TrophyGameMode.CulinarySaga),
+                                                    new SpecialSagaDrop("FishingRod",      100,  1, 1, true, false, TrophyGameMode.CulinarySaga),
                                                 }
                 },
                 {
                     "$enemy_goblinbrute",       new List<SpecialSagaDrop>
                                                 {
                                                     new SpecialSagaDrop("YagluthDrop",     100,  1, 1, true),
-                                                    new SpecialSagaDrop("FishingRod",      100,  1, 1, true, TrophyGameMode.CulinarySaga),
+                                                    new SpecialSagaDrop("FishingRod",      100,  1, 1, true, false, TrophyGameMode.CulinarySaga),
                                                 }
                 },
                 {
@@ -4155,7 +4160,7 @@ namespace TrophyHuntMod
                 {
                     "$enemy_lox",               new List<SpecialSagaDrop>
                                                 {
-                                                    new SpecialSagaDrop("FishingBaitMistlands", 45,  1, 5, false, TrophyGameMode.CulinarySaga),
+                                                    new SpecialSagaDrop("FishingBaitMistlands", 45,  1, 5, false, false, TrophyGameMode.CulinarySaga),
                                                 }
                 },
 
@@ -4164,7 +4169,7 @@ namespace TrophyHuntMod
                     "$enemy_seekerbrute",    new List<SpecialSagaDrop>
                                                 {
                                                     new SpecialSagaDrop("QueenDrop",       100,  1, 1, false),
-                                                    new SpecialSagaDrop("FishingRod",      100,  1, 1, true, TrophyGameMode.CulinarySaga),
+                                                    new SpecialSagaDrop("FishingRod",      100,  1, 1, true, false, TrophyGameMode.CulinarySaga),
                                                 }
                 },
 
@@ -4185,13 +4190,13 @@ namespace TrophyHuntMod
                 {
                     "$enemy_serpent",               new List<SpecialSagaDrop>
                                                 {
-                                                    new SpecialSagaDrop("FishingBaitOcean", 100,  20, 20, false, TrophyGameMode.CulinarySaga),
+                                                    new SpecialSagaDrop("FishingBaitOcean", 100,  20, 20, false, false, TrophyGameMode.CulinarySaga),
                                                 }
                 },
                 {
                     "$enemy_charred_melee",               new List<SpecialSagaDrop>
                                                 {
-                                                    new SpecialSagaDrop("FishingBaitAshlands", 25,  1, 5, false, TrophyGameMode.CulinarySaga),
+                                                    new SpecialSagaDrop("FishingBaitAshlands", 25,  1, 5, false, false, TrophyGameMode.CulinarySaga),
                                                 }
                 },
 
@@ -4239,6 +4244,7 @@ namespace TrophyHuntMod
                         SpecialSagaDrop drop = dropList[i];
 
                         drop.m_numDropped = 0;
+                        drop.m_numPickedUp = 0;
                         dropList[i] = drop;
                     }
                     __m_specialSagaDrops[key] = dropList;
@@ -4265,6 +4271,27 @@ namespace TrophyHuntMod
 
                 return hasDropped;
             }
+            public static bool HasBeenPickedUp(string itemName)
+            {
+                bool hasDropped = false;
+
+                foreach (KeyValuePair<string, List<SpecialSagaDrop>> specialDrops in __m_specialSagaDrops)
+                {
+                    foreach (SpecialSagaDrop sagaDrop in specialDrops.Value)
+                    {
+                        if (sagaDrop.m_itemName == itemName)
+                        {
+                            if (sagaDrop.m_numPickedUp > 0)
+                            {
+                                return true;
+                            }
+                        }
+                    }
+                }
+
+                return hasDropped;
+            }
+
 
             // Watch character drops and see what characters drop what items (actual dropped items)
             //
@@ -4404,28 +4431,12 @@ namespace TrophyHuntMod
                                     if (sagaDrop.m_dropOnlyOne)
                                     {
                                         alreadyDropped = HasAnyoneDropped(sagaDrop.m_itemName);
-
-                                        //alreadyDropped = sagaDrop.m_numDropped > 0;
-                                        //if (!alreadyDropped)
-                                        //{
-
-                                        //    // Special handling for the strength belt, either greylings or trolls can drop it but not both
-                                        //    if (sagaDrop.m_itemName == "BeltStrength")
-                                        //    {
-                                        //        List<SpecialSagaDrop> greylingDrops = __m_specialSagaDrops["$enemy_greyling"];
-                                        //        List<SpecialSagaDrop> trollDrops = __m_specialSagaDrops["$enemy_troll"];
-
-                                        //        SpecialSagaDrop greylingBeltDrop = greylingDrops.Find(x => x.m_itemName == "BeltStrength");
-                                        //        SpecialSagaDrop trollBeltDrop = trollDrops.Find(x => x.m_itemName == "BeltStrength");
-                                        //        if (greylingBeltDrop.m_numDropped > 0 || trollBeltDrop.m_numDropped > 0)
-                                        //        {
-                                        //            alreadyDropped = true;
-                                        //            //                                                    Debug.LogWarning($"Greyling or Troll already dropped {sagaDrop.m_itemName}");
-                                        //        }
-                                        //    }
-                                        //}
                                     }
 
+                                    if (sagaDrop.m_stopDroppingOnPickup)
+                                    {
+                                        alreadyDropped = HasBeenPickedUp(sagaDrop.m_itemName);
+                                    }
                                     // If it's only meant to drop once, just ignore additional drops
                                     if (alreadyDropped)
                                     {
@@ -4544,7 +4555,7 @@ namespace TrophyHuntMod
                     return;
                 }
 
-                Debug.LogWarning($"ConvertMetal(): Creating {itemData.ToString()} {itemData.m_dropPrefab.name}");
+//                Debug.LogWarning($"ConvertMetal(): Creating {itemData.ToString()} {itemData.m_dropPrefab.name}");
 
                 string cookedMetalName;
                 if (__m_oreNameToBarPrefabName.TryGetValue(itemData.m_dropPrefab.name, out cookedMetalName))
@@ -4780,14 +4791,53 @@ namespace TrophyHuntMod
                         return;
                     }
 
-                    if (IsSagaMode())
+                    ItemDrop itemDrop = go.GetComponent<ItemDrop>();
+                    if (itemDrop != null)
                     {
-                        if (__m_instaSmelt)
+                        if (IsSagaMode())
                         {
-                            ItemDrop itemDrop = go.GetComponent<ItemDrop>();
-                            if (itemDrop != null)
+                            if (__m_instaSmelt)
                             {
                                 ConvertMetal(ref itemDrop.m_itemData);
+                            }
+
+                            // Check to see if we picked up something that's a SpecialSagaDrop
+                            if (itemDrop.m_itemData != null && itemDrop.m_itemData.m_dropPrefab != null)
+                            {
+                                string itemName = itemDrop.m_itemData.m_dropPrefab.name;
+
+                                foreach (KeyValuePair<string, List<SpecialSagaDrop>> specialDrops in __m_specialSagaDrops)
+                                {
+                                    string merbName = specialDrops.Key;
+
+                                    List<SpecialSagaDrop> merbDrop = __m_specialSagaDrops[merbName];
+
+                                    for (int i = 0; i < merbDrop.Count; i++)
+                                    {
+                                        SpecialSagaDrop sagaDrop = merbDrop[i];
+                                        if (sagaDrop.m_itemName == itemName && sagaDrop.m_stopDroppingOnPickup)
+                                        {
+                                            Debug.LogError($"Humanoid.Pickup() SpecialSagaDrop for {itemName} found in list for {merbName}");
+
+                                            Debug.LogError($"Player has picked up {sagaDrop.m_numPickedUp} {itemName}");
+
+                                            sagaDrop.m_numPickedUp++;
+                                        }
+
+                                        merbDrop[i] = sagaDrop;
+                                    }
+
+                                    List<SpecialSagaDrop> verifyList = __m_specialSagaDrops[merbName];
+
+                                    foreach (SpecialSagaDrop sd in verifyList)
+                                    {
+                                        if (sd.m_itemName == itemName && sd.m_stopDroppingOnPickup)
+                                        {
+                                            Debug.LogError($"{merbName} m_numPickedUp for {sd.m_itemName} is {sd.m_numPickedUp}");
+
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
