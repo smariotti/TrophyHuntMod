@@ -58,7 +58,7 @@ Elder Trophy - 60 points
 Bonemass Trophy - 80 points
 Moder Trophy - 100 points
 Yagluth Trophy - 120 points
-Queen/Fader Trophy - 1000 points
+Queen/Fader Trophy - 1000 points (400 in Saga modes)
 
 (Queen/Fader points will get nerfed when/if someone completes)
 ```
@@ -140,6 +140,14 @@ This Trophy Hunt variant implements a good number of modifications to standard V
 
 
 ## Change Log
+v0.9.7
+- Synchronized Thunderstore version number with internal version number.
+
+v0.9.5
+- Trophy Saga
+  - The Queen trophy is now worth 400 points
+  - Fader trophy is now worth 400 points
+
 v0.9.4
 - Trophy Saga
   - Changed Megingjord drop logic to stop dropping off of Greylings or Trolls only after you've picked one up, rather than after one has dropped at all. Helps prevent missing the drop if mob vs. mob violence offscreen results in a Megingjord dropping. May result in multiple Megingjords dropping during play.

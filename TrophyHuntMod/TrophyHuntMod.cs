@@ -54,7 +54,7 @@ namespace TrophyHuntMod
         public const string PluginName = "TrophyHuntMod";
         private const Boolean UPDATE_LEADERBOARD = true;
 #endif
-        public const string PluginVersion = "0.9.4";
+        public const string PluginVersion = "0.9.7";
         private readonly Harmony harmony = new Harmony(PluginGUID);
 
         // Configuration variables
@@ -76,6 +76,32 @@ namespace TrophyHuntMod
             Bogwitch = 9,
         };
 
+
+        public struct TrophyHuntDataScoreOverride
+        {
+            public TrophyHuntDataScoreOverride(TrophyGameMode gameMode, string trophyName, int score)
+            {
+                m_gameMode = gameMode;
+                m_trophyName = trophyName;
+                m_score = score;
+            }
+
+            public TrophyGameMode m_gameMode;
+            public string m_trophyName;
+            public int m_score;
+        }
+
+        static public TrophyHuntDataScoreOverride[] __m_trophyHuntScoreOverrides = new TrophyHuntDataScoreOverride[]
+        {
+            new TrophyHuntDataScoreOverride(TrophyGameMode.TrophySaga, "TrophyFader", 400),
+            new TrophyHuntDataScoreOverride(TrophyGameMode.CasualSaga, "TrophyFader", 400),
+            new TrophyHuntDataScoreOverride(TrophyGameMode.CulinarySaga, "TrophyFader", 400),
+
+            new TrophyHuntDataScoreOverride(TrophyGameMode.TrophySaga, "TrophySeekerQueen", 400),
+            new TrophyHuntDataScoreOverride(TrophyGameMode.CasualSaga, "TrophySeekerQueen", 400),
+            new TrophyHuntDataScoreOverride(TrophyGameMode.CulinarySaga, "TrophySeekerQueen", 400)
+        };
+
         public struct TrophyHuntData
         {
             public TrophyHuntData(string name, string prettyName, Biome biome, int value, float dropPercent, List<string> enemies)
@@ -91,9 +117,25 @@ namespace TrophyHuntMod
             public string m_name;
             public string m_prettyName;
             public Biome m_biome;
-            public int m_value;
+             int m_value;
             public float m_dropPercent;
             public List<string> m_enemies;
+
+            public int GetCurGameModeTrophyScoreValue()
+            {
+                int points = m_value;
+
+                foreach (TrophyHuntDataScoreOverride thdso in __m_trophyHuntScoreOverrides)
+                {
+                    if (thdso.m_gameMode == GetGameMode() && thdso.m_trophyName == m_name)
+                    {
+                        points = thdso.m_score;
+                        break;
+                    }
+                }
+
+                return points;
+            }
         }
 
         const int TROPHY_HUNT_DEATH_PENALTY = -20;
@@ -207,6 +249,7 @@ namespace TrophyHuntMod
             new TrophyHuntData("TrophyWraith",                  "Wraith",           Biome.Swamp,        20,     5,      new List<string> { "$enemy_wraith" }),
             new TrophyHuntData("TrophyKvastur",                 "Kvastur",          Biome.Bogwitch,     25,     100,    new List<string> { "$enemy_kvastur" })
         };
+
 
         static public Color[] __m_biomeColors = new Color[]
         {
@@ -1483,7 +1526,7 @@ namespace TrophyHuntMod
                 //                Debug.LogWarning("Local Player is Spawned!");
 
                 // Sort the trophies by biome, score and name
-                Array.Sort<TrophyHuntData>(__m_trophyHuntData, (x, y) => x.m_biome.CompareTo(y.m_biome) * 100000 + x.m_value.CompareTo(y.m_value) * 10000 + x.m_name.CompareTo(y.m_name));
+                Array.Sort<TrophyHuntData>(__m_trophyHuntData, (x, y) => x.m_biome.CompareTo(y.m_biome) * 100000 + x.GetCurGameModeTrophyScoreValue().CompareTo(y.GetCurGameModeTrophyScoreValue()) * 10000 + x.m_name.CompareTo(y.m_name));
 
                 //                Array.Sort<ConsumableData>(__m_cookedFoodData, (x, y) => x.m_regen.CompareTo(y.m_regen) * 100 + x.m_health.CompareTo(y.m_health) + x.m_stamina.CompareTo(y.m_stamina) + x.m_eitr.CompareTo(y.m_eitr) + x.m_prefabName.CompareTo(y.m_prefabName));
 
@@ -1492,7 +1535,7 @@ namespace TrophyHuntMod
                 {
                     foreach (var t in __m_trophyHuntData)
                     {
-                        Debug.LogWarning($"{t.m_biome.ToString()}, {t.m_name}, {t.m_value}");
+                        Debug.LogWarning($"{t.m_biome.ToString()}, {t.m_name}, {t.GetCurGameModeTrophyScoreValue()}");
                     }
                 }
 
@@ -1699,9 +1742,9 @@ namespace TrophyHuntMod
                     {
                         if (displayToLog)
                         {
-                            PrintToConsole($"  {thData.m_name}: Score: {thData.m_value} Biome: {thData.m_biome.ToString()}");
+                            PrintToConsole($"  {thData.m_name}: Score: {thData.GetCurGameModeTrophyScoreValue()} Biome: {thData.m_biome.ToString()}");
                         }
-                        score += thData.m_value;
+                        score += thData.GetCurGameModeTrophyScoreValue();
                     }
                 }
 
@@ -2350,7 +2393,7 @@ namespace TrophyHuntMod
                     if (trophyHuntData.m_name == trophyName)
                     {
                         // Add the value to our score
-                        score += trophyHuntData.m_value;
+                        score += trophyHuntData.GetCurGameModeTrophyScoreValue();
                     }
                 }
 
@@ -3862,7 +3905,7 @@ namespace TrophyHuntMod
 
                 string text =
                     $"<size=16><b><color=#FFB75B>{trophyHuntData.m_prettyName}</color><b></size>\n" +
-                    $"<color=white>Point Value: </color><color=green>{trophyHuntData.m_value}</color>\n" +
+                    $"<color=white>Point Value: </color><color=green>{trophyHuntData.GetCurGameModeTrophyScoreValue()}</color>\n" +
                     $"<color=white>Player Kills: </color><color=orange>{playerDropInfo.m_numKilled}</color>\n" +
                     $"<color=white>Trophies Picked Up: </color><color=orange>{playerDropInfo.m_trophies}</color>\n" +
                     $"<color=white>Kill/Pickup Rate: </color><color=orange>{playerDropPercentStr}%</color>\n" +
