@@ -54,7 +54,7 @@ namespace TrophyHuntMod
         public const string PluginName = "TrophyHuntMod";
         private const Boolean UPDATE_LEADERBOARD = true;
 #endif
-        public const string PluginVersion = "0.9.7";
+        public const string PluginVersion = "0.9.9";
         private readonly Harmony harmony = new Harmony(PluginGUID);
 
         // Configuration variables
@@ -4095,7 +4095,7 @@ namespace TrophyHuntMod
                 {
                     "$enemy_greydwarfbrute",    new List<SpecialSagaDrop>
                                                 {
-                                                    new SpecialSagaDrop("CryptKey",        100,  1, 1, true),
+                                                    new SpecialSagaDrop("CryptKey",        100,  1, 1, false, true),
                                                     new SpecialSagaDrop("FishingRod",      100,  1, 1, true, false, TrophyGameMode.CulinarySaga),
                                                 }
                 },
@@ -4124,7 +4124,7 @@ namespace TrophyHuntMod
                 {
                     "$enemy_blobelite",         new List<SpecialSagaDrop>
                                                 {
-                                                    new SpecialSagaDrop("Wishbone",       100,  1, 1, true),
+                                                    new SpecialSagaDrop("Wishbone",       100,  1, 1, false, true),
                                                     new SpecialSagaDrop("Ooze",           100,  2, 5, false),
                                                     new SpecialSagaDrop("FishingRod",      100,  1, 1, true, false, TrophyGameMode.CulinarySaga),
                                                 }
@@ -4177,14 +4177,14 @@ namespace TrophyHuntMod
                {
                     "$enemy_goblinshaman",      new List<SpecialSagaDrop>
                                                 {
-                                                    new SpecialSagaDrop("YagluthDrop",     100,  1, 1, true),
+                                                    new SpecialSagaDrop("YagluthDrop",     100,  1, 1, false, true),
                                                     new SpecialSagaDrop("FishingRod",      100,  1, 1, true, false, TrophyGameMode.CulinarySaga),
                                                 }
                 },
                 {
                     "$enemy_goblinbrute",       new List<SpecialSagaDrop>
                                                 {
-                                                    new SpecialSagaDrop("YagluthDrop",     100,  1, 1, true),
+                                                    new SpecialSagaDrop("YagluthDrop",     100,  1, 1, false, true),
                                                     new SpecialSagaDrop("FishingRod",      100,  1, 1, true, false, TrophyGameMode.CulinarySaga),
                                                 }
                 },
@@ -4211,7 +4211,7 @@ namespace TrophyHuntMod
                 {
                     "$enemy_seekerbrute",    new List<SpecialSagaDrop>
                                                 {
-                                                    new SpecialSagaDrop("QueenDrop",       100,  1, 1, false),
+                                                    new SpecialSagaDrop("QueenDrop",       100,  1, 1, false, true),
                                                     new SpecialSagaDrop("FishingRod",      100,  1, 1, true, false, TrophyGameMode.CulinarySaga),
                                                 }
                 },
@@ -5901,6 +5901,18 @@ namespace TrophyHuntMod
 
                             AddPlayerEvent(PlayerEventType.Misc, "PenaltySlashDie", Player.m_localPlayer.transform.position);
                         }
+                        if (args.Length > 0 && args[0] == "devcommands")
+                        {
+                            __m_invalidForTournamentPlay = true;
+
+                            if (__m_scoreTextElement != null)
+                            {
+                                TMPro.TextMeshProUGUI tmText = __m_scoreTextElement.GetComponent<TMPro.TextMeshProUGUI>();
+                                tmText.color = Color.green;
+                            }
+
+                            UpdateModUI(Player.m_localPlayer);
+                        }
                     }
                 }
             }
@@ -6129,7 +6141,7 @@ namespace TrophyHuntMod
                     }
                 }
             }
-
+            /*
             [HarmonyPatch(typeof(Game), nameof(Game.ShowIntro))]
             public static class Game_ShowIntro_Patch
             {
@@ -6161,7 +6173,7 @@ namespace TrophyHuntMod
                     }
                 }
             }
-
+            */
             // Mining all veins are more productive
             //
             [HarmonyPatch(typeof(MineRock5), nameof(MineRock5.Awake))]

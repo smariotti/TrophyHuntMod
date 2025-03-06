@@ -140,6 +140,15 @@ This Trophy Hunt variant implements a good number of modifications to standard V
 
 
 ## Change Log
+v0.9.9
+- Saga Modes
+  - Adjusted Boss item drop method to prevent mob vs. mob violence causing player to miss dropped Boss items
+
+v0.9.8
+- Changes for latest Valheim (Patch 0.220.3):
+  - Fixed crash caused by recent Valheim update (Platform DLL was added by Iron Gate)
+  - Removed custom Intro text, as that no longer patched correctly
+
 v0.9.7
 - Synchronized Thunderstore version number with internal version number.
 

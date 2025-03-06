@@ -12,7 +12,7 @@ using TrophyHuntMod;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 using static UnityEngine.GUI;
-using static PrivilegeManager;
+//using static PrivilegeManager;
 
 public class DiscordOAuthFlow
 {
