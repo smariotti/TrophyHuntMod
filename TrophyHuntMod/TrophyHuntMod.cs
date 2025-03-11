@@ -54,7 +54,7 @@ namespace TrophyHuntMod
         public const string PluginName = "TrophyHuntMod";
         private const Boolean UPDATE_LEADERBOARD = true;
 #endif
-        public const string PluginVersion = "0.9.9";
+        public const string PluginVersion = "0.9.10";
         private readonly Harmony harmony = new Harmony(PluginGUID);
 
         // Configuration variables
@@ -1542,7 +1542,13 @@ namespace TrophyHuntMod
                 // Cache already discovered trophies
                 __m_trophyCache = Player.m_localPlayer.GetTrophies();
 
-                if (__m_showAllTrophyStats || __m_ignoreLogouts || GetGameMode() == TrophyGameMode.TrophyFiesta || GetGameMode() == TrophyGameMode.CulinarySaga || GetGameMode() == TrophyGameMode.CasualSaga)
+                if (__m_showAllTrophyStats || 
+                    __m_ignoreLogouts || 
+                    GetGameMode() == TrophyGameMode.TrophyFiesta || 
+                    GetGameMode() == TrophyGameMode.CulinarySaga || 
+                    GetGameMode() == TrophyGameMode.CasualSaga ||
+                     Game.instance.m_playerProfile.m_usedCheats == true ||
+                     Game.instance.m_playerProfile.m_playerStats[PlayerStatType.Cheats] > 0)
                 {
                     __m_invalidForTournamentPlay = true;
                 }
@@ -2956,6 +2962,13 @@ namespace TrophyHuntMod
                 if (!__m_loggedInWithDiscord)
                 {
                     return;
+                }
+
+                if (__m_invalidForTournamentPlay) 
+                {
+                    Debug.Log("Invalid for Tournament Play, not sending score to Tracker.");
+
+                    return; 
                 }
 
                 string discordUser = __m_configDiscordUser.Value;

@@ -140,6 +140,9 @@ This Trophy Hunt variant implements a good number of modifications to standard V
 
 
 ## Change Log
+v0.9.10
+- Internal housekeeping
+
 v0.9.9
 - Saga Modes
   - Adjusted Boss item drop method to prevent mob vs. mob violence causing player to miss dropped Boss items
