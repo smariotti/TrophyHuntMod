@@ -140,6 +140,9 @@ This Trophy Hunt variant implements a good number of modifications to standard V
 
 
 ## Change Log
+v0.9.11
+- Added `/togglescorebackground` Console command to enable/disable a black background behind the score for increased legibility.
+
 v0.9.10
 - Internal housekeeping
 

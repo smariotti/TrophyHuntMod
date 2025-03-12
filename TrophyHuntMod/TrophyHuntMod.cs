@@ -54,7 +54,7 @@ namespace TrophyHuntMod
         public const string PluginName = "TrophyHuntMod";
         private const Boolean UPDATE_LEADERBOARD = true;
 #endif
-        public const string PluginVersion = "0.9.10";
+        public const string PluginVersion = "0.9.11";
         private readonly Harmony harmony = new Harmony(PluginGUID);
 
         // Configuration variables
@@ -294,6 +294,7 @@ namespace TrophyHuntMod
 
         // UI Elements
         static GameObject __m_scoreTextElement = null;
+        static GameObject __m_scoreBGElement = null;
         static GameObject __m_deathsTextElement = null;
         static GameObject __m_relogsTextElement = null;
         static GameObject __m_relogsIconElement = null;
@@ -976,6 +977,19 @@ namespace TrophyHuntMod
                 }
 
                 Player_OnSpawned_Patch.InitializeSagaDrops();
+            });
+
+            ConsoleCommand toggleScoreBGCommand = new ConsoleCommand("togglescorebackground", "Toggle black background underneath the score", delegate (ConsoleEventArgs args)
+            {
+                if (!Game.instance)
+                {
+                    PrintToConsole("'togglescorebackground' console command can only be used in-game.");
+                }
+
+                
+                RectTransform textTransform = __m_scoreBGElement.GetComponent<RectTransform>();
+
+                __m_scoreBGElement.SetActive(!__m_scoreBGElement.activeSelf);
             });
 
 
@@ -2134,19 +2148,24 @@ namespace TrophyHuntMod
 
             static GameObject CreateScoreTextElement(Transform parentTransform)
             {
-                GameObject scoreBGElement = new GameObject("ScoreBG");
-                scoreBGElement.transform.SetParent(parentTransform);
+                __m_scoreBGElement = new GameObject("ScoreBG");
+                __m_scoreBGElement.transform.SetParent(parentTransform);
 
                 Vector2 scorePos = new Vector2(-65, -140);
                 Vector2 scoreSize = new Vector2(70, 42);
 
-                //RectTransform bgTransform = scoreBGElement.AddComponent<RectTransform>();
-                //bgTransform.sizeDelta = scoreSize;
-                //bgTransform.anchoredPosition = scorePos;
+                RectTransform bgTransform = __m_scoreBGElement.AddComponent<RectTransform>();
+                Vector2 scorePosBg = new Vector2(-70, -143);
+                Vector2 scoreSizeBg = new Vector2(70, 42);
+                bgTransform.sizeDelta = scoreSizeBg;
+                bgTransform.anchoredPosition = scorePosBg;
+                bgTransform.localScale = new Vector3(__m_userTextScale, __m_userTextScale, __m_userTextScale);
+
+                __m_scoreBGElement.SetActive(false);
 
                 //// Add an Image component for the background
-                //UnityEngine.UI.Image backgroundImage = scoreBGElement.AddComponent<UnityEngine.UI.Image>();
-                //backgroundImage.color = new Color(0, 0, 0, 0.85f); // Semi-transparent black background
+                UnityEngine.UI.Image backgroundImage = __m_scoreBGElement.AddComponent<UnityEngine.UI.Image>();
+                backgroundImage.color = new Color(0, 0, 0, 1f); // Semi-transparent black background
 
                 // Create a new GameObject for the text
                 GameObject scoreTextElement = new GameObject("ScoreText");
@@ -2167,7 +2186,7 @@ namespace TrophyHuntMod
 
                 tmText.text = $"{scoreValue}";
                 tmText.fontSize = DEFAULT_SCORE_FONT_SIZE;
-                tmText.fontStyle = FontStyles.Bold;
+//                tmText.fontStyle = FontStyles.Bold;
                 tmText.color = Color.yellow;
                 tmText.alignment = TextAlignmentOptions.Center;
                 tmText.raycastTarget = true;
