@@ -448,6 +448,7 @@ namespace TrophyHuntMod
         static ConfigEntry<string> __m_configDiscordGlobalUser;
         static ConfigEntry<string> __m_configDiscordAvatar;
         static ConfigEntry<string> __m_configDiscordDiscriminator;
+        static ConfigEntry<string> __m_configDiscordCallbackPort;
 
         // PlayerProfile save data
         //
@@ -708,10 +709,12 @@ namespace TrophyHuntMod
             __m_configDiscordGlobalUser = Config.Bind("General", "DiscordGlobalUserName", "", "When signed in with Discord, the Global User Name of the Discord user");
             __m_configDiscordAvatar = Config.Bind("General", "DiscordAvatar", "", "When signed in with Discord, the Avatar id of the Discord user");
             __m_configDiscordDiscriminator = Config.Bind("General", "DiscordDiscriminator", "", "When signed in with Discord, the User Discriminator of the Discord user");
+            __m_configDiscordCallbackPort = Config.Bind("General", "DiscordCallbackPort", "5000", "The callback port used by Discord for authentication callback. By default port 5000 is normally used. Can choose either 5000, 5001 or 5002");
 
             Debug.Log($"Config __m_configDiscordId:{__m_configDiscordId.Value}");
             Debug.Log($"Config __m_configDiscordUser:{__m_configDiscordUser.Value}");
             Debug.Log($"Config __m_configDiscordGlobalUser:{__m_configDiscordGlobalUser.Value}");
+            Debug.Log($"Config __m_configDiscordCallbackPort:{__m_configDiscordCallbackPort.Value}");
 
             __m_loggedInWithDiscord = false;
             if (__m_configDiscordUser.Value != "")
@@ -5234,9 +5237,11 @@ namespace TrophyHuntMod
                 if (!__m_loggedInWithDiscord)
                 {
                     string clientId = "1328474573334642728";
-                    string redirectUri = "http://localhost:5000/callback";
+                    string discordCallbackPort = __m_configDiscordCallbackPort;
+                    string redirectDomain = $"http://localhost:{discordCallbackPort}";
+                    string redirectLink = "/callback";
 
-                    __m_discordAuthentication.StartOAuthFlow(clientId, redirectUri, UpdateOnlineStatus);
+                    __m_discordAuthentication.StartOAuthFlow(clientId, redirectLink, redirectDomain, UpdateOnlineStatus);
                 }
                 else
                 {
