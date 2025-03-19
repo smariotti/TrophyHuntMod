@@ -443,6 +443,9 @@ namespace TrophyHuntMod
         //
 
         // BepInEx Mod Config File Data
+
+
+        static ConfigEntry<bool> __m_configDisablePrintSeeds;   
         static ConfigEntry<string> __m_configDiscordId;
         static ConfigEntry<string> __m_configDiscordUser;
         static ConfigEntry<string> __m_configDiscordGlobalUser;
@@ -703,6 +706,7 @@ namespace TrophyHuntMod
             //
             InitializeTrophyDropInfo();
 
+            __m_configDisablePrintSeeds = Config.Bind("Game", "DisablePrintSeeds", false, "Some in game rules do not allow the use of the /printseeds command. You can choose to disable the command to stop you using it if you have a habit of spamming it in other game mode types.");
             __m_configDiscordId = Config.Bind("General", "DiscordUserId", "", "When signed in with Discord, the UserID of the Discord user");
             __m_configDiscordUser = Config.Bind("General", "DiscordUserName", "", "When signed in with Discord, the User Name of the Discord user");
             __m_configDiscordGlobalUser = Config.Bind("General", "DiscordGlobalUserName", "", "When signed in with Discord, the Global User Name of the Discord user");
@@ -1085,6 +1089,15 @@ namespace TrophyHuntMod
                     }
                 }
             });
+
+            if (__m_configDisablePrintSeeds)
+            {
+                ConsoleCommand printSeeds = new ConsoleCommand("printseeds", "Disabled print seeds command", delegate (ConsoleEventArgs args)
+                {
+                    PrintToConsole("The printseeds command is disabled. You can reenable in the mod config if required");
+                    return;
+                });
+            }
 
             ConsoleCommand trophySpacingCommand = new ConsoleCommand("trophyspacing", "Space the trophies out (negative and positive numbers work)", delegate (ConsoleEventArgs args)
             {
