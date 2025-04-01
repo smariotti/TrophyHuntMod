@@ -22,8 +22,6 @@ public class DiscordOAuthFlow
 
     string m_clientId = string.Empty;
     string m_redirectUri = string.Empty;
-    string m_redirectDomain = string.Empty;
-    string m_redirectLink = string.Empty;
     string m_code = string.Empty;
     DiscordUserResponse m_userInfo = null;
 
@@ -36,16 +34,14 @@ public class DiscordOAuthFlow
 
     StatusCallback m_statusCallback = null;
 
-    public void StartOAuthFlow(string clientId, string redirectDomain, string redirectLink, StatusCallback callback)
+    public void StartOAuthFlow(string clientId, string redirectUri, StatusCallback callback)
     {
         m_clientId = clientId;
-        m_redirectDomain = redirectDomain;
-        m_redirectLink = redirectLink;
-        m_redirectUri = m_redirectDomain + m_redirectLink;
+        m_redirectUri = redirectUri;
         m_statusCallback= callback;
 
         if (VERBOSE) System.Diagnostics.Debug.WriteLine("Starting OAuth flow...");
-        StartServer(redirectDomain);
+        StartServer(redirectUri);
         OpenDiscordAuthorization(clientId, redirectUri);
     }
 
@@ -70,7 +66,7 @@ public class DiscordOAuthFlow
         });
     }
 
-    private void StartServer(string redirectDomain)
+    private void StartServer(string redirectUri)
     {
         if (VERBOSE) System.Diagnostics.Debug.WriteLine("Starting local HTTP server to listen for authorization code...");
         if (httpListener != null)
@@ -80,7 +76,7 @@ public class DiscordOAuthFlow
         else
         { 
             httpListener = new HttpListener();
-            httpListener.Prefixes.Add(redirectDomain);
+            httpListener.Prefixes.Add("http://localhost:5000/");
         }
 
         httpListener.Start();
@@ -104,7 +100,7 @@ public class DiscordOAuthFlow
             HttpListenerRequest request = context.Request;
             HttpListenerResponse response = context.Response;
 
-            if (request.Url.AbsolutePath == m_redirectLink && string.IsNullOrEmpty(request.QueryString["token"]))
+            if (request.Url.AbsolutePath == "/callback" && string.IsNullOrEmpty(request.QueryString["token"]))
             {
                 // Serve the JavaScript callback page
                 string htmlContent = GetCallbackHtml();
@@ -171,7 +167,7 @@ public class DiscordOAuthFlow
             const params = new URLSearchParams(window.location.hash.substr(1));
             const accessToken = params.get('access_token');
             if (accessToken) {
-                window.location.href = '"+m_redirectUri+@"?token=' + encodeURIComponent(accessToken);
+                window.location.href = 'http://localhost:5000/callback?token=' + encodeURIComponent(accessToken);
             } else {
                 document.body.innerHTML = '<h2>Error: No access token found.</h2>';
             }
